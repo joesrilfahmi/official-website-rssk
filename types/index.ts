@@ -45,3 +45,15 @@ export interface LayananUnggulan {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface KamarInap {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  facilities: string[];
+  is_recommended: boolean;
+  urutan: number;
+  created_at?: string;
+  updated_at?: string;
+}

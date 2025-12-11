@@ -8,6 +8,7 @@ interface TitleProps {
     badgeVariant?: 'default' | 'primary' | 'secondary';
     titleClassName?: string;
     containerClassName?: string;
+    align?: 'left' | 'center' | 'right';
 }
 
 const Title: React.FC<TitleProps> = ({
@@ -15,10 +16,17 @@ const Title: React.FC<TitleProps> = ({
     title,
     badgeVariant = 'default',
     titleClassName = '',
-    containerClassName = ''
+    containerClassName = '',
+    align = 'left'
 }) => {
+    const alignmentClasses = {
+        left: 'text-left items-start',
+        center: 'text-center items-center',
+        right: 'text-right items-end'
+    };
+
     return (
-        <div className={`space-y-5 sm:space-y-6 ${containerClassName}`}>
+        <div className={`space-y-5 sm:space-y-6 flex flex-col ${alignmentClasses[align]} ${containerClassName}`}>
             {/* Conditional Badge */}
             {badge && (
                 <Badge variant={badgeVariant}>

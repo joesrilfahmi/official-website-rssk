@@ -38,6 +38,12 @@ const menuItems = [
         url: '/layanan-unggulan',
         access: ["administrator", "user"]
     },
+    {
+        title: 'Kamar Inap',
+        icon: Home,
+        url: '/kamar-inap',
+        access: ["administrator", "user"]
+    },
 
     {
         title: 'Users',
