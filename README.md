@@ -1,38 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Project Name
 
-## Getting Started
+A modern web application built with Next.js and Supabase.
 
-First, run the development server:
+## 🚀 Tech Stack
+
+- **[Next.js](https://nextjs.org/)** - React framework for production
+- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript
+- **[Bun](https://bun.sh/)** - Fast all-in-one JavaScript runtime
+- **[shadcn/ui](https://ui.shadcn.com/)** - Re-usable components built with Radix UI and Tailwind CSS
+- **[Supabase](https://supabase.com/)** - Open source Firebase alternative
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have installed:
+- [Bun](https://bun.sh/) (latest version)
+- [Git](https://git-scm.com/)
+
+## 🛠️ Getting Started
+
+### 1. Clone the Repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd <repository-name>
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install Dependencies
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+bun install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Environment Setup
 
-## Learn More
+Create a `.env.local` file in the root directory and add your Supabase credentials:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> **Note:** Contact rssk.sirs@gmail.com for Supabase access credentials.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Run the Development Server
 
-## Deploy on Vercel
+```bash
+bun run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# templates
-# rssk-website-official
+## 📦 Available Scripts
+
+- `bun run dev` - Start the development server
+- `bun run build` - Build the application for production
+- `bun run start` - Start the production server
+- `bun run lint` - Run ESLint for code linting
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📧 Contact
+
+For Supabase access or any questions, reach out to: rssk.sirs@gmail.com
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
