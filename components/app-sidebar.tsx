@@ -32,6 +32,12 @@ const menuItems = [
         url: '/dashboard',
         access: ["administrator", "user"]
     },
+    {
+        title: 'Layanan Unggulan',
+        icon: Home,
+        url: '/layanan-unggulan',
+        access: ["administrator", "user"]
+    },
 
     {
         title: 'Users',

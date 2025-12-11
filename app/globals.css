@@ -82,6 +82,19 @@
   --color-catskillwhite-900: #707c8a;
   --color-catskillwhite-950: #3d4556;
 
+  /* === Greenfresh === */
+  --color-greenfresh-50: #f0fff7;
+  --color-greenfresh-100: #d9fee7;
+  --color-greenfresh-200: #b5fbcf;
+  --color-greenfresh-300: #8ff7b6;
+  --color-greenfresh-400: #72f29f;
+  --color-greenfresh-500: #5ee088;
+  --color-greenfresh-600: #4ebb70;
+  --color-greenfresh-700: #3e9659;
+  --color-greenfresh-800: #2f7042;
+  --color-greenfresh-900: #214a2c;
+  --color-greenfresh-950: #132716;
+
   /* === Mineshaft === */
   --color-mineshaft-50: #fafafa;
   --color-mineshaft-100: #f5f5f5;

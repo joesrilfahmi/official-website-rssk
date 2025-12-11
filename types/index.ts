@@ -34,3 +34,14 @@ export interface RegisterData {
   id_telegram?: string;
   email?: string;
 }
+
+export interface LayananUnggulan {
+  id: string;
+  icon: string;
+  title: string;
+  description: string;
+  urutan: number;
+  status: 'active' | 'inactive';
+  created_at?: string;
+  updated_at?: string;
+}
