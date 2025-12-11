@@ -22,7 +22,7 @@ import {
     AlertDialogTitle,
     AlertDialogFooter
 } from '@/components/ui/alert-dialog';
-import { Building2, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/password-input';
 import { PasswordStrengthIndicator } from '@/components/ui/password-strength-indicator';
 import { register } from '@/lib/auth';
@@ -74,7 +74,6 @@ export default function RegisterPage() {
         id_telegram: '',
     });
 
-    // Hitung validasi password untuk ditampilkan
     const passwordValidation = useMemo(() => {
         return validasiPassword(formData.password);
     }, [formData.password]);
@@ -86,7 +85,6 @@ export default function RegisterPage() {
             ...prev,
             [name]: name === 'username' ? value.toLowerCase() : value,
         }));
-        // Clear error when user starts typing
         setErrors((prev) => ({
             ...prev,
             [name]: '',
@@ -105,26 +103,22 @@ export default function RegisterPage() {
         };
         let isValid = true;
 
-        // Validasi nama
         if (!formData.nama.trim()) {
             newErrors.nama = 'Nama lengkap wajib diisi';
             isValid = false;
         }
 
-        // Validasi username
         const usernameValidation = validasiUsername(formData.username);
         if (!usernameValidation.isValid) {
             newErrors.username = usernameValidation.message;
             isValid = false;
         }
 
-        // Validasi password
         if (!passwordValidation.isValid) {
             newErrors.password = passwordValidation.message;
             isValid = false;
         }
 
-        // Validasi konfirmasi password
         const confirmPasswordValidation = validasiKonfirmasiPassword(
             formData.password,
             formData.confirmPassword
@@ -134,19 +128,16 @@ export default function RegisterPage() {
             isValid = false;
         }
 
-        // Validasi email (optional tapi harus valid jika diisi)
         if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             newErrors.email = 'Email tidak valid';
             isValid = false;
         }
 
-        // Validasi nomor telepon (jika ada isi, harus valid)
         if (formData.nomor_telepon.trim() && !/^(\+62|62|0)[0-9]{9,12}$/.test(formData.nomor_telepon)) {
             newErrors.nomor_telepon = 'Nomor telepon tidak valid';
             isValid = false;
         }
 
-        // Validasi ID Telegram
         const idTelegramValidation = validasiIdTelegram(formData.id_telegram);
         if (!idTelegramValidation.isValid) {
             newErrors.id_telegram = idTelegramValidation.message;
@@ -160,18 +151,15 @@ export default function RegisterPage() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        // Validasi semua field terlebih dahulu
         if (!validateForm()) {
             return;
         }
 
-        // Jika id_telegram kosong, tampilkan dialog konfirmasi
         if (!formData.id_telegram.trim()) {
             setShowTelegramDialog(true);
             return;
         }
 
-        // Semua validasi pass, lanjutkan registrasi
         await performRegistration();
     };
 
@@ -179,7 +167,6 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            // Validasi ulang sebelum submit (safety check)
             if (!validateForm()) {
                 setLoading(false);
                 return;
@@ -208,27 +195,20 @@ export default function RegisterPage() {
 
     return (
         <>
-            <div className="grid min-h-screen lg:grid-cols-2">
-                {/* Left side - Form */}
-                <div className="flex items-center justify-center p-8">
-                    <div className="w-full max-w-md space-y-6">
-                        <div className="flex flex-col space-y-2 text-center">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                <Building2 className="h-6 w-6" />
-                            </div>
-                            <h1 className="text-2xl font-semibold tracking-tight">Buat Akun Baru</h1>
-                            <p className="text-sm text-muted-foreground">Daftar untuk menggunakan sistem</p>
-                        </div>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Register</CardTitle>
-                                <CardDescription>Lengkapi form di bawah untuk membuat akun</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+                <div className="flex w-full max-w-sm flex-col gap-6">
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-2xl">Buat Akun Baru</CardTitle>
+                            <CardDescription>
+                                Lengkapi form untuk membuat akun
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                                <div className="flex flex-col gap-4">
                                     {/* Nama Lengkap */}
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="nama">
                                             Nama Lengkap <span className="text-red-500">*</span>
                                         </Label>
@@ -241,6 +221,7 @@ export default function RegisterPage() {
                                             onChange={handleChange}
                                             disabled={loading}
                                             className={errors.nama ? 'border-red-500' : ''}
+                                            required
                                         />
                                         {errors.nama && (
                                             <p className="text-sm text-red-500">{errors.nama}</p>
@@ -248,7 +229,7 @@ export default function RegisterPage() {
                                     </div>
 
                                     {/* Username */}
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="username">
                                             Username <span className="text-red-500">*</span>
                                         </Label>
@@ -256,11 +237,12 @@ export default function RegisterPage() {
                                             id="username"
                                             name="username"
                                             type="text"
-                                            placeholder="Pilih username (min 3-20 karakter)"
+                                            placeholder="Pilih username (3-20 karakter)"
                                             value={formData.username}
                                             onChange={handleChange}
                                             disabled={loading}
                                             className={errors.username ? 'border-red-500' : ''}
+                                            required
                                         />
                                         {errors.username && (
                                             <p className="text-sm text-red-500">{errors.username}</p>
@@ -268,12 +250,12 @@ export default function RegisterPage() {
                                     </div>
 
                                     {/* Password */}
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <PasswordInput
                                             id="password"
                                             name="password"
                                             label="Password"
-                                            placeholder="Minimal 8 karakter dengan kombinasi huruf, angka, dan simbol"
+                                            placeholder="Minimal 8 karakter"
                                             value={formData.password}
                                             onChange={handleChange}
                                             disabled={loading}
@@ -281,7 +263,6 @@ export default function RegisterPage() {
                                             required
                                         />
 
-                                        {/* Password Strength Indicator */}
                                         <PasswordStrengthIndicator
                                             password={formData.password}
                                             validationResult={passwordValidation}
@@ -291,7 +272,7 @@ export default function RegisterPage() {
                                     </div>
 
                                     {/* Konfirmasi Password */}
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <PasswordInput
                                             id="confirmPassword"
                                             name="confirmPassword"
@@ -306,7 +287,7 @@ export default function RegisterPage() {
                                     </div>
 
                                     {/* Email */}
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="email">Email</Label>
                                         <Input
                                             id="email"
@@ -324,7 +305,7 @@ export default function RegisterPage() {
                                     </div>
 
                                     {/* Nomor Telepon */}
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="nomor_telepon">Nomor Telepon</Label>
                                         <Input
                                             id="nomor_telepon"
@@ -342,7 +323,7 @@ export default function RegisterPage() {
                                     </div>
 
                                     {/* ID Telegram */}
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="id_telegram">ID Telegram (angka saja)</Label>
                                         <Input
                                             id="id_telegram"
@@ -358,36 +339,30 @@ export default function RegisterPage() {
                                             <p className="text-sm text-red-500">{errors.id_telegram}</p>
                                         )}
                                     </div>
-
-                                    <Button type="submit" className="w-full" disabled={loading}>
-                                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        {loading ? 'Memproses...' : 'Daftar'}
-                                    </Button>
-                                </form>
-
-                                <div className="mt-4 text-center text-sm">
-                                    Sudah punya akun?{' '}
-                                    <Link
-                                        href="/login"
-                                        className="font-medium text-primary hover:underline"
-                                    >
-                                        Login di sini
-                                    </Link>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
 
-                {/* Right side - Cover Image */}
-                <div className="hidden bg-muted lg:block">
-                    <div className="flex h-full flex-col items-center justify-center p-8">
-                        <div className="space-y-6 text-center">
-                            <h2 className="text-4xl font-bold tracking-tight">Bergabung dengan Kami</h2>
-                            <p className="text-xl text-muted-foreground">
-                                Kelola sistem dengan mudah dan efisien
-                            </p>
-                        </div>
+                                <Button type="submit" className="w-full" disabled={loading}>
+                                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {loading ? 'Memproses...' : 'Daftar'}
+                                </Button>
+                            </form>
+
+                            <div className="mt-4 text-center text-sm">
+                                Sudah punya akun?{' '}
+                                <Link
+                                    href="/login"
+                                    className="font-medium underline underline-offset-4"
+                                >
+                                    Login
+                                </Link>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-primary">
+                        Dengan mendaftar, Anda menyetujui{' '}
+                        <a href="#">Syarat & Ketentuan</a> dan{' '}
+                        <a href="#">Kebijakan Privasi</a> kami.
                     </div>
                 </div>
             </div>

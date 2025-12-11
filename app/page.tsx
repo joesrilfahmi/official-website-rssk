@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated } from '@/lib/auth';
 
-export default function HomePage() {
+export default function App() {
   const router = useRouter();
 
   useEffect(() => {
