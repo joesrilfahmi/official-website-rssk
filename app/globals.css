@@ -3,6 +3,99 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  /* === Bittersweet === */
+  --color-bittersweet-50: #fff8f6;
+  --color-bittersweet-100: #ffe8e1;
+  --color-bittersweet-200: #ffd4c8;
+  --color-bittersweet-300: #ffb5a3;
+  --color-bittersweet-400: #ff8f73;
+  --color-bittersweet-500: #ff6f61;
+  --color-bittersweet-600: #f54a38;
+  --color-bittersweet-700: #d93625;
+  --color-bittersweet-800: #b52b1f;
+  --color-bittersweet-900: #972419;
+  --color-bittersweet-950: #540d0a;
+
+  /* === Pastel Green === */
+  --color-pastelgreen-50: #f0f9f4;
+  --color-pastelgreen-100: #d4f1e3;
+  --color-pastelgreen-200: #aae5cc;
+  --color-pastelgreen-300: #7dd5b0;
+  --color-pastelgreen-400: #52c299;
+  --color-pastelgreen-500: #2ecc7199;
+  --color-pastelgreen-600: #229d69;
+  --color-pastelgreen-700: #1a7f55;
+  --color-pastelgreen-800: #156245;
+  --color-pastelgreen-900: #124e39;
+  --color-pastelgreen-950: #092e20;
+
+  /* === Mariner === */
+  --color-mariner-50: #eff6fc;
+  --color-mariner-100: #daeaf6;
+  --color-mariner-200: #b8d9ed;
+  --color-mariner-300: #86c1e1;
+  --color-mariner-400: #4da5d1;
+  --color-mariner-500: #2f8bbf;
+  --color-mariner-600: #2677bc;
+  --color-mariner-700: #205fa3;
+  --color-mariner-800: #1d4d84;
+  --color-mariner-900: #1c3f6b;
+  --color-mariner-950: #132645;
+
+  /* === Curious Blue === */
+  --color-curiousblue-50: #eff7fe;
+  --color-curiousblue-100: #d9ecfd;
+  --color-curiousblue-200: #b8dbfb;
+  --color-curiousblue-300: #86c3f8;
+  --color-curiousblue-400: #4ba4f3;
+  --color-curiousblue-500: #3498db;
+  --color-curiousblue-600: #2e7cc1;
+  --color-curiousblue-700: #2563a8;
+  --color-curiousblue-800: #224d8c;
+  --color-curiousblue-900: #213f71;
+  --color-curiousblue-950: #152644;
+
+  /* === Eastern Blue === */
+  --color-easternblue-50: #ecf8f9;
+  --color-easternblue-100: #d1eff3;
+  --color-easternblue-200: #a8e3e8;
+  --color-easternblue-300: #75d3dd;
+  --color-easternblue-400: #46b9ca;
+  --color-easternblue-500: #1a9b9de5;
+  --color-easternblue-600: #1b7f87;
+  --color-easternblue-700: #1a6a71;
+  --color-easternblue-800: #1a5460;
+  --color-easternblue-900: #1a4550;
+  --color-easternblue-950: #0d2730;
+
+  /* === Catskill White === */
+  --color-catskillwhite-50: #ffffff;
+  --color-catskillwhite-100: #fefeff;
+  --color-catskillwhite-200: #fafbfc;
+  --color-catskillwhite-300: #f7f9fb;
+  --color-catskillwhite-400: #f6f8fa;
+  --color-catskillwhite-500: #f5f8fa;
+  --color-catskillwhite-600: #e8ecf1;
+  --color-catskillwhite-700: #d9e0e8;
+  --color-catskillwhite-800: #a8b3bf;
+  --color-catskillwhite-900: #707c8a;
+  --color-catskillwhite-950: #3d4556;
+
+  /* === Mineshaft === */
+  --color-mineshaft-50: #fafafa;
+  --color-mineshaft-100: #f5f5f5;
+  --color-mineshaft-200: #eeeeee;
+  --color-mineshaft-300: #e0e0e0;
+  --color-mineshaft-400: #bdbdbd;
+  --color-mineshaft-500: #333333;
+  --color-mineshaft-600: #2e2e2e;
+  --color-mineshaft-700: #262626;
+  --color-mineshaft-800: #1a1a1a;
+  --color-mineshaft-900: #121212;
+  --color-mineshaft-950: #0a0a0a;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
