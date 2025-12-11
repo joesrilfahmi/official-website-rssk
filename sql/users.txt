@@ -1,0 +1,52 @@
+create table public.users(
+    id uuid not null default gen_random_uuid(),
+    nama character varying(255) not null,
+    username character varying(50) not null,
+    password character varying(255) not null,
+    email character varying(255) null,
+    nomor_telepon character varying(20) null,
+    id_telegram character varying(50) null,
+    role character varying(20) not null default 'user':: character varying,
+    status_users character varying(20) not null default 'inactive':: character varying,
+    avatar text null,
+    created_at timestamp with time zone null default CURRENT_TIMESTAMP,
+        updated_at timestamp with time zone null default CURRENT_TIMESTAMP,
+            constraint users_pkey primary key(id),
+                constraint users_username_key unique(username),
+                    constraint users_role_check check(
+                        (
+                            (role):: text = any(
+                                (
+                                    array[
+                                    'administrator':: character varying,
+                                'user':: character varying
+          ]
+                            ):: text[]
+                    )
+    )
+  ),
+  constraint users_status_users_check check(
+                        (
+                            (status_users):: text = any(
+                                (
+                                    array[
+                                    'active':: character varying,
+                                'inactive':: character varying
+          ]
+                            ):: text[]
+                    )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_users_username on public.users using btree (username) TABLESPACE pg_default;
+
+create index IF not exists idx_users_role on public.users using btree (role) TABLESPACE pg_default;
+
+create index IF not exists idx_users_status on public.users using btree (status_users) TABLESPACE pg_default;
+
+create index IF not exists idx_users_created_at on public.users using btree (created_at) TABLESPACE pg_default;
+
+create trigger update_users_updated_at BEFORE
+update on users for EACH row
+execute FUNCTION update_updated_at_column();
