@@ -52,7 +52,6 @@ const LayananUnggulan = () => {
                 const { data, error } = await supabase
                     .from('layanan_unggulan')
                     .select('*')
-                    .eq('status', 'active')
                     .order('urutan', { ascending: true })
                     .limit(6);
 
@@ -84,37 +83,10 @@ const LayananUnggulan = () => {
         };
     }, []);
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-12 sm:mb-16">
-                        <div className="h-8 w-48 bg-gray-200 rounded-full mx-auto mb-6 animate-pulse"></div>
-                        <div className="h-12 w-96 bg-gray-200 rounded mx-auto animate-pulse"></div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                        {[...Array(6)].map((_, i) => (
-                            <div key={i} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
-                                <div className="h-16 w-16 bg-gray-200 rounded-2xl mb-4"></div>
-                                <div className="h-6 w-32 bg-gray-200 rounded mb-3"></div>
-                                <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-                                <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (layananList.length === 0) {
-        return null;
-    }
-
     return (
         <div className="min-h-screen bg-gray-50 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-                {/* Header Section */}
+                {/* Header Section - Selalu tampil */}
                 <div className="text-center mb-12 sm:mb-16">
                     <Title
                         badge="SPESIALIS KAMI"
@@ -124,51 +96,57 @@ const LayananUnggulan = () => {
                     />
                 </div>
 
-                {/* Desktop & Tablet: Grid View (md and up) */}
-                <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
-                    {layananList.map((layanan, index) => {
-                        const IconComponent = Icons[layanan.icon as keyof typeof Icons] as React.ElementType;
-                        const numberString = (index + 1).toString().padStart(2, '0');
-
-                        return (
-                            <div
-                                key={layanan.id}
-                                className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
-                            >
-                                {/* Decorative Number Background */}
-                                <div className="absolute top-6 right-6 text-7xl font-bold text-gray-200/50 select-none pointer-events-none">
-                                    {numberString}
+                {/* Loading State - Hanya Skeleton Cards */}
+                {loading && (
+                    <>
+                        {/* Desktop & Tablet: Grid View */}
+                        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
+                            {[...Array(6)].map((_, i) => (
+                                <div key={i} className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg animate-pulse">
+                                    <div className="h-16 w-16 bg-gray-200 rounded-2xl mb-4"></div>
+                                    <div className="h-6 w-32 bg-gray-200 rounded mb-3"></div>
+                                    <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                                    <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
                                 </div>
+                            ))}
+                        </div>
 
-                                {/* Icon Badge */}
-                                <div className="inline-flex p-4 sm:p-5 rounded-2xl bg-bittersweet-100 text-bittersweet-500 mb-4 sm:mb-6 relative z-10 group-hover:scale-110 transition-transform duration-300">
-                                    {IconComponent && <IconComponent className="w-7 h-7 sm:w-8 sm:h-8" />}
+                        {/* Mobile: Carousel View */}
+                        <div className="md:hidden flex gap-4 overflow-x-auto scrollbar-hide pb-4">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="flex-[0_0_85%] min-w-0">
+                                    <div className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
+                                        <div className="h-16 w-16 bg-gray-200 rounded-2xl mb-4"></div>
+                                        <div className="h-6 w-32 bg-gray-200 rounded mb-3"></div>
+                                        <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                                        <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                                    </div>
                                 </div>
+                            ))}
+                        </div>
+                    </>
+                )}
 
-                                {/* Content */}
-                                <div className="relative z-10">
-                                    <h3 className="text-xl sm:text-2xl font-bold text-mariner-500 mb-3 sm:mb-4">
-                                        {layanan.title}
-                                    </h3>
-                                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4 sm:mb-6">
-                                        {layanan.description}
-                                    </p>
+                {/* Empty State */}
+                {!loading && layananList.length === 0 && (
+                    <div className="text-center py-12">
+                        <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
+                            <Icons.AlertCircle className="w-12 h-12 text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                            Belum Ada Layanan
+                        </h3>
+                        <p className="text-gray-500">
+                            Layanan unggulan belum tersedia saat ini.
+                        </p>
+                    </div>
+                )}
 
-                                    {/* Explore Button */}
-                                    <Button variant='secondary' size="sm">
-                                        Explore More
-                                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                                    </Button>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {/* Mobile Only: Carousel View (below md breakpoint) */}
-                <div className="md:hidden relative mb-12">
-                    <div className="overflow-hidden" ref={emblaRef}>
-                        <div className="flex gap-4">
+                {/* Content - Tampil saat ada data */}
+                {!loading && layananList.length > 0 && (
+                    <>
+                        {/* Desktop & Tablet: Grid View (md and up) */}
+                        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
                             {layananList.map((layanan, index) => {
                                 const IconComponent = Icons[layanan.icon as keyof typeof Icons] as React.ElementType;
                                 const numberString = (index + 1).toString().padStart(2, '0');
@@ -176,70 +154,115 @@ const LayananUnggulan = () => {
                                 return (
                                     <div
                                         key={layanan.id}
-                                        className="flex-[0_0_85%] min-w-0"
+                                        className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
                                     >
-                                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden h-full">
-                                            {/* Decorative Number Background */}
-                                            <div className="absolute top-6 right-6 text-7xl font-bold text-gray-200/50 select-none pointer-events-none">
-                                                {numberString}
-                                            </div>
+                                        {/* Decorative Number Background */}
+                                        <div className="absolute top-6 right-6 text-7xl font-bold text-gray-200/50 select-none pointer-events-none">
+                                            {numberString}
+                                        </div>
 
-                                            {/* Icon Badge */}
-                                            <div className="inline-flex p-4 rounded-2xl bg-bittersweet-100 text-bittersweet-500 mb-4 relative z-10 group-hover:scale-110 transition-transform duration-300">
-                                                {IconComponent && <IconComponent className="w-7 h-7" />}
-                                            </div>
+                                        {/* Icon Badge */}
+                                        <div className="inline-flex p-4 sm:p-5 rounded-2xl bg-bittersweet-100 text-bittersweet-500 mb-4 sm:mb-6 relative z-10 group-hover:scale-110 transition-transform duration-300">
+                                            {IconComponent && <IconComponent className="w-7 h-7 sm:w-8 sm:h-8" />}
+                                        </div>
 
-                                            {/* Content */}
-                                            <div className="relative z-10">
-                                                <h3 className="text-xl font-bold text-mariner-500 mb-3">
-                                                    {layanan.title}
-                                                </h3>
-                                                <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                                                    {layanan.description}
-                                                </p>
+                                        {/* Content */}
+                                        <div className="relative z-10">
+                                            <h3 className="text-xl sm:text-2xl font-bold text-mariner-500 mb-3 sm:mb-4">
+                                                {layanan.title}
+                                            </h3>
+                                            <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4 sm:mb-6">
+                                                {layanan.description}
+                                            </p>
 
-                                                {/* Explore Button */}
-                                                <Button variant='secondary' size="sm">
-                                                    Explore More
-                                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                                </Button>
-                                            </div>
+                                            {/* Explore Button */}
+                                            <Button variant='secondary' size="sm">
+                                                Explore More
+                                                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                                            </Button>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                    </div>
 
-                    {/* Carousel Navigation Buttons */}
-                    <button
-                        onClick={scrollPrev}
-                        disabled={!prevBtnEnabled}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors z-10"
-                        aria-label="Previous slide"
-                    >
-                        <ChevronLeft className="w-6 h-6 text-mariner-500" />
-                    </button>
-                    <button
-                        onClick={scrollNext}
-                        disabled={!nextBtnEnabled}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors z-10"
-                        aria-label="Next slide"
-                    >
-                        <ChevronRight className="w-6 h-6 text-mariner-500" />
-                    </button>
-                </div>
+                        {/* Mobile Only: Carousel View (below md breakpoint) */}
+                        <div className="md:hidden relative mb-12">
+                            <div className="overflow-hidden" ref={emblaRef}>
+                                <div className="flex gap-4">
+                                    {layananList.map((layanan, index) => {
+                                        const IconComponent = Icons[layanan.icon as keyof typeof Icons] as React.ElementType;
+                                        const numberString = (index + 1).toString().padStart(2, '0');
 
-                {/* View All Button - Only show if there might be more services */}
-                {layananList.length >= 6 && (
-                    <div className="text-center">
-                        <Link href="/layanan">
-                            <Button variant="primary" size="lg" className="group shadow-lg">
-                                Selengkapnya
-                                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                        </Link>
-                    </div>
+                                        return (
+                                            <div
+                                                key={layanan.id}
+                                                className="flex-[0_0_85%] min-w-0"
+                                            >
+                                                <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden h-full">
+                                                    {/* Decorative Number Background */}
+                                                    <div className="absolute top-6 right-6 text-7xl font-bold text-gray-200/50 select-none pointer-events-none">
+                                                        {numberString}
+                                                    </div>
+
+                                                    {/* Icon Badge */}
+                                                    <div className="inline-flex p-4 rounded-2xl bg-bittersweet-100 text-bittersweet-500 mb-4 relative z-10 group-hover:scale-110 transition-transform duration-300">
+                                                        {IconComponent && <IconComponent className="w-7 h-7" />}
+                                                    </div>
+
+                                                    {/* Content */}
+                                                    <div className="relative z-10">
+                                                        <h3 className="text-xl font-bold text-mariner-500 mb-3">
+                                                            {layanan.title}
+                                                        </h3>
+                                                        <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                                                            {layanan.description}
+                                                        </p>
+
+                                                        {/* Explore Button */}
+                                                        <Button variant='secondary' size="sm">
+                                                            Explore More
+                                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Carousel Navigation Buttons */}
+                            <button
+                                onClick={scrollPrev}
+                                disabled={!prevBtnEnabled}
+                                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors z-10"
+                                aria-label="Previous slide"
+                            >
+                                <ChevronLeft className="w-6 h-6 text-mariner-500" />
+                            </button>
+                            <button
+                                onClick={scrollNext}
+                                disabled={!nextBtnEnabled}
+                                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors z-10"
+                                aria-label="Next slide"
+                            >
+                                <ChevronRight className="w-6 h-6 text-mariner-500" />
+                            </button>
+                        </div>
+
+                        {/* View All Button - Only show if there might be more services */}
+                        {layananList.length >= 6 && (
+                            <div className="text-center">
+                                <Link href="/layanan">
+                                    <Button variant="primary" size="lg" className="group shadow-lg">
+                                        Selengkapnya
+                                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                                    </Button>
+                                </Link>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
