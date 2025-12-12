@@ -104,3 +104,68 @@ WHERE schemaname = 'storage'
   AND tablename = 'objects'
   AND policyname LIKE '%berita_thumbnails%'
 ORDER BY policyname;
+
+-- 1. Drop trigger lama
+DROP TRIGGER IF EXISTS cleanup_old_thumbnail ON berita;
+DROP TRIGGER IF EXISTS cleanup_thumbnail_on_delete ON berita;
+
+-- 2. Drop function lama jika ada
+DROP FUNCTION IF EXISTS delete_old_thumbnail();
+DROP FUNCTION IF EXISTS delete_thumbnail_on_delete();
+
+-- 3. Buat function baru yang benar
+CREATE OR REPLACE FUNCTION delete_old_thumbnail()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Hanya jalankan jika thumbnail berubah
+  IF OLD.thumbnail IS NOT NULL AND OLD.thumbnail IS DISTINCT FROM NEW.thumbnail THEN
+    -- Extract path dari URL
+    DECLARE
+      old_path TEXT;
+    BEGIN
+      -- Format URL: https://xxx.supabase.co/storage/v1/object/public/berita-thumbnails/path/to/file.jpg
+      old_path := regexp_replace(OLD.thumbnail, '^.*/berita-thumbnails/', '');
+      
+      -- Hapus file dari storage
+      PERFORM extensions.http((
+        'DELETE',
+        current_setting('app.settings.supabase_url') || '/storage/v1/object/berita-thumbnails/' || old_path,
+        ARRAY[extensions.http_header('apikey', current_setting('app.settings.supabase_anon_key'))],
+        NULL,
+        NULL
+      )::extensions.http_request);
+    EXCEPTION WHEN OTHERS THEN
+      -- Ignore error jika gagal hapus file
+      NULL;
+    END;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. Buat function untuk delete
+CREATE OR REPLACE FUNCTION delete_thumbnail_on_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.thumbnail IS NOT NULL THEN
+    DECLARE
+      old_path TEXT;
+    BEGIN
+      old_path := regexp_replace(OLD.thumbnail, '^.*/berita-thumbnails/', '');
+      
+      PERFORM extensions.http((
+        'DELETE',
+        current_setting('app.settings.supabase_url') || '/storage/v1/object/berita-thumbnails/' || old_path,
+        ARRAY[extensions.http_header('apikey', current_setting('app.settings.supabase_anon_key'))],
+        NULL,
+        NULL
+      )::extensions.http_request);
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+  END IF;
+  
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
