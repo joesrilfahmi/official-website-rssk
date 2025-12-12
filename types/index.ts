@@ -57,3 +57,43 @@ export interface KamarInap {
   created_at?: string;
   updated_at?: string;
 }
+
+export type BeritaStatus = 'active' | 'non_active' | 'draft';
+
+export interface Berita {
+  id: string;
+  title: string;
+  slug: string;
+  description: string; // Markdown content
+  category: string;
+  thumbnail: string | null;
+  status: BeritaStatus;
+  author: string; // UUID of user
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BeritaWithAuthor extends Berita {
+  author_detail?: {
+    id: string;
+    nama: string;
+    username: string;
+    avatar: string | null;
+  };
+}
+
+export interface BeritaFormData {
+  title: string;
+  slug: string;
+  description: string;
+  category: string;
+  thumbnail: string;
+  status: BeritaStatus;
+}
+
+export interface BeritaFilters {
+  status?: BeritaStatus;
+  category?: string;
+  author?: string;
+  search?: string;
+}

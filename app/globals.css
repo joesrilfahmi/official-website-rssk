@@ -226,3 +226,94 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* app/globals.css - Tambahkan di bagian bawah */
+
+/* FilePond Custom Styles */
+.filepond-wrapper {
+  font-family: inherit;
+}
+
+.filepond--root {
+  margin-bottom: 0;
+}
+
+.filepond--panel-root {
+  background-color: hsl(var(--background));
+  border: 2px dashed hsl(var(--border));
+  border-radius: var(--radius);
+}
+
+.filepond--drop-label {
+  color: hsl(var(--foreground));
+}
+
+.filepond--label-action {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.filepond--drip-blob {
+  background-color: hsl(var(--primary));
+}
+
+.filepond--file {
+  color: hsl(var(--foreground));
+}
+
+.filepond--file-status {
+  color: hsl(var(--muted-foreground));
+}
+
+.filepond--file-info {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Dark mode adjustments */
+.dark .filepond--panel-root {
+  background-color: hsl(var(--background));
+  border-color: hsl(var(--border));
+}
+
+.dark .filepond--drop-label {
+  color: hsl(var(--foreground));
+}
+
+/* Progress bar */
+.filepond--file-action-button {
+  cursor: pointer;
+  color: hsl(var(--foreground));
+}
+
+.filepond--file-action-button:hover {
+  box-shadow: 0 0 0 0.125em hsla(var(--primary), 0.3);
+}
+
+/* Image preview */
+.filepond--image-preview-wrapper {
+  background-color: hsl(var(--muted));
+}
+
+.filepond--image-preview-overlay {
+  background: linear-gradient(
+    to bottom,
+    hsla(var(--background), 0) 0%,
+    hsla(var(--background), 0.5) 100%
+  );
+}
+
+/* Loading indicator */
+.filepond--hopper[data-hopper-state="busy"] .filepond--panel-root {
+  border-color: hsl(var(--primary));
+}
+
+/* Error state */
+.filepond--file[data-file-status="error"] .filepond--file-status {
+  color: hsl(var(--destructive));
+}
+
+/* Success state */
+.filepond--file[data-file-status="success"] .filepond--file-status {
+  color: hsl(var(--success));
+}

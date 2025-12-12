@@ -33,6 +33,12 @@ const menuItems = [
         access: ["administrator", "user"]
     },
     {
+        title: 'Berita',
+        icon: Home,
+        url: '/berita',
+        access: ["administrator", "user"]
+    },
+    {
         title: 'Layanan Unggulan',
         icon: Home,
         url: '/layanan-unggulan',
