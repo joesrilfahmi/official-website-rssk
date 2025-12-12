@@ -1,5 +1,5 @@
 // ============================================
-// FILE: src/app/(auth)/login/page.tsx
+// FILE: app/(auth)/login/page.tsx
 // ============================================
 
 'use client';
