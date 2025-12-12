@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, ArrowUpRight, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowRight, ArrowUpRight, AlertCircle } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Button from '@/components/ui/custom/button';
 import Title from '@/components/ui/custom/title';
@@ -23,50 +23,14 @@ export default function BeritaSection() {
     const [beritaList, setBeritaList] = useState<Berita[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Embla Carousel setup
-    const [emblaRef, emblaApi] = useEmblaCarousel({
+    // Embla Carousel - untuk mobile saja (seperti layanan-unggulan)
+    const [emblaRef] = useEmblaCarousel({
         loop: false,
         align: 'start',
         skipSnaps: false,
         slidesToScroll: 1,
         dragFree: true,
     });
-
-    const [canScrollPrev, setCanScrollPrev] = useState(false);
-    const [canScrollNext, setCanScrollNext] = useState(false);
-
-    const scrollPrev = useCallback(() => {
-        if (emblaApi) emblaApi.scrollPrev();
-    }, [emblaApi]);
-
-    const scrollNext = useCallback(() => {
-        if (emblaApi) emblaApi.scrollNext();
-    }, [emblaApi]);
-
-    const onSelect = useCallback((api: typeof emblaApi) => {
-        if (!api) return;
-        setCanScrollPrev(api.canScrollPrev());
-        setCanScrollNext(api.canScrollNext());
-    }, []);
-
-    useEffect(() => {
-        if (!emblaApi) return;
-
-        const handleSelect = () => onSelect(emblaApi);
-        const handleReInit = () => onSelect(emblaApi);
-
-        emblaApi.on('select', handleSelect);
-        emblaApi.on('reInit', handleReInit);
-
-        requestAnimationFrame(() => {
-            onSelect(emblaApi);
-        });
-
-        return () => {
-            emblaApi.off('select', handleSelect);
-            emblaApi.off('reInit', handleReInit);
-        };
-    }, [emblaApi, onSelect]);
 
     useEffect(() => {
         const fetchBerita = async () => {
@@ -76,7 +40,7 @@ export default function BeritaSection() {
                     .select('*')
                     .eq('status', 'active')
                     .order('created_at', { ascending: false })
-                    .limit(5);
+                    .limit(6);
 
                 if (error) throw error;
 
@@ -196,13 +160,13 @@ export default function BeritaSection() {
                         </Link>
                     </div>
 
-                    {/* Right Content - Berita Carousel */}
+                    {/* Right Content - Berita */}
                     <div className="lg:col-span-8">
                         {/* Loading State */}
                         {loading && (
                             <>
-                                {/* Desktop: Grid View */}
-                                <div className="hidden lg:grid grid-cols-3 gap-6 mb-8">
+                                {/* Desktop & Tablet: Grid View */}
+                                <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
                                     {[...Array(3)].map((_, i) => (
                                         <div key={i} className="animate-pulse">
                                             <div className="h-20 w-20 bg-gray-200 rounded mb-3"></div>
@@ -214,10 +178,10 @@ export default function BeritaSection() {
                                 </div>
 
                                 {/* Mobile: Carousel View */}
-                                <div className="lg:hidden mb-8">
-                                    <div className="flex gap-4 overflow-x-auto scrollbar-hide">
+                                <div className="md:hidden">
+                                    <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
                                         {[...Array(3)].map((_, i) => (
-                                            <div key={i} className="flex-[0_0_85%] sm:flex-[0_0_calc(50%-10px)] animate-pulse">
+                                            <div key={i} className="flex-[0_0_85%] animate-pulse">
                                                 <div className="h-20 w-20 bg-gray-200 rounded mb-3"></div>
                                                 <div className="h-4 w-32 bg-gray-200 rounded mb-3"></div>
                                                 <div className="h-6 w-full bg-gray-200 rounded mb-4"></div>
@@ -247,8 +211,8 @@ export default function BeritaSection() {
                         {/* Content - Tampil saat ada data */}
                         {!loading && beritaList.length > 0 && (
                             <>
-                                {/* Desktop & Tablet: Show grid (lg and up) */}
-                                <div className="hidden lg:grid grid-cols-3 gap-6 mb-8">
+                                {/* Desktop & Tablet: Grid View (md and up) */}
+                                <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
                                     {beritaList.slice(0, 3).map((berita, index) => (
                                         <div key={berita.id}>
                                             {renderBeritaCard(berita, index)}
@@ -256,42 +220,20 @@ export default function BeritaSection() {
                                     ))}
                                 </div>
 
-                                {/* Mobile & Tablet: Carousel View (below lg breakpoint) */}
-                                <div className="lg:hidden mb-8">
+                                {/* Mobile Only: Carousel View (below md breakpoint) */}
+                                <div className="md:hidden">
                                     <div className="overflow-hidden" ref={emblaRef}>
-                                        <div className="flex gap-4 sm:gap-5 px-1">
+                                        <div className="flex gap-4 px-1">
                                             {beritaList.map((berita, index) => (
                                                 <div
                                                     key={berita.id}
-                                                    className="flex-[0_0_85%] sm:flex-[0_0_calc(50%-10px)] min-w-0"
+                                                    className="flex-[0_0_85%] min-w-0"
                                                 >
                                                     {renderBeritaCard(berita, index)}
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                                </div>
-
-                                {/* Navigation Buttons - Only show on mobile/tablet */}
-                                <div className="flex gap-3 lg:hidden">
-                                    <Button
-                                        variant='secondary'
-                                        size='sm'
-                                        onClick={scrollPrev}
-                                        disabled={!canScrollPrev}
-                                    >
-                                        <ArrowLeft className="w-5 h-5" />
-                                        Prev
-                                    </Button>
-                                    <Button
-                                        variant='secondary'
-                                        size='sm'
-                                        onClick={scrollNext}
-                                        disabled={!canScrollNext}
-                                    >
-                                        Next
-                                        <ArrowRight className="w-5 h-5" />
-                                    </Button>
                                 </div>
                             </>
                         )}
