@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
-import { ArrowRight, ArrowUpRight, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { ArrowRight, ArrowUpRight, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Button from '@/components/ui/custom/button';
 import Title from '@/components/ui/custom/title';
 import { supabase } from '@/lib/supabase/client';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Berita {
     id: string;
@@ -23,14 +24,39 @@ export default function BeritaSection() {
     const [beritaList, setBeritaList] = useState<Berita[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Embla Carousel - untuk mobile saja (seperti layanan-unggulan)
-    const [emblaRef] = useEmblaCarousel({
+    // Embla Carousel - untuk semua ukuran layar
+    const [emblaRef, emblaApi] = useEmblaCarousel({
         loop: false,
         align: 'start',
         skipSnaps: false,
         slidesToScroll: 1,
-        dragFree: true,
+        dragFree: false,
+        containScroll: 'trimSnaps',
     });
+
+    const [prevBtnEnabled, setPrevBtnEnabled] = useState(false);
+    const [nextBtnEnabled, setNextBtnEnabled] = useState(false);
+
+    const scrollPrev = useCallback(() => {
+        if (emblaApi) emblaApi.scrollPrev();
+    }, [emblaApi]);
+
+    const scrollNext = useCallback(() => {
+        if (emblaApi) emblaApi.scrollNext();
+    }, [emblaApi]);
+
+    const onSelect = useCallback(() => {
+        if (!emblaApi) return;
+        setPrevBtnEnabled(emblaApi.canScrollPrev());
+        setNextBtnEnabled(emblaApi.canScrollNext());
+    }, [emblaApi]);
+
+    useEffect(() => {
+        if (!emblaApi) return;
+        onSelect();
+        emblaApi.on('select', onSelect);
+        emblaApi.on('reInit', onSelect);
+    }, [emblaApi, onSelect]);
 
     useEffect(() => {
         const fetchBerita = async () => {
@@ -40,7 +66,7 @@ export default function BeritaSection() {
                     .select('*')
                     .eq('status', 'active')
                     .order('created_at', { ascending: false })
-                    .limit(6);
+                    .limit(10);
 
                 if (error) throw error;
 
@@ -83,7 +109,7 @@ export default function BeritaSection() {
     const renderBeritaCard = (berita: Berita, index: number) => {
         return (
             <Link href={`/berita/${berita.slug}`} className="block h-full">
-                <div className="h-full">
+                <div className="h-full flex flex-col">
                     {/* Berita Number */}
                     <div className="text-7xl sm:text-8xl font-bold text-gray-100 leading-none mb-3">
                         {String(index + 1).padStart(2, '0')}
@@ -100,21 +126,24 @@ export default function BeritaSection() {
                         </div>
                     </div>
 
-                    {/* Title */}
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 h-14 sm:h-16 line-clamp-2 flex items-start">
-                        <span className="line-clamp-2">{berita.title}</span>
+                    {/* Title - Fixed height with line clamp */}
+                    <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 line-clamp-2 min-h-14 sm:min-h-16">
+                        {berita.title}
                     </h3>
 
-                    {/* Image */}
+                    {/* Image - Flex grow to fill remaining space */}
                     <div
-                        className="relative bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl overflow-hidden group cursor-pointer"
-                        style={{ aspectRatio: '4/3' }}
+                        className="relative bg-linear-to-br from-gray-200 to-gray-300 rounded-2xl overflow-hidden group cursor-pointer grow"
+                        style={{ minHeight: '200px' }}
                     >
                         {berita.thumbnail ? (
-                            <img
+                            <Image
                                 src={berita.thumbnail}
                                 alt={berita.title}
-                                className="w-full h-full object-cover"
+                                fill
+                                sizes="(max-width: 768px) 85vw, (max-width: 1024px) 45vw, 30vw"
+                                className="object-cover"
+                                unoptimized
                             />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -134,8 +163,8 @@ export default function BeritaSection() {
     };
 
     return (
-        <section className="min-h-screen bg-white py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
-            <div className='max-w-7xl mx-auto'>
+        <section className="bg-white py-12 sm:py-16 lg:py-20 overflow-hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
                     {/* Left Content */}
                     <div className="lg:col-span-4 space-y-6">
@@ -164,11 +193,10 @@ export default function BeritaSection() {
                     <div className="lg:col-span-8">
                         {/* Loading State */}
                         {loading && (
-                            <>
-                                {/* Desktop & Tablet: Grid View */}
-                                <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="-mx-4 px-4">
+                                <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
                                     {[...Array(3)].map((_, i) => (
-                                        <div key={i} className="animate-pulse">
+                                        <div key={i} className="flex-[0_0_85%] md:flex-[0_0_45%] lg:flex-[0_0_30%] animate-pulse">
                                             <div className="h-20 w-20 bg-gray-200 rounded mb-3"></div>
                                             <div className="h-4 w-32 bg-gray-200 rounded mb-3"></div>
                                             <div className="h-6 w-full bg-gray-200 rounded mb-4"></div>
@@ -176,21 +204,7 @@ export default function BeritaSection() {
                                         </div>
                                     ))}
                                 </div>
-
-                                {/* Mobile: Carousel View */}
-                                <div className="md:hidden">
-                                    <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
-                                        {[...Array(3)].map((_, i) => (
-                                            <div key={i} className="flex-[0_0_85%] animate-pulse">
-                                                <div className="h-20 w-20 bg-gray-200 rounded mb-3"></div>
-                                                <div className="h-4 w-32 bg-gray-200 rounded mb-3"></div>
-                                                <div className="h-6 w-full bg-gray-200 rounded mb-4"></div>
-                                                <div className="w-full bg-gray-200 rounded-2xl" style={{ aspectRatio: '4/3' }}></div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </>
+                            </div>
                         )}
 
                         {/* Empty State */}
@@ -208,32 +222,47 @@ export default function BeritaSection() {
                             </div>
                         )}
 
-                        {/* Content - Tampil saat ada data */}
+                        {/* Content - Carousel for all screen sizes */}
                         {!loading && beritaList.length > 0 && (
                             <>
-                                {/* Desktop & Tablet: Grid View (md and up) */}
-                                <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {beritaList.slice(0, 3).map((berita, index) => (
-                                        <div key={berita.id}>
-                                            {renderBeritaCard(berita, index)}
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Mobile Only: Carousel View (below md breakpoint) */}
-                                <div className="md:hidden">
-                                    <div className="overflow-hidden" ref={emblaRef}>
-                                        <div className="flex gap-4 px-1">
+                                {/* Carousel Container */}
+                                <div className="-mx-4">
+                                    <div className="overflow-hidden px-4" ref={emblaRef}>
+                                        <div className="flex gap-4 md:gap-6">
                                             {beritaList.map((berita, index) => (
                                                 <div
                                                     key={berita.id}
-                                                    className="flex-[0_0_85%] min-w-0"
+                                                    className="flex-[0_0_85%] md:flex-[0_0_45%] lg:flex-[0_0_30%] min-w-0"
                                                 >
                                                     {renderBeritaCard(berita, index)}
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Navigation Buttons */}
+                                <div className="flex items-center gap-3 mt-8">
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={scrollPrev}
+                                        disabled={!prevBtnEnabled}
+                                        className={!prevBtnEnabled ? 'opacity-50 cursor-not-allowed' : ''}
+                                    >
+                                        <ChevronLeft className="w-5 h-5" />
+                                        Prev
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={scrollNext}
+                                        disabled={!nextBtnEnabled}
+                                        className={!nextBtnEnabled ? 'opacity-50 cursor-not-allowed' : ''}
+                                    >
+                                        Next
+                                        <ChevronRight className="w-5 h-5" />
+                                    </Button>
                                 </div>
                             </>
                         )}

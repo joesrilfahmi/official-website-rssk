@@ -13,13 +13,14 @@ const KamarInap = () => {
     const [kamarList, setKamarList] = useState<KamarInapType[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Embla Carousel - untuk mobile (tanpa loop dan navigation buttons)
+    // Embla Carousel - untuk tablet dan mobile
     const [emblaRef] = useEmblaCarousel({
         loop: false,
         align: 'start',
         skipSnaps: false,
         slidesToScroll: 1,
         dragFree: true,
+        containScroll: 'trimSnaps',
     });
 
     // Sort kamar: recommended di tengah
@@ -89,12 +90,12 @@ const KamarInap = () => {
         }).format(price).replace('IDR', 'Rp');
     };
 
-    const renderKamarCard = (kamar: KamarInapType, isMobile: boolean = false) => (
+    const renderKamarCard = (kamar: KamarInapType) => (
         <div
-            className={`bg-white rounded-2xl border-2 p-6 ${isMobile ? '' : 'sm:p-8'} hover:shadow-xl transition-all duration-300 group ${kamar.is_recommended
-                    ? 'border-mariner-400 shadow-lg relative'
-                    : 'border-gray-200'
-                } h-full`}
+            className={`bg-white rounded-2xl border-2 p-6 sm:p-8 hover:shadow-xl transition-all duration-300 group ${kamar.is_recommended
+                ? 'border-mariner-400 shadow-lg relative'
+                : 'border-gray-200'
+                } h-full flex flex-col`}
         >
             {/* Recommended Badge */}
             {kamar.is_recommended && (
@@ -105,72 +106,79 @@ const KamarInap = () => {
                 </div>
             )}
 
-            {/* Room Name */}
-            <h3 className={`${isMobile ? 'text-xl' : 'text-xl sm:text-2xl'} font-bold text-mariner-500 mb-2`}>
+            {/* Room Name - Fixed height */}
+            <h3 className="text-xl sm:text-2xl font-bold text-mariner-500 mb-2 line-clamp-1 min-h-8">
                 {kamar.title}
             </h3>
 
-            {/* Recommendation Text (if recommended) */}
-            {kamar.is_recommended && (
-                <p className={`text-teal-500 ${isMobile ? 'text-xs' : 'text-xs sm:text-sm'} font-medium mb-3`}>
-                    (Recommended)
-                </p>
-            )}
+            {/* Recommendation Text (if recommended) - Fixed height */}
+            <div className="min-h-6 mb-3">
+                {kamar.is_recommended && (
+                    <p className="text-teal-500 text-xs sm:text-sm font-medium">
+                        (Recommended)
+                    </p>
+                )}
+            </div>
 
-            {/* Description */}
-            <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-sm sm:text-base'} leading-relaxed mb-6`}>
+            {/* Description - Fixed height with line clamp */}
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-6 line-clamp-2 min-h-[2.8rem]">
                 {kamar.description}
             </p>
 
-            {/* Price */}
-            <div className="mb-6">
-                <p className={`${isMobile ? 'text-3xl' : 'text-3xl sm:text-4xl'} font-bold text-mariner-500`}>
+            {/* Price - Fixed height */}
+            <div className="mb-6 min-h-12">
+                <p className="text-3xl sm:text-4xl font-bold text-mariner-500">
                     {formatPrice(kamar.price)}
                 </p>
             </div>
 
             {/* Facilities Title */}
-            <h4 className={`text-mariner-500 font-semibold ${isMobile ? 'text-sm' : 'text-sm sm:text-base'} mb-4`}>
+            <h4 className="text-mariner-500 font-semibold text-sm sm:text-base mb-4">
                 Fasilitas
             </h4>
 
-            {/* Facilities List */}
-            <div className="space-y-3 mb-6">
-                {kamar.facilities && kamar.facilities.map((facility: string, index: number) => (
-                    <div key={index} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
-                        <span className={`text-gray-700 ${isMobile ? 'text-sm' : 'text-sm sm:text-base'}`}>
-                            {facility}
-                        </span>
-                    </div>
-                ))}
+            {/* Facilities List - Fixed height with scroll */}
+            <div className="mb-6 grow">
+                <div className="space-y-3 max-h-[180px] overflow-y-auto scrollbar-thin">
+                    {kamar.facilities && kamar.facilities.map((facility: string, index: number) => (
+                        <div key={index} className="flex items-start gap-2">
+                            <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+                            <span className="text-gray-700 text-sm sm:text-base">
+                                {facility}
+                            </span>
+                        </div>
+                    ))}
+                </div>
             </div>
 
-            {/* Details Button */}
-            <Button
-                variant='outline'
-                size="sm"
-                className="w-full mb-3 border-bittersweet-400 text-bittersweet-500 hover:bg-bittersweet-50"
-            >
-                Lihat Selengkapnya
-                <ArrowRight className={`${isMobile ? 'w-4 h-4' : 'w-4 h-4 sm:w-5 sm:h-5'}`} />
-            </Button>
+            {/* Buttons - Always at bottom */}
+            <div className="mt-auto space-y-3">
+                {/* Details Button */}
+                <Button
+                    variant='outline'
+                    size="sm"
+                    className="w-full border-bittersweet-400 text-bittersweet-500 hover:bg-bittersweet-50"
+                >
+                    Lihat Selengkapnya
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Button>
 
-            {/* Book Now Button */}
-            <Button
-                variant='primary'
-                size={isMobile ? "sm" : "md"}
-                className="w-full shadow-md"
-            >
-                Pesan Sekarang
-                <ArrowRight className={`${isMobile ? 'w-4 h-4' : 'w-4 h-4 sm:w-5 sm:h-5'} group-hover:translate-x-1 transition-transform`} />
-            </Button>
+                {/* Book Now Button */}
+                <Button
+                    variant='primary'
+                    size="md"
+                    className="w-full shadow-md"
+                >
+                    Pesan Sekarang
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+            </div>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-white py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
+        <div className="bg-white py-12 sm:py-16 lg:py-20 overflow-hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header Section */}
                 <div className="text-center mb-12 sm:mb-16">
                     <Title
@@ -183,8 +191,8 @@ const KamarInap = () => {
                 {/* Loading State */}
                 {loading && (
                     <>
-                        {/* Desktop & Tablet: Grid View */}
-                        <div className="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
+                        {/* Desktop: Grid View */}
+                        <div className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12">
                             {[...Array(3)].map((_, i) => (
                                 <div key={i} className="bg-white rounded-2xl border-2 border-gray-200 p-6 sm:p-8 animate-pulse">
                                     <div className="h-8 w-32 bg-gray-200 rounded mb-3"></div>
@@ -202,11 +210,11 @@ const KamarInap = () => {
                             ))}
                         </div>
 
-                        {/* Mobile: Carousel View */}
-                        <div className="md:hidden">
-                            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory">
+                        {/* Tablet & Mobile: Carousel View */}
+                        <div className="lg:hidden -mx-4 px-4">
+                            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
                                 {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="flex-[0_0_85%] min-w-0 snap-start">
+                                    <div key={i} className="flex-[0_0_85%] md:flex-[0_0_45%]">
                                         <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 animate-pulse">
                                             <div className="h-8 w-32 bg-gray-200 rounded mb-3"></div>
                                             <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
@@ -245,27 +253,30 @@ const KamarInap = () => {
                 {/* Content - Tampil saat ada data */}
                 {!loading && sortedKamarList.length > 0 && (
                     <>
-                        {/* Desktop & Tablet: Grid View (md and up) */}
-                        <div className="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
+                        {/* Desktop: Grid View (lg and up) */}
+                        <div className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12">
                             {sortedKamarList.slice(0, 3).map((kamar) => (
                                 <div key={kamar.id}>
-                                    {renderKamarCard(kamar, false)}
+                                    {renderKamarCard(kamar)}
                                 </div>
                             ))}
                         </div>
 
-                        {/* Mobile Only: Carousel View (below md breakpoint) */}
-                        <div className="md:hidden mb-12">
-                            <div className="overflow-hidden" ref={emblaRef}>
-                                <div className="flex gap-4 px-1">
-                                    {sortedKamarList.slice(0, 3).map((kamar) => (
-                                        <div
-                                            key={kamar.id}
-                                            className="flex-[0_0_85%] min-w-0"
-                                        >
-                                            {renderKamarCard(kamar, true)}
-                                        </div>
-                                    ))}
+                        {/* Tablet & Mobile: Carousel View (below lg breakpoint) */}
+                        <div className="lg:hidden mb-12">
+                            {/* Carousel Container */}
+                            <div className="-mx-4">
+                                <div className="overflow-hidden px-4" ref={emblaRef}>
+                                    <div className="flex gap-4 md:gap-6">
+                                        {sortedKamarList.slice(0, 3).map((kamar) => (
+                                            <div
+                                                key={kamar.id}
+                                                className="flex-[0_0_85%] md:flex-[0_0_45%] min-w-0"
+                                            >
+                                                {renderKamarCard(kamar)}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
