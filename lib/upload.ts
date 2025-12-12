@@ -1,11 +1,14 @@
 // lib/upload.ts
+
 import { supabase } from '@/lib/supabase/client';
+import { validateImage } from '@/lib/validasi/validasiImage';
 
 export interface UploadOptions {
   bucket: string;
-  folder?: string;
+  folder: string;
   file: File;
   maxSizeInMB?: number;
+  allowedTypes?: string[];
 }
 
 export interface UploadResult {
@@ -16,215 +19,394 @@ export interface UploadResult {
 }
 
 /**
- * Convert image to WebP format
- */
-export async function convertToWebP(file: File, quality: number = 0.8): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      const img = new Image();
-      
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        
-        // Gunakan ukuran asli tanpa resize
-        canvas.width = img.width;
-        canvas.height = img.height;
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'));
-          return;
-        }
-        
-        ctx.drawImage(img, 0, 0);
-        
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error('Could not convert to WebP'));
-              return;
-            }
-            resolve(blob);
-          },
-          'image/webp',
-          quality
-        );
-      };
-      
-      img.onerror = () => reject(new Error('Could not load image'));
-      img.src = e.target?.result as string;
-    };
-    
-    reader.onerror = () => reject(new Error('Could not read file'));
-    reader.readAsDataURL(file);
-  });
-}
-
-/**
- * Validate image file
- */
-export function validateImageFile(file: File, maxSizeInMB: number = 5): { valid: boolean; error?: string } {
-  // Support berbagai MIME type untuk WebP
-  const allowedTypes = [
-    'image/jpeg', 
-    'image/jpg', 
-    'image/png', 
-    'image/webp',
-    'image/x-webp' // Alternative WebP MIME type
-  ];
-  
-  // Check by MIME type
-  let isValidType = allowedTypes.includes(file.type);
-  
-  // Jika MIME type tidak dikenali, cek by extension
-  if (!isValidType) {
-    const fileName = file.name.toLowerCase();
-    const validExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
-    isValidType = validExtensions.some(ext => fileName.endsWith(ext));
-  }
-  
-  if (!isValidType) {
-    console.log('Invalid file type:', file.type, 'for file:', file.name);
-    return {
-      valid: false,
-      error: `Format file tidak didukung. Gunakan JPG, PNG, atau WebP. File type: ${file.type}`
-    };
-  }
-  
-  const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
-  if (file.size > maxSizeInBytes) {
-    return {
-      valid: false,
-      error: `Ukuran file terlalu besar. Maksimal ${maxSizeInMB}MB`
-    };
-  }
-  
-  return { valid: true };
-}
-
-/**
- * Check if file is already WebP
- */
-function isWebP(file: File): boolean {
-  return file.type === 'image/webp' || 
-         file.type === 'image/x-webp' || 
-         file.name.toLowerCase().endsWith('.webp');
-}
-
-/**
- * Upload file to Supabase Storage
+ * Upload file ke Supabase Storage
+ * @param options - Upload options
+ * @returns UploadResult
  */
 export async function uploadFile(options: UploadOptions): Promise<UploadResult> {
+  const { bucket, folder, file } = options;
+
   try {
-    const { bucket, folder = '', file, maxSizeInMB = 5 } = options;
-    
-    console.log('Starting upload process...', { 
-      bucket, 
-      folder, 
-      fileName: file.name, 
-      fileSize: file.size,
-      fileType: file.type 
-    });
-    
-    const validation = validateImageFile(file, maxSizeInMB);
+    // Validasi file gambar
+    const validation = validateImage(file);
     if (!validation.valid) {
-      console.error('Validation failed:', validation.error);
-      return { success: false, error: validation.error };
+      return {
+        success: false,
+        error: validation.error || 'File tidak valid',
+      };
     }
-    
-    // Convert to WebP only if not already WebP
-    let blobToUpload: Blob;
-    try {
-      if (isWebP(file)) {
-        console.log('File is already WebP, skipping conversion');
-        blobToUpload = file;
-      } else {
-        console.log('Converting to WebP...');
-        blobToUpload = await convertToWebP(file);
-        console.log('WebP conversion successful, size:', blobToUpload.size);
-      }
-    } catch (error) {
-      console.error('Error converting to WebP:', error);
-      return { success: false, error: 'Gagal mengkonversi gambar ke format WebP' };
-    }
-    
+
     // Generate unique filename
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const fileName = `${timestamp}-${randomString}.webp`;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const filePath = folder ? `${folder}/${fileName}` : fileName;
-    
-    console.log('Uploading to Supabase Storage...', { filePath, bucketName: bucket });
-    
-    // Upload to Supabase Storage
+
+    console.log('Uploading to:', bucket, filePath);
+
+    // Upload ke Supabase Storage
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(filePath, blobToUpload, {
+      .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false,
-        contentType: 'image/webp'
       });
-    
+
     if (error) {
-      console.error('Supabase upload error:', error);
-      return { success: false, error: error.message || 'Gagal mengupload file' };
+      console.error('Upload error:', error);
+      return {
+        success: false,
+        error: error.message || 'Gagal mengupload file',
+      };
     }
-    
-    console.log('Upload successful:', data);
-    
-    const { data: { publicUrl } } = supabase.storage
+
+    console.log('Upload data:', data);
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
       .from(bucket)
       .getPublicUrl(data.path);
-    
-    console.log('Public URL generated:', publicUrl);
-    
-    return { success: true, url: publicUrl, path: data.path };
-    
+
+    console.log('Public URL:', urlData.publicUrl);
+
+    return {
+      success: true,
+      url: urlData.publicUrl,
+      path: data.path,
+    };
   } catch (error) {
-    console.error('Unexpected upload error:', error);
+    console.error('Upload exception:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Terjadi kesalahan saat upload'
+      error: error instanceof Error ? error.message : 'Terjadi kesalahan saat upload',
     };
   }
 }
 
 /**
- * Delete file from Supabase Storage
+ * Delete file dari Supabase Storage
+ * @param bucket - Bucket name
+ * @param path - File path
+ * @returns boolean
  */
-export async function deleteFile(bucket: string, path: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteFile(bucket: string, path: string): Promise<boolean> {
   try {
-    console.log('Deleting file:', { bucket, path });
     const { error } = await supabase.storage.from(bucket).remove([path]);
+
     if (error) {
       console.error('Delete error:', error);
-      return { success: false, error: error.message || 'Gagal menghapus file' };
+      return false;
     }
-    console.log('File deleted successfully');
-    return { success: true };
+
+    return true;
   } catch (error) {
-    console.error('Unexpected delete error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Terjadi kesalahan saat menghapus file'
-    };
+    console.error('Delete error:', error);
+    return false;
   }
 }
 
 /**
- * Get file path from public URL
+ * Delete multiple files dari Supabase Storage
+ * @param bucket - Bucket name
+ * @param paths - Array of file paths
+ * @returns boolean
+ */
+export async function deleteFiles(bucket: string, paths: string[]): Promise<boolean> {
+  try {
+    const { error } = await supabase.storage.from(bucket).remove(paths);
+
+    if (error) {
+      console.error('Delete multiple files error:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Delete multiple files error:', error);
+    return false;
+  }
+}
+
+/**
+ * Extract file path from public URL
+ * @param url - Public URL dari Supabase Storage
+ * @param bucket - Bucket name
+ * @returns File path atau null
  */
 export function getFilePathFromUrl(url: string, bucket: string): string | null {
   try {
-    // Use non-regex approach to avoid ES2018 flag requirement
-    const bucketPath = `${bucket}/`;
-    const index = url.indexOf(bucketPath);
-    if (index === -1) return null;
-    return url.substring(index + bucketPath.length);
+    if (!url) return null;
+
+    // Format URL Supabase: https://xxx.supabase.co/storage/v1/object/public/bucket-name/path/to/file
+    const urlParts = url.split(`/object/public/${bucket}/`);
+    
+    if (urlParts.length === 2) {
+      return urlParts[1];
+    }
+
+    return null;
   } catch (error) {
-    console.error('Error extracting path:', error);
+    console.error('Error extracting path from URL:', error);
     return null;
   }
+}
+
+/**
+ * Replace file - delete old and upload new
+ * @param bucket - Bucket name
+ * @param oldUrl - Old file URL (to be deleted)
+ * @param newFile - New file to upload
+ * @param folder - Folder path
+ * @returns UploadResult
+ */
+export async function replaceFile(
+  bucket: string,
+  oldUrl: string | null,
+  newFile: File,
+  folder: string
+): Promise<UploadResult> {
+  try {
+    // Delete old file if exists
+    if (oldUrl) {
+      const oldPath = getFilePathFromUrl(oldUrl, bucket);
+      if (oldPath) {
+        await deleteFile(bucket, oldPath);
+      }
+    }
+
+    // Upload new file
+    return await uploadFile({
+      bucket,
+      folder,
+      file: newFile,
+    });
+  } catch (error) {
+    console.error('Replace file error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Gagal mengganti file',
+    };
+  }
+}
+
+/**
+ * Get file info from storage
+ * @param bucket - Bucket name
+ * @param path - File path
+ */
+export async function getFileInfo(bucket: string, path: string) {
+  try {
+    const { data, error } = await supabase.storage.from(bucket).list(path);
+
+    if (error) {
+      console.error('Get file info error:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Get file info error:', error);
+    return null;
+  }
+}
+
+/**
+ * Check if file exists
+ * @param bucket - Bucket name
+ * @param path - File path
+ * @returns boolean
+ */
+export async function fileExists(bucket: string, path: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.storage.from(bucket).list(path);
+
+    if (error) {
+      return false;
+    }
+
+    return data && data.length > 0;
+  } catch (error) {
+    console.error('File exists check error:', error);
+    return false;
+  }
+}
+
+/**
+ * Get public URL for a file
+ * @param bucket - Bucket name
+ * @param path - File path
+ * @returns Public URL
+ */
+export function getPublicUrl(bucket: string, path: string): string {
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/**
+ * Download file
+ * @param bucket - Bucket name
+ * @param path - File path
+ */
+export async function downloadFile(bucket: string, path: string) {
+  try {
+    const { data, error } = await supabase.storage.from(bucket).download(path);
+
+    if (error) {
+      console.error('Download error:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Download error:', error);
+    return null;
+  }
+}
+
+/**
+ * Create signed URL (for private files)
+ * @param bucket - Bucket name
+ * @param path - File path
+ * @param expiresIn - Expiration time in seconds (default: 3600 = 1 hour)
+ */
+export async function createSignedUrl(
+  bucket: string,
+  path: string,
+  expiresIn: number = 3600
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, expiresIn);
+
+    if (error) {
+      console.error('Create signed URL error:', error);
+      return null;
+    }
+
+    return data.signedUrl;
+  } catch (error) {
+    console.error('Create signed URL error:', error);
+    return null;
+  }
+}
+
+/**
+ * Copy file to another location
+ * @param bucket - Bucket name
+ * @param fromPath - Source path
+ * @param toPath - Destination path
+ */
+export async function copyFile(
+  bucket: string,
+  fromPath: string,
+  toPath: string
+): Promise<boolean> {
+  try {
+    const { error } = await supabase.storage.from(bucket).copy(fromPath, toPath);
+
+    if (error) {
+      console.error('Copy file error:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Copy file error:', error);
+    return false;
+  }
+}
+
+/**
+ * Move file to another location
+ * @param bucket - Bucket name
+ * @param fromPath - Source path
+ * @param toPath - Destination path
+ */
+export async function moveFile(
+  bucket: string,
+  fromPath: string,
+  toPath: string
+): Promise<boolean> {
+  try {
+    const { error } = await supabase.storage.from(bucket).move(fromPath, toPath);
+
+    if (error) {
+      console.error('Move file error:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Move file error:', error);
+    return false;
+  }
+}
+
+/**
+ * List files in a folder
+ * @param bucket - Bucket name
+ * @param path - Folder path (optional)
+ * @param options - List options
+ */
+export async function listFiles(
+  bucket: string,
+  path?: string,
+  options?: {
+    limit?: number;
+    offset?: number;
+    sortBy?: { column: string; order: string };
+  }
+) {
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .list(path, options);
+
+    if (error) {
+      console.error('List files error:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('List files error:', error);
+    return null;
+  }
+}
+
+/**
+ * Get storage bucket info
+ * @param bucket - Bucket name
+ */
+export async function getBucketInfo(bucket: string) {
+  try {
+    const { data, error } = await supabase.storage.getBucket(bucket);
+
+    if (error) {
+      console.error('Get bucket info error:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Get bucket info error:', error);
+    return null;
+  }
+}
+
+/**
+ * Format bytes to human readable format
+ * @param bytes - Size in bytes
+ * @param decimals - Number of decimal places
+ */
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }

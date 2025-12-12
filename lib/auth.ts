@@ -126,18 +126,21 @@ export function logout(): void {
 /**
  * Get current logged in user
  */
+// lib/auth.ts
 export function getCurrentUser(): User | null {
-  if (typeof window !== 'undefined') {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        return JSON.parse(userStr);
-      } catch {
-        return null;
-      }
-    }
+  if (typeof window === 'undefined') return null;
+  
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  
+  try {
+    const user = JSON.parse(userStr);
+    // Pastikan user.id ada dan valid
+    if (!user || !user.id) return null;
+    return user;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 /**

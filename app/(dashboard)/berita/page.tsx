@@ -1,13 +1,13 @@
 // app/(dashboard)/berita/page.tsx
 'use client';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { BeritaWithAuthor, BeritaStatus } from '@/types/index';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MarkdownEditor } from '@/components/ui/custom/markdown-editor';
 import Image from 'next/image';
 import {
     Table,
@@ -67,9 +67,9 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ImageUpload } from '@/components/ui/custom/image-upload';
 import ReactMarkdown from 'react-markdown';
 import { uploadFile, deleteFile, getFilePathFromUrl } from '@/lib/upload';
+import { validateImage } from '@/lib/validasi/validasiImage';
 
 type SortField = 'title' | 'category' | 'status' | 'created_at';
 type SortOrder = 'asc' | 'desc';
@@ -82,8 +82,7 @@ interface FormDataType {
     thumbnail: string;
     status: BeritaStatus;
     thumbnailFile: File | null;
-    thumbnailPreview: string | null;
-    thumbnailDeleted: boolean; // Flag untuk menandai thumbnail dihapus
+    thumbnailDeleted: boolean;
 }
 
 interface FormErrorsType {
@@ -103,7 +102,6 @@ const DEFAULT_FORM_DATA: FormDataType = {
     thumbnail: '',
     status: 'draft',
     thumbnailFile: null,
-    thumbnailPreview: null,
     thumbnailDeleted: false,
 };
 
@@ -264,6 +262,7 @@ export default function BeritaPage() {
                     return;
                 }
 
+                console.log('Current User ID:', currentUser.id); // LOG INI PENTING
                 setCurrentUserId(currentUser.id);
                 await fetchBerita();
             } finally {
@@ -287,6 +286,7 @@ export default function BeritaPage() {
             supabase.removeChannel(channel);
         };
     }, [fetchBerita]);
+
 
     const handleRefresh = async () => {
         setRefreshing(true);
@@ -372,7 +372,6 @@ export default function BeritaPage() {
                 thumbnail: item.thumbnail || '',
                 status: item.status,
                 thumbnailFile: null,
-                thumbnailPreview: item.thumbnail || null,
                 thumbnailDeleted: false,
             });
         } else {
@@ -388,6 +387,10 @@ export default function BeritaPage() {
         setSelectedBerita(null);
         setFormData({ ...DEFAULT_FORM_DATA });
         setFormErrors({ ...DEFAULT_FORM_ERRORS });
+
+        // Reset input file jika ada
+        const input = document.getElementById('thumbnail-upload') as HTMLInputElement;
+        if (input) input.value = '';
     };
 
     const validateForm = async () => {
@@ -403,7 +406,6 @@ export default function BeritaPage() {
             errors.slug = 'Slug wajib diisi';
             isValid = false;
         } else {
-            // Check if slug already exists (except current item)
             try {
                 const { data, error } = await supabase
                     .from('berita')
@@ -414,7 +416,6 @@ export default function BeritaPage() {
                     console.error('Error checking slug:', error);
                 }
 
-                // Check if slug exists and belongs to different item
                 if (data && data.length > 0) {
                     const existingItem = data[0];
                     if (!selectedBerita || existingItem.id !== selectedBerita.id) {
@@ -454,106 +455,117 @@ export default function BeritaPage() {
             selectedBerita ? 'Mengupdate berita...' : 'Menambahkan berita...'
         );
 
+        let newUploadedPath: string | null = null;
+
         try {
-            let thumbnailUrl: string | null = null;
+            let finalThumbnailUrl: string | null = null;
 
-            // Logika pengelolaan thumbnail
+            // STEP 1: Handle upload file baru DULU (jika ada)
             if (formData.thumbnailFile) {
-                // CASE 1: Ada file baru yang akan diupload
-                console.log('Case 1: Uploading new file');
+                console.log('Uploading new file...');
 
-                // Delete old thumbnail if exists (untuk update)
-                if (selectedBerita?.thumbnail) {
-                    const oldPath = getFilePathFromUrl(selectedBerita.thumbnail, 'berita-thumbnails');
-                    if (oldPath) {
-                        console.log('Deleting old thumbnail:', oldPath);
-                        await deleteFile('berita-thumbnails', oldPath);
-                    }
-                }
-
-                // Upload new thumbnail
-                console.log('Uploading new thumbnail...');
                 const uploadResult = await uploadFile({
                     bucket: 'berita-thumbnails',
                     folder: currentUserId,
                     file: formData.thumbnailFile,
-                    maxSizeInMB: 5,
                 });
 
                 if (!uploadResult.success) {
                     throw new Error(uploadResult.error || 'Gagal mengupload thumbnail');
                 }
 
-                thumbnailUrl = uploadResult.url || null;
-                console.log('Upload success:', thumbnailUrl);
-            } else if (formData.thumbnailDeleted) {
-                // CASE 2: User menghapus thumbnail (klik X)
-                console.log('Case 2: Thumbnail deleted by user');
+                finalThumbnailUrl = uploadResult.url || null;
+                newUploadedPath = uploadResult.path || null;
 
-                // Hapus thumbnail lama dari storage
-                if (selectedBerita?.thumbnail) {
-                    const oldPath = getFilePathFromUrl(selectedBerita.thumbnail, 'berita-thumbnails');
-                    if (oldPath) {
-                        console.log('Deleting thumbnail:', oldPath);
-                        await deleteFile('berita-thumbnails', oldPath);
-                    }
-                }
-                thumbnailUrl = null;
-            } else if (selectedBerita?.thumbnail) {
-                // CASE 3: Edit mode - thumbnail tidak berubah, pakai yang lama
-                console.log('Case 3: Using existing thumbnail from database');
-                thumbnailUrl = selectedBerita.thumbnail;
+                console.log('Upload success:', finalThumbnailUrl);
+            } else if (formData.thumbnailDeleted) {
+                // User menghapus thumbnail
+                finalThumbnailUrl = null;
             } else {
-                // CASE 4: Tidak ada thumbnail sama sekali
-                console.log('Case 4: No thumbnail');
-                thumbnailUrl = null;
+                // Tetap gunakan thumbnail lama
+                finalThumbnailUrl = selectedBerita?.thumbnail || null;
             }
 
+            // STEP 2: Prepare data untuk database
             const dataToSubmit = {
                 title: formData.title,
                 slug: formData.slug,
                 description: formData.description,
                 category: formData.category,
-                thumbnail: thumbnailUrl,
+                thumbnail: finalThumbnailUrl,
                 status: formData.status,
+                // PENTING: Pastikan author adalah UUID, bukan string
                 author: selectedBerita ? selectedBerita.author : currentUserId,
             };
 
-            console.log('Data to submit:', dataToSubmit);
+            console.log('Saving to database...', dataToSubmit);
 
+            // STEP 3: Save/Update ke database
             if (selectedBerita) {
-                const { error } = await supabase
+                // Pastikan ID valid
+                if (!selectedBerita.id) {
+                    throw new Error('ID berita tidak valid');
+                }
+
+                const { data, error } = await supabase
                     .from('berita')
                     .update(dataToSubmit)
-                    .eq('id', selectedBerita.id);
+                    .eq('id', selectedBerita.id)
+                    .select();
 
                 if (error) {
-                    console.error('Supabase update error:', error);
-                    throw error;
+                    console.error('Database update error:', error);
+                    throw new Error(`Gagal update: ${error.message}`);
                 }
 
-                toast.success('Berita berhasil diupdate', {
-                    id: loadingToast
-                });
+                if (!data || data.length === 0) {
+                    throw new Error('Data tidak ditemukan atau tidak berhasil diupdate');
+                }
+
+                console.log('Database updated successfully:', data);
             } else {
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('berita')
-                    .insert([dataToSubmit]);
+                    .insert([dataToSubmit])
+                    .select();
 
                 if (error) {
-                    console.error('Supabase insert error:', error);
-                    throw error;
+                    console.error('Database insert error:', error);
+                    throw new Error(`Gagal insert: ${error.message}`);
                 }
 
-                toast.success('Berita berhasil ditambahkan', {
-                    id: loadingToast
-                });
+                if (!data || data.length === 0) {
+                    throw new Error('Data tidak berhasil ditambahkan');
+                }
+
+                console.log('Database inserted successfully:', data);
             }
+
+            // STEP 4: Hapus file lama HANYA setelah database berhasil
+            if (selectedBerita?.thumbnail && (formData.thumbnailFile || formData.thumbnailDeleted)) {
+                const oldPath = getFilePathFromUrl(selectedBerita.thumbnail, 'berita-thumbnails');
+                if (oldPath) {
+                    console.log('Deleting old file:', oldPath);
+                    await deleteFile('berita-thumbnails', oldPath);
+                }
+            }
+
+            toast.success(
+                selectedBerita ? 'Berita berhasil diupdate' : 'Berita berhasil ditambahkan',
+                { id: loadingToast }
+            );
 
             await fetchBerita();
             handleCloseDialog();
         } catch (error) {
             console.error('Error saving berita:', error);
+
+            // ROLLBACK: Hapus file baru yang sudah diupload jika database gagal
+            if (newUploadedPath) {
+                console.log('Rolling back: Deleting newly uploaded file');
+                await deleteFile('berita-thumbnails', newUploadedPath);
+            }
+
             const errorMessage = error instanceof Error ? error.message : 'Gagal menyimpan data berita';
             toast.error(errorMessage, {
                 id: loadingToast
@@ -570,7 +582,6 @@ export default function BeritaPage() {
         const loadingToast = toast.loading('Menghapus berita...');
 
         try {
-            // Delete thumbnail if exists
             if (selectedBerita.thumbnail) {
                 const path = getFilePathFromUrl(selectedBerita.thumbnail, 'berita-thumbnails');
                 if (path) {
@@ -611,7 +622,6 @@ export default function BeritaPage() {
         try {
             const idsArray = Array.from(selectedIds);
 
-            // Delete thumbnails
             for (const id of idsArray) {
                 const item = berita.find(b => b.id === id);
                 if (item?.thumbnail) {
@@ -893,16 +903,15 @@ export default function BeritaPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
-                                                    {item.author_detail?.avatar && (
-                                                        <Image
-                                                            src={item.author_detail.avatar}
-                                                            alt={item.author_detail.nama || 'Avatar'}
-                                                            width={24}
-                                                            height={24}
-                                                            className="w-6 h-6 rounded-full object-cover"
-                                                            unoptimized
+                                                    <Avatar className="h-6 w-6">
+                                                        <AvatarImage
+                                                            src={item.author_detail?.avatar}
+                                                            alt={item.author_detail?.nama || 'User'}
                                                         />
-                                                    )}
+                                                        <AvatarFallback className="text-xs">
+                                                            {item.author_detail?.nama?.charAt(0).toUpperCase() || 'U'}
+                                                        </AvatarFallback>
+                                                    </Avatar>
                                                     <span className="text-sm truncate max-w-[120px]">
                                                         {item.author_detail?.nama}
                                                     </span>
@@ -1091,34 +1100,153 @@ export default function BeritaPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <ImageUpload
-                                        label="Thumbnail"
-                                        value={formData.thumbnailPreview || ''}
-                                        onChange={(file, previewUrl) => {
-                                            console.log('ImageUpload onChange called', { file: file?.name, previewUrl: previewUrl?.substring(0, 50) });
-                                            if (file) {
-                                                // User memilih file baru - HANYA SIMPAN DI STATE, TIDAK UPLOAD
-                                                setFormData({
-                                                    ...formData,
-                                                    thumbnailFile: file,
-                                                    thumbnailPreview: previewUrl,
-                                                    thumbnailDeleted: false,
-                                                });
-                                            } else {
-                                                // User menghapus gambar (klik X) - HANYA SET FLAG, TIDAK HAPUS FILE
-                                                setFormData({
-                                                    ...formData,
-                                                    thumbnailFile: null,
-                                                    thumbnailPreview: null,
-                                                    thumbnailDeleted: true,
-                                                });
-                                            }
-                                        }}
-                                        disabled={submitting}
-                                        maxSizeInMB={5}
-                                    />
-                                </div>
+                                    <Label>Thumbnail</Label>
 
+                                    {/* Show existing thumbnail if no new file uploaded and not deleted */}
+                                    {selectedBerita?.thumbnail && !formData.thumbnailFile && !formData.thumbnailDeleted && (
+                                        <div className="space-y-2">
+                                            <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                                                <Image
+                                                    src={selectedBerita.thumbnail}
+                                                    alt="Current thumbnail"
+                                                    fill
+                                                    className="object-cover"
+                                                    unoptimized
+                                                />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setFormData({
+                                                            ...formData,
+                                                            thumbnailDeleted: true,
+                                                        });
+                                                    }}
+                                                    disabled={submitting}
+                                                    className="w-full sm:w-auto"
+                                                >
+                                                    <X className="h-4 w-4 mr-1" />
+                                                    Hapus & Upload Baru
+                                                </Button>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Thumbnail saat ini. Klik tombol di atas untuk menggantinya.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Show file input when: adding new, deleted existing, or has new file */}
+                                    {(!selectedBerita?.thumbnail || formData.thumbnailDeleted || formData.thumbnailFile) && (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-center w-full">
+                                                <label
+                                                    htmlFor="thumbnail-upload"
+                                                    className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80 transition-colors"
+                                                >
+                                                    {formData.thumbnailFile ? (
+                                                        <div className="relative w-full h-full">
+                                                            <Image
+                                                                src={URL.createObjectURL(formData.thumbnailFile)}
+                                                                alt="Preview"
+                                                                fill
+                                                                className="object-cover rounded-lg"
+                                                                unoptimized
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="icon"
+                                                                className="absolute top-2 right-2"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        thumbnailFile: null,
+                                                                        thumbnailDeleted: false,
+                                                                    });
+                                                                    // Reset input file
+                                                                    const input = document.getElementById('thumbnail-upload') as HTMLInputElement;
+                                                                    if (input) input.value = '';
+                                                                }}
+                                                                disabled={submitting}
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                            <svg
+                                                                className="w-10 h-10 mb-3 text-muted-foreground"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth={2}
+                                                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                                                                />
+                                                            </svg>
+                                                            <p className="mb-2 text-sm text-muted-foreground">
+                                                                <span className="font-semibold">Klik untuk upload</span> atau drag and drop
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                PNG, JPG, JPEG, WebP (MAX. 5MB)
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    <Input
+                                                        id="thumbnail-upload"
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                        disabled={submitting}
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                const validationResult = validateImage(file);
+                                                                if (!validationResult.valid) {
+                                                                    toast.error(validationResult.error || 'File tidak valid');
+                                                                    e.target.value = '';
+                                                                    return;
+                                                                }
+
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    thumbnailFile: file,
+                                                                    thumbnailDeleted: false,
+                                                                });
+
+                                                                toast.success('Gambar siap untuk diupload!');
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+
+                                            {formData.thumbnailFile && (
+                                                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                                            ✓ {formData.thumbnailFile.name}
+                                                        </p>
+                                                        <p className="text-xs text-green-600 dark:text-green-400">
+                                                            {(formData.thumbnailFile.size / 1024 / 1024).toFixed(2)} MB - Siap diupload
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <p className="text-xs text-muted-foreground">
+                                        Format: JPG, JPEG, PNG, WebP. Maksimal 5MB
+                                    </p>
+                                </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="status">
                                         Status <span className="text-red-500">*</span>
@@ -1149,24 +1277,33 @@ export default function BeritaPage() {
                                     <Label htmlFor="description">
                                         Konten (Markdown) <span className="text-red-500">*</span>
                                     </Label>
-                                    <MarkdownEditor
+                                    <textarea
+                                        id="description"
                                         value={formData.description}
-                                        onChange={(value) => {
-                                            setFormData({ ...formData, description: value });
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, description: e.target.value });
                                             if (formErrors.description) {
                                                 setFormErrors({ ...formErrors, description: '' });
                                             }
                                         }}
                                         disabled={submitting}
                                         placeholder="Tulis konten berita dalam format Markdown..."
-                                        className={formErrors.description ? 'border-red-500' : ''}
+                                        className={`w-full min-h-[400px] p-3 rounded-md border ${formErrors.description ? 'border-red-500' : 'border-input'
+                                            } bg-background resize-y font-mono text-sm`}
                                     />
                                     {formErrors.description && (
                                         <p className="text-sm text-red-500">{formErrors.description}</p>
                                     )}
                                     <p className="text-xs text-muted-foreground">
-                                        Gunakan toolbar di atas untuk format teks atau tulis Markdown manual
+                                        Gunakan format Markdown untuk styling teks
                                     </p>
+
+                                    <div className="mt-4">
+                                        <Label>Preview</Label>
+                                        <div className="mt-2 p-4 border rounded-md bg-muted/50 prose prose-sm dark:prose-invert max-w-none">
+                                            <ReactMarkdown>{formData.description || '*Belum ada konten*'}</ReactMarkdown>
+                                        </div>
+                                    </div>
                                 </div>
                             </TabsContent>
                         </Tabs>
@@ -1214,9 +1351,20 @@ export default function BeritaPage() {
                                     <Badge variant="outline">{selectedBerita.category}</Badge>
                                     {getStatusBadge(selectedBerita.status)}
                                 </div>
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    Oleh {selectedBerita.author_detail?.nama} • {formatDateTime(selectedBerita.created_at)}
-                                </p>
+                                <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                                    <Avatar className="h-5 w-5">
+                                        <AvatarImage
+                                            src={selectedBerita.author_detail?.avatar}
+                                            alt={selectedBerita.author_detail?.nama || 'User'}
+                                        />
+                                        <AvatarFallback className="text-xs">
+                                            {selectedBerita.author_detail?.nama?.charAt(0).toUpperCase() || 'U'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <span>
+                                        Oleh {selectedBerita.author_detail?.nama} • {formatDateTime(selectedBerita.created_at)}
+                                    </span>
+                                </div>
                             </div>
                             <div className="prose prose-sm dark:prose-invert max-w-none">
                                 <ReactMarkdown>{selectedBerita.description}</ReactMarkdown>
