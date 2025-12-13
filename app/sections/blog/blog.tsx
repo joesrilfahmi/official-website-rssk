@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Calendar, User, Tag, X, ArrowRight, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/custom/button';
 import Banner from '@/components/ui/custom/banner';
 import Input from '@/components/ui/custom/input';
@@ -13,12 +14,12 @@ import { BeritaWithAuthor } from '@/types/index';
 const ITEMS_PER_PAGE = 5;
 
 const Blog = () => {
+    const router = useRouter();
     const [beritaList, setBeritaList] = useState<BeritaWithAuthor[]>([]);
     const [popularPosts, setPopularPosts] = useState<BeritaWithAuthor[]>([]);
     const [allTags, setAllTags] = useState<{ tag: string; count: number }[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedBerita, setSelectedBerita] = useState<BeritaWithAuthor | null>(null);
 
     // Filters
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -172,6 +173,11 @@ const Blog = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // Handler untuk navigasi ke detail
+    const handleBeritaClick = (berita: BeritaWithAuthor) => {
+        router.push(`/sections/blog/detail/${berita.id}`);
+    };
+
     // Format date
     const formatDate = (dateString: string) => {
         const options: Intl.DateTimeFormatOptions = {
@@ -191,7 +197,7 @@ const Blog = () => {
     const renderBeritaCard = (berita: BeritaWithAuthor) => {
         return (
             <div
-                onClick={() => setSelectedBerita(berita)}
+                onClick={() => handleBeritaClick(berita)}
                 className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
             >
                 {/* Thumbnail */}
@@ -391,7 +397,6 @@ const Blog = () => {
                                             size="md"
                                             onClick={() => handlePageChange(currentPage - 1)}
                                             disabled={currentPage === 1}
-
                                         >
                                             <ChevronLeft className="w-5 h-5" />
                                             Previous
@@ -408,7 +413,6 @@ const Blog = () => {
                                             size="md"
                                             onClick={() => handlePageChange(currentPage + 1)}
                                             disabled={currentPage === totalPages}
-
                                         >
                                             Next
                                             <ChevronRight className="w-5 h-5" />
@@ -446,7 +450,7 @@ const Blog = () => {
                                     {popularPosts.map((post) => (
                                         <div
                                             key={post.id}
-                                            onClick={() => setSelectedBerita(post)}
+                                            onClick={() => handleBeritaClick(post)}
                                             className="flex gap-4 cursor-pointer group"
                                         >
                                             <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-200">
@@ -534,92 +538,6 @@ const Blog = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Detail Modal */}
-            {selectedBerita && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedBerita(null)}>
-                    <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div className="relative">
-                            {/* Close Button */}
-                            <button
-                                onClick={() => setSelectedBerita(null)}
-                                className="absolute top-4 right-4 z-10 p-2 bg-white hover:bg-gray-100 rounded-full transition-colors shadow-lg"
-                            >
-                                <X className="w-6 h-6 text-gray-500" />
-                            </button>
-
-                            {/* Hero Image */}
-                            {selectedBerita.thumbnail && (
-                                <div className="relative w-full h-64 md:h-96">
-                                    <Image
-                                        src={selectedBerita.thumbnail}
-                                        alt={selectedBerita.title}
-                                        fill
-                                        className="object-cover"
-                                        sizes="(max-width: 768px) 100vw, 896px"
-                                    />
-                                </div>
-                            )}
-
-                            {/* Content */}
-                            <div className="p-8">
-                                {/* Category Badge */}
-                                <div className="mb-4">
-                                    <span className="inline-block px-4 py-2 bg-bittersweet-100 text-bittersweet-600 rounded-full text-sm font-medium">
-                                        {selectedBerita.category}
-                                    </span>
-                                </div>
-
-                                {/* Title */}
-                                <h2 className="text-3xl md:text-4xl font-bold text-mariner-500 mb-4">
-                                    {selectedBerita.title}
-                                </h2>
-
-                                {/* Meta */}
-                                <div className="flex items-center gap-6 mb-6 text-gray-600 pb-6 border-b">
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="w-5 h-5" />
-                                        <span>{formatDate(selectedBerita.created_at)}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <User className="w-5 h-5" />
-                                        <span>{selectedBerita.author_detail?.nama || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                {/* Description */}
-                                <div className="prose max-w-none mb-6">
-                                    <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-line">
-                                        {selectedBerita.description}
-                                    </p>
-                                </div>
-
-                                {/* Tags */}
-                                {selectedBerita.tags && selectedBerita.tags.length > 0 && (
-                                    <div className="pt-6 border-t">
-                                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Tags:</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedBerita.tags.map((tag: string, index: number) => (
-                                                <button
-                                                    key={index}
-                                                    onClick={() => {
-                                                        setSelectedBerita(null);
-                                                        handleTagClick(tag);
-                                                    }}
-                                                    className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-mariner-100 text-gray-700 hover:text-mariner-600 rounded-full text-sm transition-colors"
-                                                >
-                                                    <Tag className="w-3 h-3" />
-                                                    {tag}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

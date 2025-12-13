@@ -108,7 +108,7 @@ export default function BeritaSection() {
 
     const renderBeritaCard = (berita: Berita, index: number) => {
         return (
-            <Link href={`/berita/${berita.slug}`} className="block h-full">
+            <Link href={`/sections/blog/detail/${berita.id}`} className="block h-full">
                 <div className="h-full flex flex-col">
                     {/* Berita Number */}
                     <div className="text-7xl sm:text-8xl font-bold text-gray-100 leading-none mb-3">
