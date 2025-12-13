@@ -223,7 +223,7 @@ export default function PendaftaranSection() {
     }));
 
     return (
-        <section className="relative min-h-screen py-12 sm:py-16 lg:py-20 overflow-hidden">
+        <section className="relative min-h-screen py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
             {/* Background with Blue Gradient */}
             <div className="absolute inset-0 bg-linear-to-br from-mariner-600 via-mariner-500 to-mariner-700">
                 {/* Overlay Pattern */}

@@ -78,8 +78,8 @@ export default function Navbar() {
     return (
         <>
             {/* Navbar - Fixed di atas */}
-            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${shouldUseDarkText
-                ? 'bg-white shadow-md'
+            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 sm:px-6 ${shouldUseDarkText
+                ? 'bg-white'
                 : 'bg-transparent'
                 }`}>
                 <div className="max-w-7xl mx-auto">

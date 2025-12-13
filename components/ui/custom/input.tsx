@@ -60,13 +60,6 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 )}
 
                 <div className="relative">
-                    {Icon && (
-                        <Icon
-                            className={`absolute ${iconPosition === 'left' ? 'left-4' : 'right-4'
-                                } top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none`}
-                        />
-                    )}
-
                     <input
                         ref={ref}
                         disabled={disabled}
@@ -81,10 +74,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               focus:outline-none focus:ring-2 focus:border-transparent
               transition-all duration-200
               placeholder:text-gray-400
+              text-gray-900
               ${className}
             `}
+                        style={{ color: disabled ? undefined : '#111827' }}
                         {...props}
                     />
+
+                    {Icon && (
+                        <Icon
+                            className={`absolute ${iconPosition === 'left' ? 'left-4' : 'right-4'
+                                } top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none`}
+                        />
+                    )}
                 </div>
 
                 {error && (

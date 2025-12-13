@@ -31,7 +31,7 @@ const Button: React.FC<ButtonProps> = ({
 
     return (
         <button
-            className={`inline-flex items-center gap-2 font-medium rounded-full transition-all duration-300 ${variants[variant]} ${sizes[size]} ${className}`}
+            className={`inline-flex items-center gap-2 font-medium rounded-full transition-all duration-300 cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`}
             onClick={onClick}
             {...props}
         >

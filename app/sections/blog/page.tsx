@@ -4,14 +4,14 @@ import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
 import BackToTop from "@/components/layout/back-to-top"
 
+import Blog from "./blog"
 
-import Dokter from "./dokter"
 
 export default function App() {
     return (
         <>
             <Navbar />
-            <Dokter />
+            <Blog />
             <Footer />
             <BackToTop />
         </>

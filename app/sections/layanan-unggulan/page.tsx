@@ -1,19 +1,17 @@
-
-// app/sections/dokter/page.tsx
-import Navbar from "@/components/layout/navbar"
+// app/sections/layanan-unggulan/page.tsx
 import Footer from "@/components/layout/footer"
+import Navbar from "@/components/layout/navbar"
 import BackToTop from "@/components/layout/back-to-top"
 
-
-import Dokter from "./dokter"
+import LayananUnggulan from "../layanan-unggulan/layanan-unggulan"
 
 export default function App() {
     return (
         <>
             <Navbar />
-            <Dokter />
-            <Footer />
             <BackToTop />
+            <LayananUnggulan />
+            <Footer />
         </>
     )
 }

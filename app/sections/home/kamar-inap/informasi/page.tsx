@@ -5,13 +5,13 @@ import Footer from "@/components/layout/footer"
 import BackToTop from "@/components/layout/back-to-top"
 
 
-import Dokter from "./dokter"
+import KamarInap from "./kamar-inap"
 
 export default function App() {
     return (
         <>
             <Navbar />
-            <Dokter />
+            <KamarInap />
             <Footer />
             <BackToTop />
         </>

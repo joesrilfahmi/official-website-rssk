@@ -76,6 +76,7 @@ export interface Berita {
   slug: string;
   description: string;
   category: string;
+  tags: string[];
   thumbnail: string | null;
   status: BeritaStatus;
   author: string;

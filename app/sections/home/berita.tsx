@@ -163,7 +163,7 @@ export default function BeritaSection() {
     };
 
     return (
-        <section className="bg-white py-12 sm:py-16 lg:py-20 overflow-hidden">
+        <section className="bg-white py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
             <div className="max-w-7xl mx-auto">
                 <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
                     {/* Left Content */}
@@ -178,13 +178,10 @@ export default function BeritaSection() {
                             Temukan berbagai informasi kesehatan terkini, tips hidup sehat, dan berita terbaru dari RS Siti Khodijah untuk mendukung kesejahteraan Anda dan keluarga.
                         </p>
 
-                        <Link href="/berita">
-                            <Button
-                                variant="primary"
-                                size="md"
-                            >
+                        <Link href="/sections/blog">
+                            <Button variant="primary" size="md" className="group shadow-lg">
                                 Lihat Semua Berita
-                                <ArrowRight className="w-5 h-5" />
+                                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                             </Button>
                         </Link>
                     </div>
@@ -227,7 +224,7 @@ export default function BeritaSection() {
                             <>
                                 {/* Carousel Container */}
                                 <div className="-mx-4">
-                                    <div className="overflow-hidden px-4" ref={emblaRef}>
+                                    <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
                                         <div className="flex gap-4 md:gap-6">
                                             {beritaList.map((berita, index) => (
                                                 <div

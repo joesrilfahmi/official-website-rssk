@@ -146,10 +146,22 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full" disabled={loading}>
-                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {loading ? 'Memproses...' : 'Login'}
-                            </Button>
+                            <div className="flex flex-col gap-2">
+                                <Button type="submit" className="w-full" disabled={loading}>
+                                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {loading ? 'Memproses...' : 'Login'}
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    disabled={loading}
+                                    onClick={() => router.back()}
+                                >
+                                    Kembali
+                                </Button>
+                            </div>
                         </form>
 
                         <div className="mt-4 text-center text-sm">

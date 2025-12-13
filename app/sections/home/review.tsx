@@ -126,7 +126,7 @@ export default function ReviewSection() {
     };
 
     return (
-        <section className="bg-gray-50 py-12 sm:py-16 lg:py-20 overflow-hidden">
+        <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-12 sm:mb-16">
@@ -171,7 +171,7 @@ export default function ReviewSection() {
                     <>
                         {/* Carousel Container */}
                         <div className="-mx-4">
-                            <div className="overflow-hidden px-4" ref={emblaRef}>
+                            <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
                                 <div className="flex gap-4 md:gap-6">
                                     {DUMMY_REVIEWS.map((review) => (
                                         <div

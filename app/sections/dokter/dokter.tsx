@@ -166,13 +166,27 @@ const DokterSpesialis = () => {
         }
     };
 
-    // Filter dokter
-    const filteredDokter = dokterList.filter(dokter => {
-        // Filter by poli
-        if (selectedPoli !== 'all' && dokter.poli_id !== selectedPoli) {
-            return false;
-        }
+    // Filter dokter berdasarkan search query (untuk menentukan kategori yang relevan)
+    const searchFilteredDokter = dokterList.filter(dokter => {
+        if (!searchQuery) return true;
 
+        const fullName = `${dokter.gelar_depan || ''} ${dokter.nama} ${dokter.gelar_belakang || ''}`.toLowerCase();
+        const poliName = dokter.poli?.nama_poli?.toLowerCase() || '';
+        const query = searchQuery.toLowerCase();
+
+        return fullName.includes(query) || poliName.includes(query);
+    });
+
+    // Get poli list yang relevan dengan search query
+    const relevantPoliList = searchQuery
+        ? poliList.filter(poli => {
+            // Check if any doctor in this poli matches the search
+            return searchFilteredDokter.some(dokter => dokter.poli_id === poli.id);
+        })
+        : poliList;
+
+    // Filter dokter lengkap (dengan semua filter)
+    const filteredDokter = dokterList.filter(dokter => {
         // Filter by search query
         if (searchQuery) {
             const fullName = `${dokter.gelar_depan || ''} ${dokter.nama} ${dokter.gelar_belakang || ''}`.toLowerCase();
@@ -182,6 +196,11 @@ const DokterSpesialis = () => {
             if (!fullName.includes(query) && !poliName.includes(query)) {
                 return false;
             }
+        }
+
+        // Filter by poli
+        if (selectedPoli !== 'all' && dokter.poli_id !== selectedPoli) {
+            return false;
         }
 
         // Filter by hari
@@ -195,6 +214,28 @@ const DokterSpesialis = () => {
         return true;
     });
 
+    // Handler untuk search query - reset kategori dan hari ke "all"
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        if (value) {
+            setSelectedPoli('all');
+            setSelectedHari('all');
+        }
+    };
+
+    // Handler untuk clear search
+    const handleClearSearch = () => {
+        setSearchQuery('');
+    };
+
+    // Handler untuk pilih kategori - clear search query
+    const handlePoliChange = (poliId: string) => {
+        setSelectedPoli(poliId);
+        if (poliId !== 'all') {
+            setSearchQuery('');
+        }
+    };
+
     // Sort jadwal by hari order, then by start time
     const sortJadwalByHari = (jadwal: JadwalDokter[]) => {
         return [...jadwal].sort((a, b) => {
@@ -205,7 +246,6 @@ const DokterSpesialis = () => {
             }
 
             // If same day, sort by start time
-            // Convert time format from "09.00" or "09:00" to comparable number
             const timeToNumber = (time: string) => {
                 const cleanTime = time.replace(/[.:]/g, '');
                 return parseInt(cleanTime) || 0;
@@ -225,7 +265,7 @@ const DokterSpesialis = () => {
                 className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-gray-100 hover:border-mariner-200"
             >
                 <div className="flex flex-col items-center text-center">
-                    {/* Profile Image - Increased size */}
+                    {/* Profile Image */}
                     <div className="relative w-48 h-48 mb-4">
                         {dokter.profile ? (
                             <Image
@@ -257,7 +297,7 @@ const DokterSpesialis = () => {
     };
 
     return (
-        <div className="bg-white py-12 sm:py-16 lg:py-20 overflow-hidden">
+        <div className="bg-white py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
             <div className="max-w-7xl mx-auto">
                 {/* Banner */}
                 <Banner
@@ -283,20 +323,21 @@ const DokterSpesialis = () => {
                             <div className="w-full max-w-3xl space-y-4">
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <div className="relative flex-1">
-                                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
                                         <Input
                                             type="text"
                                             placeholder="Cari dokter atau spesialisasi..."
                                             value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-12 pr-12"
+                                            onChange={(e) => handleSearchChange(e.target.value)}
+                                            icon={Search}
+                                            iconPosition="left"
                                             rounded="full"
                                             inputSize="md"
                                         />
                                         {searchQuery && (
                                             <button
-                                                onClick={() => setSearchQuery('')}
-                                                className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors z-10"
+                                                onClick={handleClearSearch}
+                                                className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors z-20"
+                                                type="button"
                                             >
                                                 <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
                                             </button>
@@ -323,27 +364,25 @@ const DokterSpesialis = () => {
                         {/* Category Pills - Carousel */}
                         {!loading && poliList.length > 0 && (
                             <div className="relative -mx-4 px-4">
-                                <div className="overflow-hidden" ref={emblaRef}>
+                                <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
                                     <div className="flex gap-3">
                                         <Pills
                                             label="Semua"
-                                            count={dokterList.length}
+                                            count={searchQuery ? searchFilteredDokter.length : dokterList.length}
                                             variant={selectedPoli === 'all' ? 'active' : 'default'}
-                                            onClick={() => setSelectedPoli('all')}
+                                            onClick={() => handlePoliChange('all')}
                                             size='md'
-
                                         />
-                                        {poliList.map((poli) => {
-                                            const count = dokterList.filter(d => d.poli_id === poli.id).length;
+                                        {relevantPoliList.map((poli) => {
+                                            const count = searchFilteredDokter.filter(d => d.poli_id === poli.id).length;
                                             return (
                                                 <Pills
                                                     key={poli.id}
                                                     label={poli.nama_poli}
                                                     count={count}
                                                     variant={selectedPoli === poli.id ? 'active' : 'default'}
-                                                    onClick={() => setSelectedPoli(poli.id)}
+                                                    onClick={() => handlePoliChange(poli.id)}
                                                     size='md'
-
                                                 />
                                             );
                                         })}
@@ -416,7 +455,7 @@ const DokterSpesialis = () => {
 
                             {/* Doctor Profile - Centered */}
                             <div className="flex flex-col items-center text-center mb-8">
-                                {/* Large Profile Image - Increased size */}
+                                {/* Large Profile Image */}
                                 <div className="relative w-56 h-56 mb-6">
                                     {selectedDokter.profile ? (
                                         <Image
@@ -457,14 +496,13 @@ const DokterSpesialis = () => {
                                         {sortJadwalByHari(selectedDokter.jadwal_dokter).map((jadwal, index, array) => {
                                             // Format time display
                                             const formatTime = (time: string) => {
-                                                // If time is already in HH.MM format, convert to HH:MM
                                                 if (time.includes('.')) {
                                                     return time.replace('.', ':');
                                                 }
                                                 return time;
                                             };
 
-                                            // Check if this is a new day (different from previous)
+                                            // Check if this is a new day
                                             const isNewDay = index === 0 || array[index - 1].hari !== jadwal.hari;
 
                                             return (

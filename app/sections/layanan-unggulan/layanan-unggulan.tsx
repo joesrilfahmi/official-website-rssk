@@ -1,28 +1,17 @@
-// app/sections/home/layanan-unggulan.tsx
+// app/sections/layanan-unggulan/layanan-unggulan.tsx
 'use client';
 import React, { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import useEmblaCarousel from 'embla-carousel-react';
 import Button from '@/components/ui/custom/button';
 import Title from '@/components/ui/custom/title';
 import { supabase } from '@/lib/supabase/client';
 import { LayananUnggulan as LayananUnggulanType } from '@/types/index';
-import Link from 'next/link';
+import Banner from '@/components/ui/custom/banner';
 
 const LayananUnggulan = () => {
     const [layananList, setLayananList] = useState<LayananUnggulanType[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // Embla Carousel - untuk tablet dan mobile
-    const [emblaRef] = useEmblaCarousel({
-        loop: false,
-        align: 'start',
-        skipSnaps: false,
-        slidesToScroll: 1,
-        dragFree: true,
-        containScroll: 'trimSnaps',
-    });
 
     useEffect(() => {
         const fetchLayanan = async () => {
@@ -30,8 +19,7 @@ const LayananUnggulan = () => {
                 const { data, error } = await supabase
                     .from('layanan_unggulan')
                     .select('*')
-                    .order('urutan', { ascending: true })
-                    .limit(6);
+                    .order('urutan', { ascending: true });
 
                 if (error) throw error;
 
@@ -101,47 +89,34 @@ const LayananUnggulan = () => {
     return (
         <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
             <div className="max-w-7xl mx-auto">
+
+                <Banner
+                    title="Layanan Unggulan"
+                    subtitle="Dapatkan solusi terbaik untuk kebutuhan kesehatan Anda"
+                />
+
                 {/* Header Section */}
                 <div className="text-center mb-12 sm:mb-16">
                     <Title
                         badge="SPESIALIS KAMI"
                         title="Layanan Unggulan"
                         badgeVariant="default"
-                        containerClassName="items-center"
+                        align='center'
                     />
                 </div>
 
                 {/* Loading State */}
                 {loading && (
-                    <>
-                        {/* Desktop: Grid View */}
-                        <div className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12">
-                            {[...Array(6)].map((_, i) => (
-                                <div key={i} className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg animate-pulse">
-                                    <div className="h-16 w-16 bg-gray-200 rounded-2xl mb-4"></div>
-                                    <div className="h-6 w-32 bg-gray-200 rounded mb-3"></div>
-                                    <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-                                    <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Tablet & Mobile: Carousel View */}
-                        <div className="lg:hidden -mx-4 px-4">
-                            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
-                                {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="flex-[0_0_85%] md:flex-[0_0_45%] animate-pulse">
-                                        <div className="bg-white rounded-2xl p-6 shadow-lg">
-                                            <div className="h-16 w-16 bg-gray-200 rounded-2xl mb-4"></div>
-                                            <div className="h-6 w-32 bg-gray-200 rounded mb-3"></div>
-                                            <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-                                            <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                                        </div>
-                                    </div>
-                                ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg animate-pulse">
+                                <div className="h-16 w-16 bg-gray-200 rounded-2xl mb-4"></div>
+                                <div className="h-6 w-32 bg-gray-200 rounded mb-3"></div>
+                                <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                                <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
                             </div>
-                        </div>
-                    </>
+                        ))}
+                    </div>
                 )}
 
                 {/* Empty State */}
@@ -159,49 +134,15 @@ const LayananUnggulan = () => {
                     </div>
                 )}
 
-                {/* Content - Tampil saat ada data */}
+                {/* Content Grid - Display all data */}
                 {!loading && layananList.length > 0 && (
-                    <>
-                        {/* Desktop: Grid View (lg and up) */}
-                        <div className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12">
-                            {layananList.map((layanan, index) => (
-                                <div key={layanan.id}>
-                                    {renderLayananCard(layanan, index)}
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Tablet & Mobile: Carousel View (below lg breakpoint) */}
-                        <div className="lg:hidden mb-12">
-                            {/* Carousel Container */}
-                            <div className="-mx-4">
-                                <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
-                                    <div className="flex gap-4 md:gap-6">
-                                        {layananList.map((layanan, index) => (
-                                            <div
-                                                key={layanan.id}
-                                                className="flex-[0_0_85%] md:flex-[0_0_45%] min-w-0"
-                                            >
-                                                {renderLayananCard(layanan, index)}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                        {layananList.map((layanan, index) => (
+                            <div key={layanan.id}>
+                                {renderLayananCard(layanan, index)}
                             </div>
-                        </div>
-
-                        {/* View All Button - Only show if there might be more services */}
-                        {layananList.length >= 6 && (
-                            <div className="text-center mt-12">
-                                <Link href="/sections/layanan-unggulan">
-                                    <Button variant="primary" size="lg" className="group shadow-lg">
-                                        Selengkapnya
-                                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                                    </Button>
-                                </Link>
-                            </div>
-                        )}
-                    </>
+                        ))}
+                    </div>
                 )}
             </div>
         </div>
