@@ -1,10 +1,13 @@
 'use client';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
 import Badge from '@/components/ui/custom/badge';
 import Button from '@/components/ui/custom/button';
 
 const Hero: React.FC = () => {
+    const [imageLoaded, setImageLoaded] = useState(false);
+
     return (
         <div className="min-h-screen bg-easternblue-500 relative overflow-hidden py-16 px-4 sm:px-6 lg:px-8">
             <div className='max-w-7xl mx-auto'>
@@ -54,12 +57,22 @@ const Hero: React.FC = () => {
 
                                     {/* Main image area */}
                                     <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-4/3 border-4 border-white">
+                                        {/* Skeleton Loader */}
+                                        {!imageLoaded && (
+                                            <div className="absolute inset-0 bg-linear-to-r from-white/20 via-white/30 to-white/20 animate-pulse">
+                                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent animate-shimmer"></div>
+                                            </div>
+                                        )}
+
+                                        {/* Image */}
                                         <Image
                                             src="/mario.jpg"
                                             alt="RS Siti Khodijah Muhammadiyah"
                                             fill
-                                            className="object-cover"
+                                            className={`object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'
+                                                }`}
                                             priority
+                                            onLoadingComplete={() => setImageLoaded(true)}
                                         />
                                     </div>
                                 </div>

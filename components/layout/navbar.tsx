@@ -12,7 +12,7 @@ export default function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
 
     const navItems = useMemo(() => [
-        { label: 'Beranda', href: '/sections/home' },
+        { label: 'Beranda', href: '/' },
         { label: 'Rumah Sakit', href: '/sections/rumah-sakit' },
         { label: 'Dokter', href: '/sections/dokter' },
         { label: 'Blog', href: '/sections/blog' },
@@ -22,7 +22,7 @@ export default function Navbar() {
     ], []);
 
     // Deteksi halaman yang memiliki hero section
-    const hasHeroSection = pathname === '/sections/home';
+    const hasHeroSection = pathname === '/';
 
     // Calculate active page from pathname
     const activePage = useMemo(() => {
@@ -86,7 +86,7 @@ export default function Navbar() {
                     <div className="flex items-center justify-between h-20">
                         {/* Logo */}
                         <button
-                            onClick={() => handleNavClick('/sections/home')}
+                            onClick={() => handleNavClick('/')}
                             className="flex items-center gap-3"
                         >
                             <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg overflow-hidden bg-white relative">

@@ -1,12 +1,15 @@
 // app/sections/home/about.tsx
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { Play, ArrowRight } from 'lucide-react';
 import Button from '@/components/ui/custom/button';
 import Title from '@/components/ui/custom/title';
 
 const About = () => {
+    const [backImageLoaded, setBackImageLoaded] = useState(false);
+    const [mainImageLoaded, setMainImageLoaded] = useState(false);
+
     return (
         <div className="min-h-screen bg-gray-50 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
@@ -15,12 +18,21 @@ const About = () => {
                     <div className="relative w-full h-[420px] sm:h-[480px] lg:h-[520px] max-w-xl mx-auto lg:mx-0">
                         {/* Back decorative shape */}
                         <div className="absolute top-0 right-0 w-[72%] sm:w-[380px] lg:w-[420px] h-60 sm:h-[280px] lg:h-80 bg-linear-to-br from-blue-100 to-blue-200 rounded-3xl overflow-hidden shadow-lg border-white">
+                            {/* Skeleton Loader untuk back image */}
+                            {!backImageLoaded && (
+                                <div className="absolute inset-0 bg-linear-to-r from-blue-100 via-blue-200 to-blue-100 animate-pulse">
+                                    <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+                                </div>
+                            )}
+
                             <Image
                                 src="/mario.jpg"
                                 alt="RS Siti Khodijah"
                                 fill
-                                className="object-cover"
+                                className={`object-cover transition-opacity duration-500 ${backImageLoaded ? 'opacity-100' : 'opacity-0'
+                                    }`}
                                 priority
+                                onLoadingComplete={() => setBackImageLoaded(true)}
                             />
                             {/* Gradient overlay for depth */}
                             <div className="absolute inset-0 bg-linear-to-br from-transparent to-blue-900/10"></div>
@@ -28,12 +40,21 @@ const About = () => {
 
                         {/* Main content area */}
                         <div className="absolute bottom-0 left-0 w-[72%] sm:w-[360px] lg:w-[400px] h-[280px] sm:h-80 lg:h-[360px] bg-linear-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center overflow-hidden shadow-xl z-20 border-4 border-white">
+                            {/* Skeleton Loader untuk main image */}
+                            {!mainImageLoaded && (
+                                <div className="absolute inset-0 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse">
+                                    <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent animate-shimmer"></div>
+                                </div>
+                            )}
+
                             <Image
                                 src="/mario.jpg"
                                 alt="RS Siti Khodijah Interior"
                                 fill
-                                className="object-cover"
+                                className={`object-cover transition-opacity duration-500 ${mainImageLoaded ? 'opacity-100' : 'opacity-0'
+                                    }`}
                                 priority
+                                onLoadingComplete={() => setMainImageLoaded(true)}
                             />
                             {/* Gradient overlay for depth */}
                             <div className="absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent"></div>
