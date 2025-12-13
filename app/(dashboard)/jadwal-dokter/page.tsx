@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatDateIndonesia } from '@/lib/utils';
 import Image from 'next/image';
 import {
     Table,
@@ -41,7 +42,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Loader2, Search, RefreshCw, ArrowUpDown, X, Eye, Clock } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Search, RefreshCw, ArrowUpDown, X, Eye, Clock, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -54,7 +55,6 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDateTime } from '@/lib/utils';
 import { TablePagination } from '@/components/table/TablePagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AccessDeniedDialog } from '@/components/access-denied-dialog';
@@ -65,7 +65,6 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { uploadFile, deleteFile, getFilePathFromUrl } from '@/lib/upload';
 import { validateImage } from '@/lib/validasi/validasiImage';
 import type {
@@ -77,6 +76,7 @@ import type {
     DokterWithRelations,
     DokterFormData,
     DokterFormErrors,
+    JadwalDokter
 } from '@/types';
 
 const DEFAULT_FORM_DATA: DokterFormData = {
@@ -153,6 +153,26 @@ export default function DokterPage() {
         return parts.join(' ');
     };
 
+    const sortJadwalByHari = (jadwal: JadwalDokter[] | undefined) => {
+        if (!jadwal || jadwal.length === 0) return [];
+
+        const hariOrder: Record<HariType, number> = {
+            'Senin': 1,
+            'Selasa': 2,
+            'Rabu': 3,
+            'Kamis': 4,
+            'Jumat': 5,
+            'Sabtu': 6,
+            'Minggu': 7
+        };
+
+        return [...jadwal].sort((a, b) => {
+            const orderA = hariOrder[a.hari as HariType] || 999;
+            const orderB = hariOrder[b.hari as HariType] || 999;
+            return orderA - orderB;
+        });
+    };
+
     const applyFilters = useCallback(() => {
         let filtered = [...dokterList];
 
@@ -222,13 +242,25 @@ export default function DokterPage() {
             const { data: dokterData, error: dokterError } = await supabase
                 .from('dokter')
                 .select(`
-                    *,
-                    poli_detail:poli!dokter_poli_fkey (
-                        id,
-                        nama_poli,
-                        status
-                    )
-                `)
+                *,
+                poli_detail:poli!dokter_poli_fkey (
+                    id,
+                    nama_poli,
+                    status
+                ),
+                created_by_user:users!dokter_created_by_fkey (
+                    id,
+                    nama,
+                    username,
+                    avatar
+                ),
+                updated_by_user:users!dokter_updated_by_fkey (
+                    id,
+                    nama,
+                    username,
+                    avatar
+                )
+            `)
                 .order('created_at', { ascending: false });
 
             if (dokterError) throw dokterError;
@@ -525,7 +557,8 @@ export default function DokterPage() {
                 gelar_belakang: formData.gelar_belakang || null,
                 poli_id: formData.poli_id,
                 profile: finalProfileUrl,
-                status: formData.status
+                status: formData.status,
+                ...(selectedDokter ? { updated_by: currentUserId } : { created_by: currentUserId })  // TAMBAHKAN INI
             };
 
             let dokterId: string;
@@ -561,7 +594,8 @@ export default function DokterPage() {
                     dokter_id: dokterId,
                     hari: j.hari as HariType,
                     jam_mulai: j.jam_mulai,
-                    jam_selesai: j.jam_selesai
+                    jam_selesai: j.jam_selesai,
+                    created_by: currentUserId  // TAMBAHKAN INI
                 }));
 
                 const { error: jadwalError } = await supabase
@@ -892,7 +926,7 @@ export default function DokterPage() {
                                     <TableHead>Poli</TableHead>
                                     <TableHead>Jadwal</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="w-[180px]">Dibuat</TableHead>
+                                    <TableHead className="w-[220px]">Tanggal</TableHead> {/* GANTI INI */}
                                     <TableHead className="text-right w-40">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -928,7 +962,7 @@ export default function DokterPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="text-sm space-y-1">
-                                                    {item.jadwal?.slice(0, 2).map(j => (
+                                                    {sortJadwalByHari(item.jadwal).slice(0, 2).map(j => (
                                                         <div key={j.id} className="flex items-center gap-1 text-muted-foreground">
                                                             <Clock className="w-3 h-3" />
                                                             <span>{j.hari}: {j.jam_mulai}-{j.jam_selesai}</span>
@@ -947,9 +981,37 @@ export default function DokterPage() {
                                             <TableCell>
                                                 {getStatusBadge(item.status)}
                                             </TableCell>
-                                            <TableCell className="text-sm text-muted-foreground">
-                                                {item.created_at ? formatDateTime(item.created_at) : '-'}
+
+                                            {/* GANTI KOLOM INI */}
+                                            <TableCell>
+                                                <div className="text-xs space-y-2">
+                                                    {/* Created Info */}
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-muted-foreground">
+                                                            <span className="font-medium">Dibuat:</span> {formatDateIndonesia(item.created_at)}
+                                                        </p>
+                                                        {item.created_by_user && (
+                                                            <span className="text-muted-foreground">
+                                                                oleh {item.created_by_user.nama}
+                                                            </span>
+
+                                                        )}
+                                                    </div>
+
+                                                    {/* Updated Info */}
+                                                    <div className="space-y-0.5 pt-1 border-t">
+                                                        <p className="text-muted-foreground">
+                                                            <span className="font-medium">Diupdate:</span> {formatDateIndonesia(item.updated_at)}
+                                                        </p>
+                                                        {item.updated_by_user && (
+                                                            <span className="text-muted-foreground">
+                                                                oleh {item.updated_by_user.nama}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </TableCell>
+
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <TooltipProvider>
@@ -1039,90 +1101,221 @@ export default function DokterPage() {
                                 : 'Tambah dokter baru dengan jadwal praktik'}
                         </DialogDescription>
                     </DialogHeader>
-                    <div onSubmit={handleSubmit}>
-                        <Tabs defaultValue="basic" className="w-full">
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="basic">Informasi Dasar</TabsTrigger>
-                                <TabsTrigger value="jadwal">Jadwal Praktik</TabsTrigger>
-                            </TabsList>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* SECTION 1: FOTO PROFIL */}
+                        <div className="space-y-2">
+                            <Label>Foto Profile</Label>
 
-                            <TabsContent value="basic" className="space-y-4 py-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="gelar_depan">Gelar Depan</Label>
-                                        <Input
-                                            id="gelar_depan"
-                                            value={formData.gelar_depan}
-                                            onChange={(e) => setFormData({ ...formData, gelar_depan: e.target.value })}
-                                            placeholder="dr., drg."
-                                            disabled={submitting}
+                            {selectedDokter?.profile && !formData.profileFile && !formData.profileDeleted && (
+                                <div className="space-y-2">
+                                    <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                                        <Image
+                                            src={selectedDokter.profile}
+                                            alt="Current profile"
+                                            fill
+                                            className="object-cover"
+                                            unoptimized
                                         />
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="gelar_belakang">Gelar Belakang</Label>
-                                        <Input
-                                            id="gelar_belakang"
-                                            value={formData.gelar_belakang}
-                                            onChange={(e) => setFormData({ ...formData, gelar_belakang: e.target.value })}
-                                            placeholder="Sp.PD, Sp.KG"
+                                    <div className="flex gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setFormData({
+                                                    ...formData,
+                                                    profileDeleted: true,
+                                                });
+                                            }}
                                             disabled={submitting}
-                                        />
+                                            className="w-full sm:w-auto"
+                                        >
+                                            <X className="h-4 w-4 mr-1" />
+                                            Hapus & Upload Baru
+                                        </Button>
                                     </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Profile saat ini. Klik tombol di atas untuk menggantinya.
+                                    </p>
                                 </div>
+                            )}
 
+                            {(!selectedDokter?.profile || formData.profileDeleted || formData.profileFile) && (
                                 <div className="space-y-2">
-                                    <Label htmlFor="nama">
-                                        Nama Dokter <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        id="nama"
-                                        value={formData.nama}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, nama: e.target.value });
-                                            if (formErrors.nama) {
-                                                setFormErrors({ ...formErrors, nama: '' });
-                                            }
-                                        }}
-                                        placeholder="Masukkan nama dokter"
-                                        disabled={submitting}
-                                        className={formErrors.nama ? 'border-red-500' : ''}
-                                    />
-                                    {formErrors.nama && (
-                                        <p className="text-sm text-red-500">{formErrors.nama}</p>
+                                    <div className="flex items-center justify-center w-full">
+                                        <label
+                                            htmlFor="profile-upload"
+                                            className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80 transition-colors"
+                                        >
+                                            {formData.profileFile ? (
+                                                <div className="relative w-full h-full">
+                                                    <Image
+                                                        src={URL.createObjectURL(formData.profileFile)}
+                                                        alt="Preview"
+                                                        fill
+                                                        className="object-cover rounded-lg"
+                                                        unoptimized
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="absolute top-2 right-2"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            setFormData({
+                                                                ...formData,
+                                                                profileFile: null,
+                                                                profileDeleted: false,
+                                                            });
+                                                            const input = document.getElementById('profile-upload') as HTMLInputElement;
+                                                            if (input) input.value = '';
+                                                        }}
+                                                        disabled={submitting}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                    {/* GANTI SVG INI DENGAN ICON LUCIDE */}
+                                                    <ImagePlus className="w-10 h-10 mb-3 text-muted-foreground" />
+                                                    <p className="mb-2 text-sm text-muted-foreground">
+                                                        <span className="font-semibold">Klik untuk upload</span> atau drag and drop
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        PNG, JPG, JPEG, WebP (MAX. 5MB)
+                                                    </p>
+                                                </div>
+                                            )}
+                                            <Input
+                                                id="profile-upload"
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                disabled={submitting}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const validationResult = validateImage(file);
+                                                        if (!validationResult.valid) {
+                                                            toast.error(validationResult.error || 'File tidak valid');
+                                                            e.target.value = '';
+                                                            return;
+                                                        }
+
+                                                        setFormData({
+                                                            ...formData,
+                                                            profileFile: file,
+                                                            profileDeleted: false,
+                                                        });
+
+                                                        toast.success('Gambar siap untuk diupload!');
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    {formData.profileFile && (
+                                        <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                                    ✓ {formData.profileFile.name}
+                                                </p>
+                                                <p className="text-xs text-green-600 dark:text-green-400">
+                                                    {(formData.profileFile.size / 1024 / 1024).toFixed(2)} MB - Siap diupload
+                                                </p>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
+                            )}
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="poli_id">
-                                        Poli <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Select
-                                        value={formData.poli_id}
-                                        onValueChange={(value) => {
-                                            setFormData({ ...formData, poli_id: value });
-                                            if (formErrors.poli_id) {
-                                                setFormErrors({ ...formErrors, poli_id: '' });
-                                            }
-                                        }}
-                                        disabled={submitting}
-                                    >
-                                        <SelectTrigger className={formErrors.poli_id ? 'border-red-500' : ''}>
-                                            <SelectValue placeholder="Pilih poli" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {poliList.map((poli) => (
-                                                <SelectItem key={poli.id} value={poli.id}>
-                                                    {poli.nama_poli}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {formErrors.poli_id && (
-                                        <p className="text-sm text-red-500">{formErrors.poli_id}</p>
-                                    )}
-                                </div>
+                            <p className="text-xs text-muted-foreground">
+                                Format: JPG, JPEG, PNG, WebP. Maksimal 5MB
+                            </p>
+                        </div>
 
+                        {/* SECTION 2: INFORMASI DASAR */}
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="gelar_depan">Gelar Depan</Label>
+                                <Input
+                                    id="gelar_depan"
+                                    value={formData.gelar_depan}
+                                    onChange={(e) => setFormData({ ...formData, gelar_depan: e.target.value })}
+                                    placeholder="dr., drg."
+                                    disabled={submitting}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="nama">
+                                    Nama Dokter <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="nama"
+                                    value={formData.nama}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, nama: e.target.value });
+                                        if (formErrors.nama) {
+                                            setFormErrors({ ...formErrors, nama: '' });
+                                        }
+                                    }}
+                                    placeholder="Masukkan nama dokter"
+                                    disabled={submitting}
+                                    className={formErrors.nama ? 'border-red-500' : ''}
+                                />
+                                {formErrors.nama && (
+                                    <p className="text-sm text-red-500">{formErrors.nama}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="gelar_belakang">Gelar Belakang</Label>
+                                <Input
+                                    id="gelar_belakang"
+                                    value={formData.gelar_belakang}
+                                    onChange={(e) => setFormData({ ...formData, gelar_belakang: e.target.value })}
+                                    placeholder="Sp.PD, Sp.KG"
+                                    disabled={submitting}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="poli_id">
+                                    Poli <span className="text-red-500">*</span>
+                                </Label>
+                                <Select
+                                    value={formData.poli_id}
+                                    onValueChange={(value) => {
+                                        setFormData({ ...formData, poli_id: value });
+                                        if (formErrors.poli_id) {
+                                            setFormErrors({ ...formErrors, poli_id: '' });
+                                        }
+                                    }}
+                                    disabled={submitting}
+                                >
+                                    <SelectTrigger className={formErrors.poli_id ? 'border-red-500' : ''}>
+                                        <SelectValue placeholder="Pilih poli" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {poliList.map((poli) => (
+                                            <SelectItem key={poli.id} value={poli.id}>
+                                                {poli.nama_poli}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {formErrors.poli_id && (
+                                    <p className="text-sm text-red-500">{formErrors.poli_id}</p>
+                                )}
+                            </div>
+
+                            {/* Status field - hanya tampil saat edit */}
+                            {selectedDokter && (
                                 <div className="space-y-2">
                                     <Label htmlFor="status">
                                         Status <span className="text-red-500">*</span>
@@ -1146,283 +1339,138 @@ export default function DokterPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            )}
+                        </div>
 
-                                <div className="space-y-2">
-                                    <Label>Foto Profile</Label>
+                        {/* SECTION 3: JADWAL PRAKTIK */}
+                        <div className="space-y-4 pt-4 border-t">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <Label className="text-base font-semibold">Jadwal Praktik</Label>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Format jam: 00.00 (Contoh: 08.00, 14.30)
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleAddJadwal}
+                                    disabled={submitting}
+                                >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Tambah Jadwal
+                                </Button>
+                            </div>
 
-                                    {selectedDokter?.profile && !formData.profileFile && !formData.profileDeleted && (
-                                        <div className="space-y-2">
-                                            <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                                                <Image
-                                                    src={selectedDokter.profile}
-                                                    alt="Current profile"
-                                                    fill
-                                                    className="object-cover"
-                                                    unoptimized
-                                                />
-                                            </div>
-                                            <div className="flex gap-2">
+                            {formErrors.jadwal && (
+                                <p className="text-sm text-red-500">{formErrors.jadwal}</p>
+                            )}
+
+                            <div className="space-y-3">
+                                {formData.jadwal.length === 0 ? (
+                                    <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                                        <Clock className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+                                        <p className="text-sm text-muted-foreground">
+                                            Belum ada jadwal praktik
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Klik tombol &quot;Tambah Jadwal&quot; untuk menambahkan
+                                        </p>
+                                    </div>
+                                ) : (
+                                    formData.jadwal.map((jadwal, index) => (
+                                        <div key={jadwal._temp_id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-sm font-medium">Jadwal #{index + 1}</Label>
                                                 <Button
                                                     type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setFormData({
-                                                            ...formData,
-                                                            profileDeleted: true,
-                                                        });
-                                                    }}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleRemoveJadwal(jadwal._temp_id)}
                                                     disabled={submitting}
-                                                    className="w-full sm:w-auto"
+                                                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                                                 >
-                                                    <X className="h-4 w-4 mr-1" />
-                                                    Hapus & Upload Baru
+                                                    <X className="h-4 w-4" />
                                                 </Button>
                                             </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                Profile saat ini. Klik tombol di atas untuk menggantinya.
-                                            </p>
-                                        </div>
-                                    )}
 
-                                    {(!selectedDokter?.profile || formData.profileDeleted || formData.profileFile) && (
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-center w-full">
-                                                <label
-                                                    htmlFor="profile-upload"
-                                                    className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80 transition-colors"
-                                                >
-                                                    {formData.profileFile ? (
-                                                        <div className="relative w-full h-full">
-                                                            <Image
-                                                                src={URL.createObjectURL(formData.profileFile)}
-                                                                alt="Preview"
-                                                                fill
-                                                                className="object-cover rounded-lg"
-                                                                unoptimized
-                                                            />
-                                                            <Button
-                                                                type="button"
-                                                                variant="destructive"
-                                                                size="icon"
-                                                                className="absolute top-2 right-2"
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    setFormData({
-                                                                        ...formData,
-                                                                        profileFile: null,
-                                                                        profileDeleted: false,
-                                                                    });
-                                                                    const input = document.getElementById('profile-upload') as HTMLInputElement;
-                                                                    if (input) input.value = '';
-                                                                }}
-                                                                disabled={submitting}
-                                                            >
-                                                                <X className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                            <svg
-                                                                className="w-10 h-10 mb-3 text-muted-foreground"
-                                                                fill="none"
-                                                                stroke="currentColor"
-                                                                viewBox="0 0 24 24"
-                                                            >
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    strokeWidth={2}
-                                                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                />
-                                                            </svg>
-                                                            <p className="mb-2 text-sm text-muted-foreground">
-                                                                <span className="font-semibold">Klik untuk upload</span> atau drag and drop
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                PNG, JPG, JPEG, WebP (MAX. 5MB)
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                    <Input
-                                                        id="profile-upload"
-                                                        type="file"
-                                                        className="hidden"
-                                                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div className="space-y-1">
+                                                    <Label className="text-xs">Hari</Label>
+                                                    <Select
+                                                        value={jadwal.hari}
+                                                        onValueChange={(value) => handleJadwalChange(jadwal._temp_id, 'hari', value)}
                                                         disabled={submitting}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Pilih hari" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {HARI_OPTIONS.map(h => (
+                                                                <SelectItem key={h} value={h}>{h}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <Label className="text-xs">Jam Mulai</Label>
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="00.00"
+                                                        value={jadwal.jam_mulai}
                                                         onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                const validationResult = validateImage(file);
-                                                                if (!validationResult.valid) {
-                                                                    toast.error(validationResult.error || 'File tidak valid');
-                                                                    e.target.value = '';
-                                                                    return;
+                                                            const value = e.target.value.replace(/[^0-9.]/g, '');
+                                                            const parts = value.split('.');
+
+                                                            if (parts.length <= 2) {
+                                                                let formatted = value;
+                                                                if (parts[0] && parts[0].length > 2) {
+                                                                    formatted = parts[0].slice(0, 2) + (parts[1] !== undefined ? '.' + parts[1] : '');
                                                                 }
-
-                                                                setFormData({
-                                                                    ...formData,
-                                                                    profileFile: file,
-                                                                    profileDeleted: false,
-                                                                });
-
-                                                                toast.success('Gambar siap untuk diupload!');
+                                                                if (parts[1] && parts[1].length > 2) {
+                                                                    formatted = parts[0] + '.' + parts[1].slice(0, 2);
+                                                                }
+                                                                handleJadwalChange(jadwal._temp_id, 'jam_mulai', formatted);
                                                             }
                                                         }}
+                                                        disabled={submitting}
                                                     />
-                                                </label>
-                                            </div>
-
-                                            {formData.profileFile && (
-                                                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                                            ✓ {formData.profileFile.name}
-                                                        </p>
-                                                        <p className="text-xs text-green-600 dark:text-green-400">
-                                                            {(formData.profileFile.size / 1024 / 1024).toFixed(2)} MB - Siap diupload
-                                                        </p>
-                                                    </div>
                                                 </div>
-                                            )}
+
+                                                <div className="space-y-1">
+                                                    <Label className="text-xs">Jam Selesai</Label>
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="00.00"
+                                                        value={jadwal.jam_selesai}
+                                                        onChange={(e) => {
+                                                            const value = e.target.value.replace(/[^0-9.]/g, '');
+                                                            const parts = value.split('.');
+
+                                                            if (parts.length <= 2) {
+                                                                let formatted = value;
+                                                                if (parts[0] && parts[0].length > 2) {
+                                                                    formatted = parts[0].slice(0, 2) + (parts[1] !== undefined ? '.' + parts[1] : '');
+                                                                }
+                                                                if (parts[1] && parts[1].length > 2) {
+                                                                    formatted = parts[0] + '.' + parts[1].slice(0, 2);
+                                                                }
+                                                                handleJadwalChange(jadwal._temp_id, 'jam_selesai', formatted);
+                                                            }
+                                                        }}
+                                                        disabled={submitting}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                    )}
+                                    ))
+                                )}
+                            </div>
+                        </div>
 
-                                    <p className="text-xs text-muted-foreground">
-                                        Format: JPG, JPEG, PNG, WebP. Maksimal 5MB
-                                    </p>
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="jadwal" className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label>Jadwal Praktik</Label>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleAddJadwal}
-                                            disabled={submitting}
-                                        >
-                                            <Plus className="h-4 w-4 mr-1" />
-                                            Tambah Jadwal
-                                        </Button>
-                                    </div>
-
-                                    {formErrors.jadwal && (
-                                        <p className="text-sm text-red-500">{formErrors.jadwal}</p>
-                                    )}
-
-                                    <div className="space-y-3 mt-4">
-                                        {formData.jadwal.length === 0 ? (
-                                            <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                                                <Clock className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
-                                                <p className="text-sm text-muted-foreground">
-                                                    Belum ada jadwal praktik
-                                                </p>
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    Klik tombol &quot;Tambah Jadwal&quot; untuk menambahkan
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            formData.jadwal.map((jadwal, index) => (
-                                                <div key={jadwal._temp_id} className="p-4 border rounded-lg space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <Label className="text-sm font-medium">Jadwal #{index + 1}</Label>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleRemoveJadwal(jadwal._temp_id)}
-                                                            disabled={submitting}
-                                                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                        >
-                                                            <X className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-3 gap-3">
-                                                        <div className="space-y-1">
-                                                            <Label className="text-xs">Hari</Label>
-                                                            <Select
-                                                                value={jadwal.hari}
-                                                                onValueChange={(value) => handleJadwalChange(jadwal._temp_id, 'hari', value)}
-                                                                disabled={submitting}
-                                                            >
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Pilih hari" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {HARI_OPTIONS.map(h => (
-                                                                        <SelectItem key={h} value={h}>{h}</SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-
-                                                        <div className="space-y-1">
-                                                            <Label className="text-xs">Jam Mulai</Label>
-                                                            <Input
-                                                                type="text"
-                                                                placeholder="00.00"
-                                                                value={jadwal.jam_mulai}
-                                                                onChange={(e) => {
-                                                                    const value = e.target.value.replace(/[^0-9.]/g, '');
-                                                                    const parts = value.split('.');
-
-                                                                    if (parts.length <= 2) {
-                                                                        let formatted = value;
-                                                                        if (parts[0] && parts[0].length > 2) {
-                                                                            formatted = parts[0].slice(0, 2) + (parts[1] !== undefined ? '.' + parts[1] : '');
-                                                                        }
-                                                                        if (parts[1] && parts[1].length > 2) {
-                                                                            formatted = parts[0] + '.' + parts[1].slice(0, 2);
-                                                                        }
-                                                                        handleJadwalChange(jadwal._temp_id, 'jam_mulai', formatted);
-                                                                    }
-                                                                }}
-                                                                disabled={submitting}
-                                                            />
-                                                        </div>
-
-                                                        <div className="space-y-1">
-                                                            <Label className="text-xs">Jam Selesai</Label>
-                                                            <Input
-                                                                type="text"
-                                                                placeholder="00.00"
-                                                                value={jadwal.jam_selesai}
-                                                                onChange={(e) => {
-                                                                    const value = e.target.value.replace(/[^0-9.]/g, '');
-                                                                    const parts = value.split('.');
-
-                                                                    if (parts.length <= 2) {
-                                                                        let formatted = value;
-                                                                        if (parts[0] && parts[0].length > 2) {
-                                                                            formatted = parts[0].slice(0, 2) + (parts[1] !== undefined ? '.' + parts[1] : '');
-                                                                        }
-                                                                        if (parts[1] && parts[1].length > 2) {
-                                                                            formatted = parts[0] + '.' + parts[1].slice(0, 2);
-                                                                        }
-                                                                        handleJadwalChange(jadwal._temp_id, 'jam_selesai', formatted);
-                                                                    }
-                                                                }}
-                                                                disabled={submitting}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                        Format jam: 00.00 (Contoh: 08.00, 14.30). Satu dokter dapat memiliki beberapa jadwal praktik.
-                                    </p>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                        <DialogFooter className="mt-6">
+                        <DialogFooter>
                             <Button
                                 type="button"
                                 variant="outline"
@@ -1431,12 +1479,12 @@ export default function DokterPage() {
                             >
                                 Batal
                             </Button>
-                            <Button onClick={(e) => { e.preventDefault(); handleSubmit(e); }} disabled={submitting}>
+                            <Button type="submit" disabled={submitting}>
                                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {submitting ? 'Menyimpan...' : 'Simpan'}
                             </Button>
                         </DialogFooter>
-                    </div>
+                    </form>
                 </DialogContent>
             </Dialog>
 
@@ -1457,26 +1505,23 @@ export default function DokterPage() {
                                         {selectedDokter.nama.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div>
+                                <div className="flex-1">
                                     <h2 className="text-2xl font-bold">{getNamaLengkap(selectedDokter)}</h2>
                                     <div className="flex gap-2 mt-2">
                                         <Badge variant="outline">{selectedDokter.poli_detail?.nama_poli}</Badge>
                                         {getStatusBadge(selectedDokter.status)}
                                     </div>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        Dibuat: {formatDateTime(selectedDokter.created_at)}
-                                    </p>
                                 </div>
                             </div>
 
+                            {/* JADWAL PRAKTIK */}
                             <div className="space-y-3">
                                 <h3 className="font-semibold flex items-center gap-2">
-                                    <Clock className="w-4 h-4" />
                                     Jadwal Praktik
                                 </h3>
                                 {selectedDokter.jadwal && selectedDokter.jadwal.length > 0 ? (
                                     <div className="space-y-2">
-                                        {selectedDokter.jadwal.map(j => (
+                                        {sortJadwalByHari(selectedDokter.jadwal).map(j => (
                                             <div key={j.id} className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
                                                 <Clock className="w-4 h-4 text-muted-foreground" />
                                                 <span className="font-medium min-w-20">{j.hari}</span>

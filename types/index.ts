@@ -121,6 +121,8 @@ export interface Dokter {
   status: DokterStatus;
   created_at: string;
   updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
 }
 
 export interface JadwalDokter {
@@ -131,11 +133,15 @@ export interface JadwalDokter {
   jam_selesai: string;
   created_at?: string;
   updated_at?: string;
+  created_by?: string | null;
+  updated_by?: string | null;
 }
 
 export interface DokterWithRelations extends Dokter {
   poli_detail?: Poli;
   jadwal?: JadwalDokter[];
+  created_by_user?: User;
+  updated_by_user?: User;
 }
 
 export interface JadwalFormData {
