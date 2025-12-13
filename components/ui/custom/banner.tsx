@@ -6,7 +6,7 @@ interface BannerProps {
 
 const Banner = ({ title = "Dokter Spesialis", subtitle = "Kosong" }: BannerProps) => {
     return (
-        <div className="bg-white py-20">
+        <div className=" py-20">
             <div className="relative bg-linear-to-b from-blue-50 to-white overflow-hidden py-16 md:py-24 rounded-2xl">
                 <div className="container mx-auto px-4">
                     <div className="relative z-10 max-w-2xl">

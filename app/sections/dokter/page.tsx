@@ -1,10 +1,16 @@
 
 // app/sections/dokter/page.tsx
-import Banner from "@/components/ui/custom/banner"
+import Navbar from "@/components/layout/navbar"
+import Footer from "@/components/layout/footer"
+
+import Dokter from "./dokter"
+
 export default function App() {
     return (
         <>
-            <Banner />
+            <Navbar />
+            <Dokter />
+            <Footer />
         </>
     )
 }

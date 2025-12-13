@@ -236,7 +236,7 @@ export default function PendaftaranSection() {
             </div>
 
             {/* Content */}
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="relative max-w-7xl mx-auto">
                 <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
                     {/* Left Side - Form */}
                     <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10">

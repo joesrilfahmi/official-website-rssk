@@ -127,7 +127,7 @@ export default function ReviewSection() {
 
     return (
         <section className="bg-gray-50 py-12 sm:py-16 lg:py-20 overflow-hidden">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-12 sm:mb-16">
                     <Title

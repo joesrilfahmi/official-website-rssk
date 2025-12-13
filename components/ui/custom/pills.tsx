@@ -5,6 +5,7 @@ export interface PillsProps {
     label: string;
     count?: number | string;
     variant?: 'default' | 'active';
+    size?: 'sm' | 'md' | 'lg';
     onClick?: () => void;
     icon?: LucideIcon;
     disabled?: boolean;
@@ -15,17 +16,36 @@ const Pills: React.FC<PillsProps> = ({
     label,
     count,
     variant = 'default',
+    size = 'md',
     onClick,
     icon: Icon,
     disabled = false,
     className = '',
 }) => {
     const baseClasses = `
-    shrink-0 px-6 py-2.5 rounded-full text-sm font-medium
+    shrink-0 rounded-full font-medium
     transition-all duration-200
     flex items-center gap-2
     ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
   `;
+
+    const sizeClasses = {
+        sm: 'px-4 py-1.5 text-xs',
+        md: 'px-6 py-2.5 text-sm',
+        lg: 'px-8 py-3.5 text-base',
+    };
+
+    const iconSizeClasses = {
+        sm: 'w-3 h-3',
+        md: 'w-4 h-4',
+        lg: 'w-5 h-5',
+    };
+
+    const countSizeClasses = {
+        sm: 'text-[10px] px-1.5 py-0.5',
+        md: 'text-xs px-2 py-0.5',
+        lg: 'text-sm px-2.5 py-1',
+    };
 
     const variantClasses = {
         default: `
@@ -52,13 +72,13 @@ const Pills: React.FC<PillsProps> = ({
         <button
             onClick={handleClick}
             disabled={disabled}
-            className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+            className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
             type="button"
         >
-            {Icon && <Icon className="w-4 h-4" />}
+            {Icon && <Icon className={iconSizeClasses[size]} />}
             <span>{label}</span>
             {count !== undefined && (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${countClasses[variant]}`}>
+                <span className={`rounded-full ${countSizeClasses[size]} ${countClasses[variant]}`}>
                     {count}
                 </span>
             )}

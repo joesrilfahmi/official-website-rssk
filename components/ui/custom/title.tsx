@@ -5,8 +5,10 @@ import Badge from './badge';
 interface TitleProps {
     badge?: string;
     title: string;
+    subtitle?: string;
     badgeVariant?: 'default' | 'primary' | 'secondary';
     titleClassName?: string;
+    subtitleClassName?: string;
     containerClassName?: string;
     align?: 'left' | 'center' | 'right';
 }
@@ -14,8 +16,10 @@ interface TitleProps {
 const Title: React.FC<TitleProps> = ({
     badge,
     title,
+    subtitle,
     badgeVariant = 'default',
     titleClassName = '',
+    subtitleClassName = '',
     containerClassName = '',
     align = 'left'
 }) => {
@@ -38,6 +42,13 @@ const Title: React.FC<TitleProps> = ({
             <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold text-mariner-500 leading-tight ${titleClassName}`}>
                 {title}
             </h1>
+
+            {/* Subtitle */}
+            {subtitle && (
+                <p className={`text-base sm:text-lg text-gray-600 max-w-2xl ${subtitleClassName}`}>
+                    {subtitle}
+                </p>
+            )}
         </div>
     );
 };
