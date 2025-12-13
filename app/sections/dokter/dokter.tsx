@@ -297,16 +297,14 @@ const DokterSpesialis = () => {
     };
 
     return (
-        <div className="bg-white py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="bg-white px-4 sm:px-6 lg:px-8 overflow-hidden">
             <div className="max-w-7xl mx-auto">
-                {/* Banner */}
                 <Banner
                     title="Dokter Spesialis Kami"
                     subtitle="Temukan dokter spesialis terbaik untuk kebutuhan kesehatan Anda"
                 />
 
-                {/* Header Section */}
-                <div className="text-center mb-12 sm:mb-16">
+                <div className="text-center mt-8 mb-12 sm:mb-16">
                     <Title
                         title="Daftar Dokter Spesialis"
                         align='center'

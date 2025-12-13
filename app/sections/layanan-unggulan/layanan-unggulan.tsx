@@ -87,16 +87,15 @@ const LayananUnggulan = () => {
     };
 
     return (
-        <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="bg-gray-50 px-4 sm:px-6 lg:px-8  overflow-hidden">
             <div className="max-w-7xl mx-auto">
-
                 <Banner
                     title="Layanan Unggulan"
                     subtitle="Dapatkan solusi terbaik untuk kebutuhan kesehatan Anda"
                 />
 
                 {/* Header Section */}
-                <div className="text-center mb-12 sm:mb-16">
+                <div className="text-center mt-8 mb-12 sm:mb-16">
                     <Title
                         badge="SPESIALIS KAMI"
                         title="Layanan Unggulan"

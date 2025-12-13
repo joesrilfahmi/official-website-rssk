@@ -98,9 +98,9 @@ const Footer = () => {
     return (
         <footer className="bg-white">
             <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
-                    {/* Logo & Kontak Kami */}
-                    <div className="md:col-span-2 lg:col-span-1">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+                    {/* Logo & Kontak Kami - Row 1 Column 1 */}
+                    <div className="order-1 col-span-2 md:col-span-2 lg:col-span-1 lg:row-span-2">
                         <div className="flex items-start gap-4 mb-6">
                             <div className="shrink-0">
                                 <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none">
@@ -133,36 +133,30 @@ const Footer = () => {
                         </div>
                     </div>
 
-                    {/* Rumah Sakit */}
-                    <div>
+                    {/* Rumah Sakit - Row 1 Column 2 */}
+                    <div className="order-2 col-span-2 md:col-span-1 lg:order-2">
                         <LinkSection title="Rumah Sakit" links={hospitals} />
-                        <div>
-                            <h4 className="font-bold text-mariner-600 text-base mb-4">Lokasi</h4>
-                            <div className="space-y-6">
-                                <LocationCard name={locations[0].name} address={locations[0].address} />
+                    </div>
+
+                    {/* Social Media & Lainnya - Row 1 Column 3-4 */}
+                    <div className="order-3 col-span-2 md:col-span-2 lg:order-3 lg:col-span-2">
+                        <div className="grid grid-cols-2 gap-6">
+                            <div>
+                                <LinkSection title="Social Media" links={socialMedia} />
+                            </div>
+                            <div>
+                                <LinkSection title="Lainnya" links={otherLinks} />
                             </div>
                         </div>
                     </div>
 
-                    {/* Social Media */}
-                    <div>
-                        <LinkSection title="Social Media" links={socialMedia} />
-                        <div>
-                            <div className="h-7"></div>
-                            <div className="space-y-6">
-                                <LocationCard name={locations[1].name} address={locations[1].address} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Lainnya */}
-                    <div>
-                        <LinkSection title="Lainnya" links={otherLinks} />
-                        <div>
-                            <div className="h-7"></div>
-                            <div className="space-y-6">
-                                <LocationCard name={locations[2].name} address={locations[2].address} />
-                            </div>
+                    {/* Lokasi - Row 2 Column 2-4 (beside Kontak on desktop, below others on mobile) */}
+                    <div className="order-5 col-span-2 md:col-span-2 lg:order-4 lg:col-span-3">
+                        <h4 className="font-bold text-mariner-600 text-base mb-4">Lokasi</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {locations.map((location, idx) => (
+                                <LocationCard key={idx} name={location.name} address={location.address} />
+                            ))}
                         </div>
                     </div>
                 </div>

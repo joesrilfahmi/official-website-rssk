@@ -1,12 +1,13 @@
+// app/components/ui/custom/banner.tsx
 interface BannerProps {
     title?: string;
     subtitle?: string;
-
 }
 
 const Banner = ({ title = "Dokter Spesialis", subtitle = "Kosong" }: BannerProps) => {
     return (
-        <div className=" py-20">
+        // Hilangkan py-20 yang menyebabkan jarak berlebihan
+        <div className="pt-20"> {/* Hanya top padding untuk offset navbar fixed */}
             <div className="relative bg-linear-to-b from-blue-50 to-white overflow-hidden py-16 md:py-24 rounded-2xl">
                 <div className="container mx-auto px-4">
                     <div className="relative z-10 max-w-2xl">
@@ -15,7 +16,8 @@ const Banner = ({ title = "Dokter Spesialis", subtitle = "Kosong" }: BannerProps
                         </h1>
 
                         <p className="text-lg text-gray-600 max-w-md">
-                            {subtitle}</p>
+                            {subtitle}
+                        </p>
                     </div>
 
                     {/* Decorative circles */}

@@ -157,7 +157,7 @@ export default function LoginPage() {
                                     variant="outline"
                                     className="w-full"
                                     disabled={loading}
-                                    onClick={() => router.back()}
+                                    onClick={() => router.push('/')}
                                 >
                                     Kembali
                                 </Button>
