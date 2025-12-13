@@ -5,6 +5,11 @@ import {
     Building2,
     Home,
     Users,
+    Newspaper,
+    ClipboardList,
+    Calendar,
+    Star,
+    Bed,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -34,19 +39,31 @@ const menuItems = [
     },
     {
         title: 'Berita',
-        icon: Home,
+        icon: Newspaper,
         url: '/berita',
         access: ["administrator", "user"]
     },
     {
+        title: 'Daftar Poli',
+        icon: ClipboardList,
+        url: '/daftar-poli',
+        access: ["administrator", "user"]
+    },
+    {
+        title: 'Jadwal Dokter',
+        icon: Calendar,
+        url: '/jadwal-dokter',
+        access: ["administrator", "user"]
+    },
+    {
         title: 'Layanan Unggulan',
-        icon: Home,
+        icon: Star,
         url: '/layanan-unggulan',
         access: ["administrator", "user"]
     },
     {
         title: 'Kamar Inap',
-        icon: Home,
+        icon: Bed,
         url: '/kamar-inap',
         access: ["administrator", "user"]
     },

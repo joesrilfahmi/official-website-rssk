@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Phone, Mail } from 'lucide-react';
+import { ArrowRight, Phone, Mail, User, AtSign, Calendar, Clock } from 'lucide-react';
 import Button from '@/components/ui/custom/button';
+import Input from '@/components/ui/custom/input';
+import Select from '@/components/ui/custom/select';
+import Textarea from '@/components/ui/custom/textarea';
 import { supabase } from '@/lib/supabase/client';
 import Badge from '@/components/ui/custom/badge';
 
@@ -22,8 +25,20 @@ export default function PendaftaranSection() {
     const [specialties, setSpecialties] = useState<DoctorSpecialty[]>([]);
     const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
+    const [loadingSpecialties, setLoadingSpecialties] = useState(true);
+    const [loadingDoctors, setLoadingDoctors] = useState(false);
 
     const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        specialty: '',
+        doctor: '',
+        date: '',
+        time: '',
+        description: ''
+    });
+
+    const [errors, setErrors] = useState({
         name: '',
         email: '',
         specialty: '',
@@ -39,6 +54,7 @@ export default function PendaftaranSection() {
     }, []);
 
     const fetchSpecialties = async () => {
+        setLoadingSpecialties(true);
         try {
             const { data, error } = await supabase
                 .from('doctor_specialties')
@@ -49,6 +65,8 @@ export default function PendaftaranSection() {
             setSpecialties(data || []);
         } catch (error) {
             console.error('Error fetching specialties:', error);
+        } finally {
+            setLoadingSpecialties(false);
         }
     };
 
@@ -68,17 +86,80 @@ export default function PendaftaranSection() {
 
     const handleSpecialtyChange = (specialtyId: string) => {
         setFormData({ ...formData, specialty: specialtyId, doctor: '' });
+        setErrors({ ...errors, specialty: '', doctor: '' });
 
         if (specialtyId) {
+            setLoadingDoctors(true);
             const filtered = doctors.filter(doc => doc.specialty_id === specialtyId);
             setFilteredDoctors(filtered);
+            setLoadingDoctors(false);
         } else {
             setFilteredDoctors([]);
         }
     };
 
+    const validateForm = () => {
+        const newErrors = {
+            name: '',
+            email: '',
+            specialty: '',
+            doctor: '',
+            date: '',
+            time: '',
+            description: ''
+        };
+
+        let isValid = true;
+
+        if (!formData.name.trim()) {
+            newErrors.name = 'Nama wajib diisi';
+            isValid = false;
+        }
+
+        if (!formData.email.trim()) {
+            newErrors.email = 'Email wajib diisi';
+            isValid = false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            newErrors.email = 'Format email tidak valid';
+            isValid = false;
+        }
+
+        if (!formData.specialty) {
+            newErrors.specialty = 'Pilih spesialis terlebih dahulu';
+            isValid = false;
+        }
+
+        if (!formData.doctor) {
+            newErrors.doctor = 'Pilih dokter terlebih dahulu';
+            isValid = false;
+        }
+
+        if (!formData.date) {
+            newErrors.date = 'Tanggal wajib diisi';
+            isValid = false;
+        }
+
+        if (!formData.time) {
+            newErrors.time = 'Waktu wajib diisi';
+            isValid = false;
+        }
+
+        if (!formData.description.trim()) {
+            newErrors.description = 'Deskripsi keluhan wajib diisi';
+            isValid = false;
+        }
+
+        setErrors(newErrors);
+        return isValid;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!validateForm()) {
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -112,6 +193,15 @@ export default function PendaftaranSection() {
                 description: ''
             });
             setFilteredDoctors([]);
+            setErrors({
+                name: '',
+                email: '',
+                specialty: '',
+                doctor: '',
+                date: '',
+                time: '',
+                description: ''
+            });
 
         } catch (error) {
             console.error('Error submitting form:', error);
@@ -120,6 +210,17 @@ export default function PendaftaranSection() {
             setLoading(false);
         }
     };
+
+    // Convert specialties and doctors to SelectOption format
+    const specialtyOptions = specialties.map(specialty => ({
+        value: specialty.id,
+        label: specialty.name
+    }));
+
+    const doctorOptions = filteredDoctors.map(doctor => ({
+        value: doctor.id,
+        label: doctor.name
+    }));
 
     return (
         <section className="relative min-h-screen py-12 sm:py-16 lg:py-20 overflow-hidden">
@@ -153,117 +254,109 @@ export default function PendaftaranSection() {
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Name & Email */}
                             <div className="grid sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="mymail@l"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mariner-500 focus:border-transparent outline-none transition-all"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        placeholder="Input Email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mariner-500 focus:border-transparent outline-none transition-all"
-                                        required
-                                    />
-                                </div>
+                                <Input
+                                    label="Nama"
+                                    type="text"
+                                    placeholder="Masukkan nama lengkap"
+                                    value={formData.name}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, name: e.target.value });
+                                        if (errors.name) setErrors({ ...errors, name: '' });
+                                    }}
+                                    icon={User}
+                                    error={errors.name}
+                                    required
+                                />
+                                <Input
+                                    label="Email"
+                                    type="email"
+                                    placeholder="nama@email.com"
+                                    value={formData.email}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, email: e.target.value });
+                                        if (errors.email) setErrors({ ...errors, email: '' });
+                                    }}
+                                    icon={AtSign}
+                                    error={errors.email}
+                                    required
+                                />
                             </div>
 
                             {/* Poli Spesialis & Nama Dokter */}
                             <div className="grid sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Poli Spesialis
-                                    </label>
-                                    <select
-                                        value={formData.specialty}
-                                        onChange={(e) => handleSpecialtyChange(e.target.value)}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mariner-500 focus:border-transparent outline-none transition-all appearance-none bg-white"
-                                        required
-                                    >
-                                        <option value="">Choose Doctor Type</option>
-                                        {specialties.map((specialty) => (
-                                            <option key={specialty.id} value={specialty.id}>
-                                                {specialty.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Nama Dokter
-                                    </label>
-                                    <select
-                                        value={formData.doctor}
-                                        onChange={(e) => setFormData({ ...formData, doctor: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mariner-500 focus:border-transparent outline-none transition-all appearance-none bg-white"
-                                        required
-                                        disabled={!formData.specialty}
-                                    >
-                                        <option value="">Choose Doctor Name</option>
-                                        {filteredDoctors.map((doctor) => (
-                                            <option key={doctor.id} value={doctor.id}>
-                                                {doctor.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <Select
+                                    label="Poli Spesialis"
+                                    placeholder="Pilih spesialis"
+                                    value={formData.specialty}
+                                    onChange={handleSpecialtyChange}
+                                    options={specialtyOptions}
+                                    searchable
+                                    loading={loadingSpecialties}
+                                    error={errors.specialty}
+                                    required
+                                />
+                                <Select
+                                    label="Nama Dokter"
+                                    placeholder="Pilih dokter"
+                                    value={formData.doctor}
+                                    onChange={(value) => {
+                                        setFormData({ ...formData, doctor: value });
+                                        if (errors.doctor) setErrors({ ...errors, doctor: '' });
+                                    }}
+                                    options={doctorOptions}
+                                    searchable
+                                    disabled={!formData.specialty}
+                                    loading={loadingDoctors}
+                                    error={errors.doctor}
+                                    helperText={!formData.specialty ? 'Pilih spesialis terlebih dahulu' : ''}
+                                    required
+                                />
                             </div>
 
                             {/* Tanggal & Time */}
                             <div className="grid sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Tanggal
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={formData.date}
-                                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mariner-500 focus:border-transparent outline-none transition-all"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Time
-                                    </label>
-                                    <input
-                                        type="time"
-                                        value={formData.time}
-                                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mariner-500 focus:border-transparent outline-none transition-all"
-                                        required
-                                    />
-                                </div>
+                                <Input
+                                    label="Tanggal"
+                                    type="date"
+                                    value={formData.date}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, date: e.target.value });
+                                        if (errors.date) setErrors({ ...errors, date: '' });
+                                    }}
+                                    icon={Calendar}
+                                    error={errors.date}
+                                    required
+                                    min={new Date().toISOString().split('T')[0]}
+                                />
+                                <Input
+                                    label="Waktu"
+                                    type="time"
+                                    value={formData.time}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, time: e.target.value });
+                                        if (errors.time) setErrors({ ...errors, time: '' });
+                                    }}
+                                    icon={Clock}
+                                    error={errors.time}
+                                    required
+                                />
                             </div>
 
                             {/* Deskripsi Keluhan */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Deskripsi Keluhan Anda
-                                </label>
-                                <textarea
-                                    rows={4}
-                                    placeholder="Tuliskan keluhan Anda..."
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mariner-500 focus:border-transparent outline-none transition-all resize-none"
-                                    required
-                                ></textarea>
-                            </div>
+                            <Textarea
+                                label="Deskripsi Keluhan Anda"
+                                rows={4}
+                                placeholder="Tuliskan keluhan Anda secara detail..."
+                                value={formData.description}
+                                onChange={(e) => {
+                                    setFormData({ ...formData, description: e.target.value });
+                                    if (errors.description) setErrors({ ...errors, description: '' });
+                                }}
+                                error={errors.description}
+                                showCharCount
+                                maxLength={500}
+                                required
+                            />
 
                             {/* Submit Button */}
                             <Button
@@ -273,7 +366,7 @@ export default function PendaftaranSection() {
                                 className="w-full shadow-lg bg-bittersweet-500 hover:bg-bittersweet-600"
                                 disabled={loading}
                             >
-                                {loading ? 'Mengirim...' : 'Send'}
+                                {loading ? 'Mengirim...' : 'Kirim Pendaftaran'}
                                 <ArrowRight className="w-5 h-5" />
                             </Button>
                         </form>

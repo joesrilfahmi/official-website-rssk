@@ -1,8 +1,10 @@
 // types/index.ts
 
+// ============================================
+// USER TYPES
+// ============================================
 export type UserRole = 'administrator' | 'user';
 export type UserStatus = 'active' | 'inactive';
-export type BeritaStatus = 'active' | 'non_active' | 'draft';
 
 export interface User {
   id: string;
@@ -34,6 +36,9 @@ export interface RegisterData {
   email?: string;
 }
 
+// ============================================
+// LAYANAN UNGGULAN TYPES
+// ============================================
 export interface LayananUnggulan {
   id: string;
   icon: string;
@@ -45,6 +50,9 @@ export interface LayananUnggulan {
   updated_at?: string;
 }
 
+// ============================================
+// KAMAR INAP TYPES
+// ============================================
 export interface KamarInap {
   id: string;
   title: string;
@@ -57,7 +65,11 @@ export interface KamarInap {
   updated_at?: string;
 }
 
-// Berita Types
+// ============================================
+// BERITA TYPES
+// ============================================
+export type BeritaStatus = 'active' | 'non_active' | 'draft';
+
 export interface Berita {
   id: string;
   title: string;
@@ -78,4 +90,76 @@ export interface BeritaWithAuthor extends Berita {
     username: string;
     avatar?: string;
   };
+}
+
+// ============================================
+// POLI TYPES
+// ============================================
+export interface Poli {
+  id: string;
+  nama_poli: string;
+  status: 'active' | 'inactive';
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ============================================
+// DOKTER TYPES
+// ============================================
+export type DokterStatus = 'active' | 'inactive' | 'cuti' | 'libur';
+export type HariType = 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu' | 'Minggu';
+export type SortField = 'nama' | 'poli' | 'status' | 'created_at';
+export type SortOrder = 'asc' | 'desc';
+
+export interface Dokter {
+  id: string;
+  gelar_depan: string | null;
+  nama: string;
+  gelar_belakang: string | null;
+  poli_id: string;
+  profile: string | null;
+  status: DokterStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JadwalDokter {
+  id: string;
+  dokter_id: string;
+  hari: HariType;
+  jam_mulai: string;
+  jam_selesai: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DokterWithRelations extends Dokter {
+  poli_detail?: Poli;
+  jadwal?: JadwalDokter[];
+}
+
+export interface JadwalFormData {
+  id?: string;
+  hari: HariType | '';
+  jam_mulai: string;
+  jam_selesai: string;
+  _temp_id: string;
+}
+
+export interface DokterFormData {
+  gelar_depan: string;
+  nama: string;
+  gelar_belakang: string;
+  poli_id: string;
+  profile: string;
+  status: DokterStatus;
+  profileFile: File | null;
+  profileDeleted: boolean;
+  jadwal: JadwalFormData[];
+}
+
+export interface DokterFormErrors {
+  nama: string;
+  poli_id: string;
+  jadwal: string;
 }

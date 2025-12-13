@@ -1,5 +1,4 @@
 // app/components/layout/navbar.tsx
-'use client';// app/components/layout/navbar.tsx
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -13,17 +12,17 @@ export default function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
 
     const navItems = useMemo(() => [
-        { label: 'Beranda', href: '/' },
-        { label: 'Rumah Sakit', href: '/rumah-sakit' },
-        { label: 'Dokter', href: '/dokter' },
-        { label: 'Blog', href: '/blog' },
-        { label: 'Layanan Unggulan', href: '/layanan-unggulan' },
-        { label: 'Informasi', href: '/informasi' },
-        { label: 'Kontak', href: '/kontak' }
+        { label: 'Beranda', href: '/sections/home' },
+        { label: 'Rumah Sakit', href: '/sections/rumah-sakit' },
+        { label: 'Dokter', href: '/sections/dokter' },
+        { label: 'Blog', href: '/sections/blog' },
+        { label: 'Layanan Unggulan', href: '/sections/layanan-unggulan' },
+        { label: 'Informasi', href: '/sections/informasi' },
+        { label: 'Kontak', href: '/sections/kontak' }
     ], []);
 
     // Deteksi halaman yang memiliki hero section
-    const hasHeroSection = pathname === '/';
+    const hasHeroSection = pathname === '/sections/home';
 
     // Calculate active page from pathname
     const activePage = useMemo(() => {
@@ -87,7 +86,7 @@ export default function Navbar() {
                     <div className="flex items-center justify-between h-20">
                         {/* Logo */}
                         <button
-                            onClick={() => handleNavClick('/')}
+                            onClick={() => handleNavClick('/sections/home')}
                             className="flex items-center gap-3"
                         >
                             <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg overflow-hidden bg-white relative">

@@ -1,3 +1,5 @@
+// app/sections/home/page.tsx
+
 import Hero from "./hero"
 import About from "./about"
 import LayananUnggulan from "./layanan-unggulan"
