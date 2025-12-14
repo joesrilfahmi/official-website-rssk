@@ -68,6 +68,14 @@ interface Poli {
     updated_at?: string;
 }
 
+interface DokterCheckResponse {
+    poli_id: string;
+    nama: string;
+    poli: {
+        nama_poli: string;
+    } | null;
+}
+
 type SortField = 'nama_poli' | 'status' | 'created_at';
 type SortOrder = 'asc' | 'desc';
 
@@ -428,12 +436,44 @@ export default function PoliPage() {
         const loadingToast = toast.loading('Menghapus poli...');
 
         try {
+            // Cek apakah poli sedang digunakan oleh dokter
+            const { data: dokterData, error: checkError } = await supabase
+                .from('dokter')
+                .select('id, nama')
+                .eq('poli_id', selectedPoli.id)
+                .limit(1);
+
+            if (checkError) throw checkError;
+
+            if (dokterData && dokterData.length > 0) {
+                toast.error(
+                    `Gagal menghapus poli karena sedang digunakan oleh dokter "${dokterData[0].nama}"`,
+                    { id: loadingToast, duration: 5000 }
+                );
+                setSubmitting(false);
+                setDeleteDialogOpen(false);
+                setSelectedPoli(null);
+                return;
+            }
+
+            // Jika tidak digunakan, lanjutkan penghapusan
             const { error } = await supabase
                 .from('poli')
                 .delete()
                 .eq('id', selectedPoli.id);
 
-            if (error) throw error;
+            if (error) {
+                // Handle error dari database constraint
+                if (error.code === '23503') {
+                    toast.error(
+                        'Gagal menghapus poli karena sedang digunakan oleh data lain',
+                        { id: loadingToast, duration: 5000 }
+                    );
+                } else {
+                    throw error;
+                }
+                return;
+            }
 
             toast.success('Poli berhasil dihapus', {
                 id: loadingToast
@@ -460,12 +500,49 @@ export default function PoliPage() {
 
         try {
             const idsArray = Array.from(selectedIds);
+
+            // Cek apakah ada poli yang sedang digunakan oleh dokter
+            const { data: dokterData, error: checkError } = await supabase
+                .from('dokter')
+                .select('poli_id, nama, poli:poli_id(nama_poli)')
+                .in('poli_id', idsArray);
+
+            if (checkError) throw checkError;
+
+            if (dokterData && dokterData.length > 0) {
+                const typedDokterData = dokterData as unknown as DokterCheckResponse[];
+                const usedPoli = typedDokterData
+                    .map(d => d.poli?.nama_poli || 'Unknown')
+                    .join(', ');
+
+                toast.error(
+                    `Gagal menghapus karena ${dokterData.length} poli sedang digunakan oleh dokter: ${usedPoli}`,
+                    { id: loadingToast, duration: 6000 }
+                );
+                setSubmitting(false);
+                setBulkDeleteDialogOpen(false);
+                setSelectedIds(new Set());
+                return;
+            }
+
+            // Jika tidak ada yang digunakan, lanjutkan penghapusan
             const { error } = await supabase
                 .from('poli')
                 .delete()
                 .in('id', idsArray);
 
-            if (error) throw error;
+            if (error) {
+                // Handle error dari database constraint
+                if (error.code === '23503') {
+                    toast.error(
+                        'Gagal menghapus beberapa poli karena sedang digunakan oleh data lain',
+                        { id: loadingToast, duration: 5000 }
+                    );
+                } else {
+                    throw error;
+                }
+                return;
+            }
 
             setSelectedIds(new Set());
 

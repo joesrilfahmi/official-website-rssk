@@ -577,7 +577,7 @@ export default function PromoPage() {
                                         </p>
                                     </CardContent>
 
-                                    <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute bottom-3 right-3 flex gap-2">
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>

@@ -631,15 +631,14 @@ export default function UsersPage() {
     // Status filter options
     const statusOptions = [
         { value: 'all', label: 'Semua Status' },
-        { value: 'active', label: 'Active' },
-        { value: 'inactive', label: 'Inactive' },
+        { value: 'active', label: 'Aktif' },
+        { value: 'inactive', label: 'Tidak Aktif' },
     ];
 
     // Role filter options
     const roleOptions = [
         { value: 'all', label: 'Semua Role' },
-        { value: 'admin', label: 'Admin' },
-        { value: 'operator', label: 'Operator' },
+        { value: 'administrator', label: 'Administrator' },
         { value: 'user', label: 'User' },
     ];
 
@@ -880,7 +879,7 @@ export default function UsersPage() {
                                                             : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700'
                                                     }
                                                 >
-                                                    {user.status_users === 'active' ? 'Active' : 'Inactive'}
+                                                    {user.status_users === 'active' ? 'Aktif' : 'Tidak Aktif'}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-sm text-muted-foreground">
@@ -913,7 +912,7 @@ export default function UsersPage() {
                                                                     variant="outline"
                                                                     size="icon"
                                                                     onClick={() => handleOpenResetPasswordDialog(user)}
-                                                                    className="h-8 w-8 bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 text-white dark:text-white hover:text-white"
+                                                                    className="h-8 w-8 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white dark:text-white hover:text-white"
                                                                     disabled={submitting}
                                                                 >
                                                                     <KeyRound className="h-4 w-4" />
@@ -1018,15 +1017,13 @@ export default function UsersPage() {
                                         }
                                     }}
                                     placeholder="Pilih username (min 3-20 karakter)"
-                                    disabled={submitting || !!selectedUser}
+                                    disabled={submitting}
                                     className={formErrors.username ? 'border-red-500' : ''}
                                 />
                                 {formErrors.username && (
                                     <p className="text-sm text-red-500">{formErrors.username}</p>
                                 )}
-                                {selectedUser && (
-                                    <p className="text-xs text-muted-foreground">Username tidak dapat diubah</p>
-                                )}
+
                             </div>
 
                             {/* Password - Hanya untuk User Baru */}
@@ -1102,7 +1099,7 @@ export default function UsersPage() {
 
                             {/* ID Telegram */}
                             <div className="space-y-2">
-                                <Label htmlFor="id_telegram">ID Telegram (angka saja)</Label>
+                                <Label htmlFor="id_telegram">ID Telegram</Label>
                                 <Input
                                     id="id_telegram"
                                     type="tel"
@@ -1162,8 +1159,8 @@ export default function UsersPage() {
                                             <SelectValue placeholder="Pilih status" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="active">Active</SelectItem>
-                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                            <SelectItem value="active">Aktif</SelectItem>
+                                            <SelectItem value="inactive">Tidak Aktif</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1255,7 +1252,7 @@ export default function UsersPage() {
                         <AlertDialogAction
                             onClick={handleResetPassword}
                             disabled={submitting}
-                            className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 text-white dark:text-white"
+                            className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white dark:text-white"
                         >
                             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {submitting ? 'Mereset...' : 'Reset Password'}

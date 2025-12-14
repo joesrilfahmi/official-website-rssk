@@ -10,12 +10,13 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/password-input';
 import { login } from '@/lib/auth';
 import { toast } from 'sonner';
+import { AuthHeader } from '@/components/auth/auth-header';
+import { AuthBranding } from '@/components/auth/auth-branding';
 
 interface FormErrors {
     username: string;
@@ -92,25 +93,29 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
-            <div className="flex w-full max-w-sm flex-col gap-6">
-                <Card>
-                    <CardHeader className="text-center">
-                        <CardTitle className="text-2xl">Login ke Akun Anda</CardTitle>
-                        <CardDescription>
-                            Masukkan username dan password untuk melanjutkan
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+        <div className="grid min-h-svh lg:grid-cols-2">
+            {/* Left Side - Form */}
+            <div className="flex flex-col gap-4 p-6 md:p-10">
+                <AuthHeader />
+
+                <div className="flex flex-1 items-center justify-center">
+                    <div className="w-full max-w-xs">
                         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                            <div className="flex flex-col items-center gap-2 text-center">
+                                <h1 className="text-2xl font-bold">Login ke Akun Anda</h1>
+                                <p className="text-balance text-sm text-muted-foreground">
+                                    Masukkan username dan password untuk melanjutkan
+                                </p>
+                            </div>
+
                             {error && (
                                 <Alert variant="destructive">
                                     <AlertDescription>{error}</AlertDescription>
                                 </Alert>
                             )}
 
-                            <div className="flex flex-col gap-4">
-                                <div className="flex flex-col gap-2">
+                            <div className="grid gap-6">
+                                <div className="grid gap-2">
                                     <Label htmlFor="username">
                                         Username <span className="text-red-500">*</span>
                                     </Label>
@@ -130,11 +135,21 @@ export default function LoginPage() {
                                     )}
                                 </div>
 
-                                <div className="flex flex-col gap-2">
+                                <div className="grid gap-2">
+                                    <div className="flex items-center">
+                                        <Label htmlFor="password">
+                                            Password <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Link
+                                            href="/forgot-password"
+                                            className="ml-auto text-sm underline-offset-4 hover:underline"
+                                        >
+                                            Lupa password?
+                                        </Link>
+                                    </div>
                                     <PasswordInput
                                         id="password"
                                         name="password"
-                                        label="Password"
                                         placeholder="Masukkan password"
                                         value={formData.password}
                                         onChange={handleChange}
@@ -144,41 +159,26 @@ export default function LoginPage() {
                                         error={errors.password}
                                     />
                                 </div>
-                            </div>
 
-                            <div className="flex flex-col gap-2">
                                 <Button type="submit" className="w-full" disabled={loading}>
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     {loading ? 'Memproses...' : 'Login'}
                                 </Button>
+                            </div>
 
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full"
-                                    disabled={loading}
-                                    onClick={() => router.push('/')}
-                                >
-                                    Kembali
-                                </Button>
+                            <div className="text-center text-sm">
+                                Belum punya akun?{' '}
+                                <Link href="/register" className="underline underline-offset-4">
+                                    Daftar
+                                </Link>
                             </div>
                         </form>
-
-                        <div className="mt-4 text-center text-sm">
-                            Belum punya akun?{' '}
-                            <Link href="/register" className="font-medium underline underline-offset-4">
-                                Daftar
-                            </Link>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-primary">
-                    Dengan login, Anda menyetujui{' '}
-                    <a href="#">Syarat & Ketentuan</a> dan{' '}
-                    <a href="#">Kebijakan Privasi</a> kami.
+                    </div>
                 </div>
             </div>
+
+            {/* Right Side - Branding */}
+            <AuthBranding />
         </div>
     );
 }

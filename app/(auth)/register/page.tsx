@@ -10,7 +10,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { validasiIdTelegram } from '@/lib/validasi/validasiTelegram';
 import {
     AlertDialog,
@@ -29,6 +28,8 @@ import { register } from '@/lib/auth';
 import { validasiUsername } from '@/lib/validasi/validasiUsername';
 import { validasiPassword, validasiKonfirmasiPassword } from '@/lib/validasi/validasiPassword';
 import { toast } from 'sonner';
+import { AuthHeader } from '@/components/auth/auth-header';
+import { AuthBranding } from '@/components/auth/auth-branding';
 
 interface FormData {
     nama: string;
@@ -195,176 +196,188 @@ export default function RegisterPage() {
 
     return (
         <>
-            <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
-                <div className="flex w-full max-w-sm flex-col gap-6">
-                    <Card>
-                        <CardHeader className="text-center">
-                            <CardTitle className="text-2xl">Buat Akun Baru</CardTitle>
-                            <CardDescription>
-                                Lengkapi form untuk membuat akun
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                                <div className="flex flex-col gap-4">
-                                    {/* Nama Lengkap */}
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="nama">
-                                            Nama Lengkap <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="nama"
-                                            name="nama"
-                                            type="text"
-                                            placeholder="Masukkan nama lengkap"
-                                            value={formData.nama}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                            className={errors.nama ? 'border-red-500' : ''}
-                                            required
-                                        />
-                                        {errors.nama && (
-                                            <p className="text-sm text-red-500">{errors.nama}</p>
-                                        )}
-                                    </div>
+            <div className="grid min-h-svh lg:grid-cols-2">
+                {/* Left Side - Form */}
+                <div className="flex flex-col gap-4 p-6 md:p-10">
+                    <AuthHeader />
 
-                                    {/* Username */}
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="username">
-                                            Username <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="username"
-                                            name="username"
-                                            type="text"
-                                            placeholder="Pilih username (3-20 karakter)"
-                                            value={formData.username}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                            className={errors.username ? 'border-red-500' : ''}
-                                            required
-                                        />
-                                        {errors.username && (
-                                            <p className="text-sm text-red-500">{errors.username}</p>
-                                        )}
-                                    </div>
-
-                                    {/* Password */}
-                                    <div className="flex flex-col gap-2">
-                                        <PasswordInput
-                                            id="password"
-                                            name="password"
-                                            label="Password"
-                                            placeholder="Minimal 8 karakter"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                            error={errors.password}
-                                            required
-                                        />
-
-                                        <PasswordStrengthIndicator
-                                            password={formData.password}
-                                            validationResult={passwordValidation}
-                                            showRequirements={true}
-                                            showStrengthBar={true}
-                                        />
-                                    </div>
-
-                                    {/* Konfirmasi Password */}
-                                    <div className="flex flex-col gap-2">
-                                        <PasswordInput
-                                            id="confirmPassword"
-                                            name="confirmPassword"
-                                            label="Konfirmasi Password"
-                                            placeholder="Ulangi password"
-                                            value={formData.confirmPassword}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                            error={errors.confirmPassword}
-                                            required
-                                        />
-                                    </div>
-
-                                    {/* Email */}
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            placeholder="email@example.com"
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                            className={errors.email ? 'border-red-500' : ''}
-                                        />
-                                        {errors.email && (
-                                            <p className="text-sm text-red-500">{errors.email}</p>
-                                        )}
-                                    </div>
-
-                                    {/* Nomor Telepon */}
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="nomor_telepon">Nomor Telepon</Label>
-                                        <Input
-                                            id="nomor_telepon"
-                                            name="nomor_telepon"
-                                            type="tel"
-                                            placeholder="08xxxxxxxxxx"
-                                            value={formData.nomor_telepon}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                            className={errors.nomor_telepon ? 'border-red-500' : ''}
-                                        />
-                                        {errors.nomor_telepon && (
-                                            <p className="text-sm text-red-500">{errors.nomor_telepon}</p>
-                                        )}
-                                    </div>
-
-                                    {/* ID Telegram */}
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="id_telegram">ID Telegram (angka saja)</Label>
-                                        <Input
-                                            id="id_telegram"
-                                            name="id_telegram"
-                                            type="text"
-                                            placeholder="Contoh: 1234567890"
-                                            value={formData.id_telegram}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                            className={errors.id_telegram ? 'border-red-500' : ''}
-                                        />
-                                        {errors.id_telegram && (
-                                            <p className="text-sm text-red-500">{errors.id_telegram}</p>
-                                        )}
-                                    </div>
+                    <div className="flex flex-1 items-center justify-center overflow-y-auto">
+                        <div className="w-full max-w-md py-4">
+                            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                                <div className="flex flex-col items-center gap-2 text-center">
+                                    <h1 className="text-2xl font-bold">Buat Akun Baru</h1>
+                                    <p className="text-balance text-sm text-muted-foreground">
+                                        Lengkapi form untuk membuat akun
+                                    </p>
                                 </div>
 
-                                <Button type="submit" className="w-full" disabled={loading}>
-                                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {loading ? 'Memproses...' : 'Daftar'}
-                                </Button>
+                                <div className="grid gap-4">
+                                    {/* Grid 2 Kolom untuk field tertentu */}
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        {/* Nama Lengkap */}
+                                        <div className="grid gap-2 sm:col-span-2">
+                                            <Label htmlFor="nama">
+                                                Nama Lengkap <span className="text-red-500">*</span>
+                                            </Label>
+                                            <Input
+                                                id="nama"
+                                                name="nama"
+                                                type="text"
+                                                placeholder="Masukkan nama lengkap"
+                                                value={formData.nama}
+                                                onChange={handleChange}
+                                                disabled={loading}
+                                                className={errors.nama ? 'border-red-500' : ''}
+                                                required
+                                            />
+                                            {errors.nama && (
+                                                <p className="text-sm text-red-500">{errors.nama}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Username */}
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="username">
+                                                Username <span className="text-red-500">*</span>
+                                            </Label>
+                                            <Input
+                                                id="username"
+                                                name="username"
+                                                type="text"
+                                                placeholder="Username (3-20 karakter)"
+                                                value={formData.username}
+                                                onChange={handleChange}
+                                                disabled={loading}
+                                                className={errors.username ? 'border-red-500' : ''}
+                                                required
+                                            />
+                                            {errors.username && (
+                                                <p className="text-sm text-red-500">{errors.username}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Email */}
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="email">Email</Label>
+                                            <Input
+                                                id="email"
+                                                name="email"
+                                                type="email"
+                                                placeholder="email@example.com"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                disabled={loading}
+                                                className={errors.email ? 'border-red-500' : ''}
+                                            />
+                                            {errors.email && (
+                                                <p className="text-sm text-red-500">{errors.email}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Nomor Telepon */}
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="nomor_telepon">Nomor Telepon</Label>
+                                            <Input
+                                                id="nomor_telepon"
+                                                name="nomor_telepon"
+                                                type="tel"
+                                                placeholder="08xxxxxxxxxx"
+                                                value={formData.nomor_telepon}
+                                                onChange={handleChange}
+                                                disabled={loading}
+                                                className={errors.nomor_telepon ? 'border-red-500' : ''}
+                                            />
+                                            {errors.nomor_telepon && (
+                                                <p className="text-sm text-red-500">{errors.nomor_telepon}</p>
+                                            )}
+                                        </div>
+
+                                        {/* ID Telegram */}
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="id_telegram">ID Telegram</Label>
+                                            <Input
+                                                id="id_telegram"
+                                                name="id_telegram"
+                                                type="text"
+                                                placeholder="Contoh: 1234567890"
+                                                value={formData.id_telegram}
+                                                onChange={handleChange}
+                                                disabled={loading}
+                                                className={errors.id_telegram ? 'border-red-500' : ''}
+                                            />
+                                            {errors.id_telegram && (
+                                                <p className="text-sm text-red-500">{errors.id_telegram}</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Password Section - Full Width */}
+                                    <div className="grid gap-4">
+                                        {/* Password */}
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="password">
+                                                Password <span className="text-red-500">*</span>
+                                            </Label>
+                                            <PasswordInput
+                                                id="password"
+                                                name="password"
+                                                placeholder="Minimal 8 karakter"
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                                disabled={loading}
+                                                error={errors.password}
+                                                showError={false}
+                                                required
+                                            />
+                                            <PasswordStrengthIndicator
+                                                password={formData.password}
+                                                validationResult={passwordValidation}
+                                                showRequirements={true}
+                                                showStrengthBar={true}
+                                            />
+                                        </div>
+
+                                        {/* Konfirmasi Password */}
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="confirmPassword">
+                                                Konfirmasi Password <span className="text-red-500">*</span>
+                                            </Label>
+                                            <PasswordInput
+                                                id="confirmPassword"
+                                                name="confirmPassword"
+                                                placeholder="Ulangi password"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                                disabled={loading}
+                                                error={errors.confirmPassword}
+                                                showError={false}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <Button type="submit" className="w-full" disabled={loading}>
+                                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {loading ? 'Memproses...' : 'Daftar'}
+                                    </Button>
+                                </div>
+
+                                <div className="text-center text-sm">
+                                    Sudah punya akun?{' '}
+                                    <Link
+                                        href="/login"
+                                        className="underline underline-offset-4"
+                                    >
+                                        Login
+                                    </Link>
+                                </div>
                             </form>
-
-                            <div className="mt-4 text-center text-sm">
-                                Sudah punya akun?{' '}
-                                <Link
-                                    href="/login"
-                                    className="font-medium underline underline-offset-4"
-                                >
-                                    Login
-                                </Link>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-primary">
-                        Dengan mendaftar, Anda menyetujui{' '}
-                        <a href="#">Syarat & Ketentuan</a> dan{' '}
-                        <a href="#">Kebijakan Privasi</a> kami.
+                        </div>
                     </div>
                 </div>
+
+                {/* Right Side - Branding */}
+                <AuthBranding />
             </div>
 
             {/* Telegram ID Dialog */}

@@ -2,17 +2,19 @@
 
 import * as React from 'react';
 import {
-    Building2,
-    Home,
-    Users,
+    LayoutDashboard,
+    Tag,
     Newspaper,
     ClipboardList,
     Calendar,
     Star,
     Bed,
+    MessageSquare,
+    Users,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 import {
     Sidebar,
@@ -29,17 +31,18 @@ import {
 } from '@/components/ui/sidebar';
 import { NavUser } from '@/components/nav-user';
 import { getCurrentUser } from '@/lib/auth';
+import Profile from '@/config/profile';
 
 const menuItems = [
     {
         title: 'Dashboard',
-        icon: Home,
+        icon: LayoutDashboard,
         url: '/dashboard',
         access: ["administrator", "user"]
     },
     {
         title: 'Promo',
-        icon: Home,
+        icon: Tag,
         url: '/promo',
         access: ["administrator", "user"]
     },
@@ -73,7 +76,12 @@ const menuItems = [
         url: '/kamar-inap',
         access: ["administrator", "user"]
     },
-
+    {
+        title: 'Kritik & Saran',
+        icon: MessageSquare,
+        url: '/kritik-saran',
+        access: ["administrator", "user"]
+    },
     {
         title: 'Users',
         icon: Users,
@@ -104,12 +112,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <div className="cursor-default">
-                                <div className="bg-foreground text-background flex aspect-square size-8 items-center justify-center rounded-lg">
-                                    <Building2 className="size-4" />
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden bg-white">
+                                    <Image
+                                        src={Profile.logo}
+                                        alt={Profile.shortName}
+                                        width={32}
+                                        height={32}
+                                        className="object-contain"
+                                    />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-semibold">Hospital System</span>
-                                    <span className="truncate text-xs">Management</span>
+                                    <span className="truncate font-semibold">{Profile.shortName}</span>
+                                    <span className="truncate text-xs">{Profile.subtitle}</span>
                                 </div>
                             </div>
                         </SidebarMenuButton>
