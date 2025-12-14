@@ -94,6 +94,38 @@ export interface BeritaWithAuthor extends Berita {
 }
 
 // ============================================
+// PROMO TYPES
+// ============================================
+export type PromoStatus = 'active' | 'non_active';
+
+export interface Promo {
+  id: string;
+  picture: string | null;
+  title: string;
+  description: string;
+  status: PromoStatus;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+}
+
+export interface PromoWithCreator extends Promo {
+  created_by_user?: {
+    id: string;
+    nama: string;
+    username: string;
+    avatar?: string;
+  };
+  updated_by_user?: {
+    id: string;
+    nama: string;
+    username: string;
+    avatar?: string;
+  };
+}
+
+// ============================================
 // POLI TYPES
 // ============================================
 export interface Poli {

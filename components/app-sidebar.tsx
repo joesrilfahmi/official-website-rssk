@@ -38,6 +38,12 @@ const menuItems = [
         access: ["administrator", "user"]
     },
     {
+        title: 'Promo',
+        icon: Home,
+        url: '/promo',
+        access: ["administrator", "user"]
+    },
+    {
         title: 'Berita',
         icon: Newspaper,
         url: '/berita',
