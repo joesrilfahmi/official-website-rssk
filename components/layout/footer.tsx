@@ -1,53 +1,34 @@
 // app/components/layout/footer.tsx
 import { Phone, Mail, User, LucideIcon } from 'lucide-react';
+import { Profile, rumahSakit, socialMedia } from '@/config/profile';
+import Image from 'next/image';
 
 const Footer = () => {
-    // Data kontak
+    // Data kontak dari profile
     const contactInfo: { icon: LucideIcon; content: string[] }[] = [
         {
             icon: Phone,
             content: [
-                'IGD : 031-7883980',
-                'Whatsapp IGD : 0811 3087119',
-                'Ambulance : 0811 3330 988'
+                `IGD : ${Profile.phone}`,
+                `Whatsapp IGD : ${Profile.whatsapp}`,
+                `Ambulance : ${Profile.ambulance}`
             ]
         },
         {
             icon: User,
-            content: ['Pusat Panggilan : (031) 7881130']
+            content: [`Pusat Panggilan : ${Profile.pusatPanggilan}`]
         },
         {
             icon: Mail,
-            content: ['humas@sitikhodijah.com']
+            content: [Profile.email]
         }
     ];
 
-    // Data rumah sakit
-    const hospitals: string[] = [
-        'RS Siti Khodijah Muhammadiyah Cabang Sepanjang',
-        'RSU Assakinah Medika',
-        'RS Moedito Dwidjoiswojo',
-        'Klinik Siti Khodijah Prima'
-    ];
-
-    // Data lokasi
-    const locations: { name: string; address: string }[] = [
-        {
-            name: 'RS Siti Khodijah Muhammadiyah Cabang Sepanjang Sidoarjo',
-            address: 'Jl. Raya Bebekan, RT.02/ RW.01, Bebekan, Taman, Kabupaten Sidoarjo, Jawa Timur 61257'
-        },
-        {
-            name: 'RSU Assakinah Medika Sidoarjo',
-            address: 'Jl. Raya Katon Agung No.63, Semban, Kebohanjang, Kec. Sukodono, Kabupaten Sidoarjo, Jawa Timur 61258'
-        },
-        {
-            name: 'RSU Moedito Dwidjoiswojo Jombang',
-            address: 'Jl. Hayam Wuruk No.9, Kepanjen, Kec. Jombang, Kabupaten Jombang, Jawa Timur 61411'
-        }
-    ];
-
-    // Data social media
-    const socialMedia: string[] = ['Instagram', 'Facebook', 'YouTube', 'Tiktok'];
+    // Data lokasi dari rumah sakit
+    const locations: { name: string; address: string }[] = rumahSakit.map(rs => ({
+        name: rs.name,
+        address: rs.alamat
+    }));
 
     // Data menu lainnya
     const otherLinks: string[] = [
@@ -71,14 +52,20 @@ const Footer = () => {
             </div>
         </div>
     );
-    const LinkSection = ({ title, links }: { title: string; links: string[] }) => (
+
+    const LinkSection = ({ title, links }: { title: string; links: string[] | { name: string; url: string }[] }) => (
         <div className="mb-6">
             <h4 className="font-bold text-mariner-600 text-base mb-4">{title}</h4>
             <ul className="space-y-2 text-sm text-mariner-500">
-                {links.map((link: string, idx: number) => (
+                {links.map((link: string | { name: string; url: string }, idx: number) => (
                     <li key={idx}>
-                        <a href="#" className="hover:text-mariner-700 transition">
-                            {link}
+                        <a
+                            href={typeof link === 'string' ? '#' : link.url}
+                            className="hover:text-mariner-700 transition cursor-pointer"
+                            target={typeof link === 'string' ? '_self' : '_blank'}
+                            rel={typeof link === 'string' ? '' : 'noopener noreferrer'}
+                        >
+                            {typeof link === 'string' ? link : link.name}
                         </a>
                     </li>
                 ))}
@@ -87,9 +74,8 @@ const Footer = () => {
     );
 
     // Komponen untuk location card
-    const LocationCard = ({ name, address, showTitle = false }: { name: string; address: string; showTitle?: boolean }) => (
+    const LocationCard = ({ name, address }: { name: string; address: string }) => (
         <div>
-            {showTitle && <h4 className="font-bold text-mariner-600 text-base mb-4">Lokasi</h4>}
             <h5 className="font-semibold text-mariner-600 text-sm mb-2">{name}</h5>
             <p className="text-xs text-mariner-500 leading-relaxed">{address}</p>
         </div>
@@ -103,25 +89,18 @@ const Footer = () => {
                     <div className="order-1 col-span-2 md:col-span-2 lg:col-span-1 lg:row-span-2">
                         <div className="flex items-start gap-4 mb-6">
                             <div className="shrink-0">
-                                <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none">
-                                    <circle cx="50" cy="50" r="48" fill="#FDB714" />
-                                    <circle cx="50" cy="50" r="30" fill="#0D5C75" />
-                                    <g transform="translate(50, 50)">
-                                        <circle cx="0" cy="-18" r="3" fill="#FDB714" />
-                                        <circle cx="0" cy="18" r="3" fill="#FDB714" />
-                                        <circle cx="-18" cy="0" r="3" fill="#FDB714" />
-                                        <circle cx="18" cy="0" r="3" fill="#FDB714" />
-                                        <circle cx="-13" cy="-13" r="3" fill="#FDB714" />
-                                        <circle cx="13" cy="-13" r="3" fill="#FDB714" />
-                                        <circle cx="-13" cy="13" r="3" fill="#FDB714" />
-                                        <circle cx="13" cy="13" r="3" fill="#FDB714" />
-                                    </g>
-                                </svg>
+                                <Image
+                                    src={Profile.logo}
+                                    alt={Profile.name}
+                                    width={64}
+                                    height={64}
+                                    className="w-16 h-16 object-contain"
+                                />
                             </div>
                             <div>
-                                <h3 className="text-sm text-mariner-600 font-semibold">RUMAH SAKIT</h3>
-                                <h2 className="text-xl font-bold text-mariner-600">SITI KHODIJAH</h2>
-                                <p className="text-xs text-mariner-600">MUHAMMADIYAH CABANG SEPANJANG</p>
+                                <h3 className="text-sm text-mariner-600 font-semibold">{Profile.institusi}</h3>
+                                <h2 className="text-xl font-bold text-mariner-600">{Profile.name}</h2>
+                                <p className="text-xs text-mariner-600">{Profile.subtitle.toUpperCase()}</p>
                             </div>
                         </div>
 
@@ -135,7 +114,7 @@ const Footer = () => {
 
                     {/* Rumah Sakit - Row 1 Column 2 */}
                     <div className="order-2 col-span-2 md:col-span-1 lg:order-2">
-                        <LinkSection title="Rumah Sakit" links={hospitals} />
+                        <LinkSection title="Rumah Sakit" links={rumahSakit} />
                     </div>
 
                     {/* Social Media & Lainnya - Row 1 Column 3-4 */}

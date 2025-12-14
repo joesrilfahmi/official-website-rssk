@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, LogIn } from 'lucide-react';
 import Button from '../ui/custom/button';
+import { Profile } from '@/config/profile';
+import Image from 'next/image';
 
 export default function Navbar() {
     const router = useRouter();
@@ -78,37 +80,30 @@ export default function Navbar() {
     return (
         <>
             {/* Navbar - Fixed di atas */}
-            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 sm:px-6 ${shouldUseDarkText
+            <nav className={`fixed top-0 left-0 right-0 z-70 transition-all duration-300 px-4 sm:px-6 ${shouldUseDarkText
                 ? 'bg-white'
                 : 'bg-transparent'
                 }`}>
                 <div className="max-w-7xl mx-auto">
                     <div className="flex items-center justify-between h-20">
-                        {/* Logo */}
+                        {/* Logo - Always visible */}
                         <button
                             onClick={() => handleNavClick('/')}
                             className="flex items-center gap-3"
                         >
                             <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg overflow-hidden bg-white relative">
-                                <svg className="w-12 h-12" viewBox="0 0 100 100" fill="none">
-                                    <circle cx="50" cy="50" r="48" fill="#FDB714" />
-                                    <circle cx="50" cy="50" r="30" fill="#0D5C75" />
-                                    <g transform="translate(50, 50)">
-                                        <circle cx="0" cy="-18" r="3" fill="#FDB714" />
-                                        <circle cx="0" cy="18" r="3" fill="#FDB714" />
-                                        <circle cx="-18" cy="0" r="3" fill="#FDB714" />
-                                        <circle cx="18" cy="0" r="3" fill="#FDB714" />
-                                        <circle cx="-13" cy="-13" r="3" fill="#FDB714" />
-                                        <circle cx="13" cy="-13" r="3" fill="#FDB714" />
-                                        <circle cx="-13" cy="13" r="3" fill="#FDB714" />
-                                        <circle cx="13" cy="13" r="3" fill="#FDB714" />
-                                    </g>
-                                </svg>
+                                <Image
+                                    src={Profile.logo}
+                                    alt={Profile.name}
+                                    width={48}
+                                    height={48}
+                                    className="w-12 h-12 object-contain"
+                                />
                             </div>
-                            <div className={`transition-colors duration-300 ${shouldUseDarkText ? 'text-gray-800' : 'text-white'
+                            <div className={`transition-colors duration-300 text-left ${shouldUseDarkText ? 'text-gray-800' : 'text-white'
                                 }`}>
-                                <div className="text-xs font-semibold tracking-wider uppercase">Rumah Sakit</div>
-                                <div className="text-base font-bold tracking-wide">SITI KHODIJAH</div>
+                                <div className="text-xs font-semibold tracking-wider uppercase">{Profile.institusi}</div>
+                                <div className="text-base font-bold tracking-wide">{Profile.name}</div>
                             </div>
                         </button>
 
@@ -118,7 +113,7 @@ export default function Navbar() {
                                 <button
                                     key={index}
                                     onClick={() => handleNavClick(item.href)}
-                                    className={`transition-colors duration-300 flex items-center gap-1 text-sm font-medium relative pb-1 ${shouldUseDarkText
+                                    className={`transition-colors duration-300 flex items-center gap-1 text-sm font-medium relative pb-1 cursor-pointer ${shouldUseDarkText
                                         ? 'text-gray-800 hover:text-gray-600'
                                         : 'text-white hover:text-white/80'
                                         }`}
@@ -154,28 +149,25 @@ export default function Navbar() {
                 </div>
             </nav>
 
-            {/* Mobile Menu Overlay */}
+            {/* Mobile Menu Overlay - Full screen covering navbar */}
             {isMenuOpen && (
-                <div className="lg:hidden fixed inset-0 bg-white z-40 overflow-y-auto">
-                    {/* Spacer untuk navbar fixed */}
-                    <div className="h-20"></div>
-
-                    <div className="flex flex-col px-6 py-8 gap-4">
+                <div className="lg:hidden fixed inset-0 bg-white z-60 overflow-y-auto pt-20">
+                    <div className="flex flex-col items-center px-6 py-8 gap-4 max-w-md mx-auto">
                         {navItems.map((item, index) => (
                             <button
                                 key={index}
                                 onClick={() => handleNavClick(item.href)}
-                                className="text-gray-800 text-xl font-semibold hover:text-orange-500 transition-colors duration-200 py-3 border-b border-gray-100 text-left w-full"
+                                className="text-gray-800 text-xl font-semibold hover:text-orange-500 transition-colors duration-200 py-3 text-center w-full cursor-pointer"
                             >
                                 <span className="inline-block relative pb-1">
                                     {item.label}
                                     {activePage === item.label && (
-                                        <div className="absolute -bottom-1 left-0 w-2 h-2 bg-orange-500 rounded-full"></div>
+                                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-orange-500 rounded-full"></div>
                                     )}
                                 </span>
                             </button>
                         ))}
-                        <div className="mt-4">
+                        <div className="mt-4 w-full max-w-30">
                             <Button
                                 variant="primary"
                                 size="md"

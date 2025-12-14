@@ -7,6 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
+import Download from 'yet-another-react-lightbox/plugins/download';
+import Fullscreen from 'yet-another-react-lightbox/plugins/fullscreen';
 import {
     Dialog,
     DialogContent,
@@ -32,7 +37,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Loader2, Search, RefreshCw, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Search, RefreshCw, X, Expand } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -114,6 +119,10 @@ export default function PromoPage() {
     const [currentUserId, setCurrentUserId] = useState<string>('');
     const [showAccessDenied, setShowAccessDenied] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Lightbox state
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
 
     const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
     const [formErrors, setFormErrors] = useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
@@ -434,6 +443,20 @@ export default function PromoPage() {
         );
     };
 
+    // Handle image click to open lightbox
+    const handleImageClick = (index: number, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card click event
+        setLightboxIndex(index);
+        setLightboxOpen(true);
+    };
+
+    // Prepare slides for lightbox (only promos with pictures)
+    const lightboxSlides = filteredPromos
+        .filter(promo => promo.picture)
+        .map(promo => ({
+            src: promo.picture!,
+        }));
+
     if (loading) {
         return (
             <div className="space-y-6">
@@ -514,75 +537,104 @@ export default function PromoPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredPromos.map((promo) => (
-                            <Card key={promo.id} className="overflow-hidden hover:shadow-lg transition-shadow relative group pt-0">
-                                {promo.picture && (
-                                    <div className="relative w-full h-48">
-                                        <Image
-                                            src={promo.picture}
-                                            alt={promo.title}
-                                            fill
-                                            className="object-cover"
-                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                            unoptimized
-                                        />
+                        {filteredPromos.map((promo) => {
+                            const promoIndex = lightboxSlides.findIndex(
+                                slide => slide.src === promo.picture
+                            );
+
+                            return (
+                                <Card key={promo.id} className="overflow-hidden hover:shadow-lg transition-shadow relative group pt-0">
+                                    {promo.picture && (
+                                        <div
+                                            className="relative w-full h-48 cursor-pointer group/image"
+                                            onClick={(e) => handleImageClick(promoIndex, e)}
+                                        >
+                                            <Image
+                                                src={promo.picture}
+                                                alt={promo.title}
+                                                fill
+                                                className="object-cover transition-transform group-hover/image:scale-105"
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                                unoptimized
+                                            />
+                                            <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/40 transition-all duration-300 flex items-center justify-center">
+                                                <div className="opacity-0 group-hover/image:opacity-100 transition-opacity duration-300">
+                                                    <div className="bg-white/90 dark:bg-gray-800/90 rounded-full p-3 shadow-lg">
+                                                        <Expand className="h-6 w-6 text-gray-800 dark:text-gray-200" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <CardContent className="space-y-3 pt-4">
+                                        <div>
+                                            {getStatusBadge(promo.status)}
+                                        </div>
+                                        <h3 className="font-semibold text-lg line-clamp-2">{promo.title}</h3>
+                                        <p className="text-sm text-muted-foreground line-clamp-3">
+                                            {promo.description}
+                                        </p>
+                                    </CardContent>
+
+                                    <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => handleOpenDialog(promo)}
+                                                        className="h-9 w-9 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white dark:text-white hover:text-white border-0 shadow-lg"
+                                                        disabled={submitting}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Edit Promo</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => handleOpenDeleteDialog(promo)}
+                                                        className="h-9 w-9 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white border-0 shadow-lg"
+                                                        disabled={submitting}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Hapus Promo</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </div>
-                                )}
-
-                                <CardContent className="space-y-3">
-                                    <div>
-                                        {getStatusBadge(promo.status)}
-                                    </div>
-                                    <h3 className="font-semibold text-lg line-clamp-2">{promo.title}</h3>
-                                    <p className="text-sm text-muted-foreground line-clamp-3">
-                                        {promo.description}
-                                    </p>
-                                </CardContent>
-
-                                <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => handleOpenDialog(promo)}
-                                                    className="h-9 w-9 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white dark:text-white hover:text-white border-0 shadow-lg"
-                                                    disabled={submitting}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Edit Promo</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => handleOpenDeleteDialog(promo)}
-                                                    className="h-9 w-9 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white border-0 shadow-lg"
-                                                    disabled={submitting}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Hapus Promo</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
-                            </Card>
-                        ))}
+                                </Card>
+                            );
+                        })}
                     </div>
                 )}
             </CardContent>
+
+            {/* Lightbox Component */}
+            <Lightbox
+                open={lightboxOpen}
+                close={() => setLightboxOpen(false)}
+                slides={lightboxSlides}
+                index={lightboxIndex}
+                plugins={[Zoom, Download, Fullscreen]}
+                carousel={{ finite: lightboxSlides.length > 1 }}
+                styles={{
+                    container: { backgroundColor: 'rgba(0, 0, 0, 0.95)' },
+                }}
+            />
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

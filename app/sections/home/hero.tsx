@@ -4,36 +4,22 @@ import Image from 'next/image';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Badge from '@/components/ui/custom/badge';
 import Button from '@/components/ui/custom/button';
+import { supabase } from '@/lib/supabase/client';
+import { Profile } from '@/config/profile';
 
-// Data promo dummy
-const promoImages = [
-    {
-        id: 1,
-        src: '/mario.jpg',
-        alt: 'Promo 1 - Diskon Check Up',
-        title: 'Diskon 20% Medical Check Up',
-    },
-    {
-        id: 2,
-        src: '/mario.jpg',
-        alt: 'Promo 2 - Paket Keluarga',
-        title: 'Paket Kesehatan Keluarga',
-    },
-    {
-        id: 3,
-        src: '/mario.jpg',
-        alt: 'Promo 3 - Vaksinasi',
-        title: 'Program Vaksinasi Gratis',
-    },
-    {
-        id: 4,
-        src: '/mario.jpg',
-        alt: 'Promo 4 - Konsultasi',
-        title: 'Konsultasi Dokter Spesialis',
-    },
-];
+
+interface Promo {
+    id: string;
+    picture: string | null;
+    title: string;
+    description: string;
+    status: string;
+    created_at: string;
+}
 
 const Hero: React.FC = () => {
+    const [promoImages, setPromoImages] = useState<Promo[]>([]);
+    const [loading, setLoading] = useState(true);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -41,18 +27,58 @@ const Hero: React.FC = () => {
     const [translateX, setTranslateX] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    // Fetch active promos from Supabase
+    useEffect(() => {
+        const fetchPromos = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('promo')
+                    .select('*')
+                    .eq('status', 'active')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                setPromoImages(data || []);
+            } catch (error) {
+                console.error('Error fetching promos:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPromos();
+
+        // Real-time subscription for promo changes
+        const channel = supabase
+            .channel('promo_public')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'promo' },
+                () => {
+                    fetchPromos();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
     // Fungsi untuk pindah ke slide berikutnya
     const nextSlide = useCallback(() => {
-        setCurrentSlide((prev) => (prev + 1) % promoImages.length);
-    }, []);
+        if (promoImages.length > 0) {
+            setCurrentSlide((prev) => (prev + 1) % promoImages.length);
+        }
+    }, [promoImages.length]);
 
     // Auto-scroll carousel setiap 5 detik
     useEffect(() => {
-        if (!isHovered && !isDragging) {
+        if (!isHovered && !isDragging && promoImages.length > 1) {
             const interval = setInterval(nextSlide, 5000);
             return () => clearInterval(interval);
         }
-    }, [isHovered, isDragging, nextSlide]);
+    }, [isHovered, isDragging, nextSlide, promoImages.length]);
 
     // Fungsi untuk pindah ke slide tertentu
     const goToSlide = (index: number) => {
@@ -77,10 +103,8 @@ const Hero: React.FC = () => {
 
         const threshold = 50;
         if (translateX > threshold) {
-            // Swipe right - previous slide
             setCurrentSlide((prev) => (prev - 1 + promoImages.length) % promoImages.length);
         } else if (translateX < -threshold) {
-            // Swipe left - next slide
             setCurrentSlide((prev) => (prev + 1) % promoImages.length);
         }
 
@@ -120,14 +144,14 @@ const Hero: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-easternblue-500 relative overflow-hidden py-16 px-4 sm:px-6 lg:px-8">
+        <div id="hero" className="min-h-screen bg-easternblue-500 relative overflow-hidden pt-32 pb-16 px-4 sm:px-6 lg:px-8">
             {/* Purple Circle - Top Right */}
             <div className="absolute -top-64 -right-64 w-96 h-96 bg-blue-900 rounded-full opacity-80"></div>
 
             <div className='max-w-7xl mx-auto'>
                 {/* Content */}
                 <div className="relative z-10 container mx-auto">
-                    <div className="flex flex-col lg:flex-row gap-12 items-center justify-center min-h-[calc(100vh-8rem)]">
+                    <div className="flex flex-col lg:flex-row gap-12 items-center justify-center min-h-[calc(100vh-12rem)]">
 
                         <div className="space-y-8 w-full lg:w-1/2">
                             <Badge variant="default">
@@ -136,7 +160,10 @@ const Hero: React.FC = () => {
 
                             <div className="space-y-4">
                                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
-                                    RS Siti Khodijah Muhammadiyah Cabang Sepanjang
+                                    RS {Profile.name}
+                                </h1>
+                                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                                    {Profile.subtitle}
                                 </h1>
                             </div>
 
@@ -188,75 +215,110 @@ const Hero: React.FC = () => {
                                         onTouchMove={handleTouchMove}
                                         onTouchEnd={handleTouchEnd}
                                     >
-                                        {/* Carousel slides */}
-                                        <div className="relative w-full h-full">
-                                            {promoImages.map((promo, index) => (
-                                                <div
-                                                    key={promo.id}
-                                                    className={`absolute inset-0 transition-all duration-700 ease-in-out ${index === currentSlide
-                                                        ? 'opacity-100 translate-x-0'
-                                                        : index < currentSlide
-                                                            ? 'opacity-0 -translate-x-full'
-                                                            : 'opacity-0 translate-x-full'
-                                                        }`}
-                                                    style={{
-                                                        transform: isDragging && index === currentSlide
-                                                            ? `translateX(${translateX}px)`
-                                                            : undefined,
-                                                        transition: isDragging ? 'none' : undefined
-                                                    }}
-                                                >
-                                                    {/* Image */}
-                                                    <Image
-                                                        src={promo.src}
-                                                        alt={promo.alt}
-                                                        fill
-                                                        className="object-cover pointer-events-none"
-                                                        priority={index === 0}
-                                                        draggable={false}
-                                                    />
+                                        {/* Loading State */}
+                                        {loading && (
+                                            <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+                                                <div className="text-gray-400 text-lg">Loading...</div>
+                                            </div>
+                                        )}
 
-                                                    {/* Overlay dengan title promo - Modern gradient */}
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/85 via-black/60 to-transparent p-5 sm:p-7 pb-3 sm:pb-4">
-                                                        <div className="flex items-start gap-3 mb-4">
-                                                            <div className="w-1.5 h-16 sm:h-20 bg-linear-to-b from-white to-white/60 rounded-full shadow-lg"></div>
-                                                            <div className="flex-1">
-                                                                <span className="text-white/90 text-xs sm:text-sm font-semibold tracking-wider uppercase block mb-2">
-                                                                    Promo Spesial
-                                                                </span>
-                                                                <h3 className="text-white text-xl sm:text-2xl font-bold leading-tight mb-1">
-                                                                    {promo.title}
-                                                                </h3>
-                                                                <p className="text-white/70 text-sm">Terbatas untuk Anda</p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Dots Indicator di dalam overlay - di bawah title */}
-                                                        {index === currentSlide && (
-                                                            <div className="flex justify-center gap-2.5 bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-full w-fit mx-auto border border-white/20 shadow-xl">
-                                                                {promoImages.map((_, idx) => (
-                                                                    <button
-                                                                        key={idx}
-                                                                        onClick={() => goToSlide(idx)}
-                                                                        className={`transition-all duration-300 rounded-full ${idx === currentSlide
-                                                                            ? 'bg-white w-10 h-3 shadow-lg'
-                                                                            : 'bg-white/50 w-3 h-3 hover:bg-white/80 hover:scale-110'
-                                                                            }`}
-                                                                        aria-label={`Go to slide ${idx + 1}`}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                        )}
+                                        {/* Empty State */}
+                                        {!loading && promoImages.length === 0 && (
+                                            <div className="absolute inset-0 bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-8">
+                                                <div className="text-center">
+                                                    <div className="text-gray-400 text-lg font-semibold mb-2">
+                                                        Tidak Ada Promo
+                                                    </div>
+                                                    <div className="text-gray-500 text-sm">
+                                                        Belum ada promo aktif saat ini
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </div>
+                                        )}
+
+                                        {/* Carousel slides */}
+                                        {!loading && promoImages.length > 0 && (
+                                            <div className="relative w-full h-full">
+                                                {promoImages.map((promo, index) => (
+                                                    <div
+                                                        key={promo.id}
+                                                        className={`absolute inset-0 transition-all duration-700 ease-in-out ${index === currentSlide
+                                                            ? 'opacity-100 translate-x-0'
+                                                            : index < currentSlide
+                                                                ? 'opacity-0 -translate-x-full'
+                                                                : 'opacity-0 translate-x-full'
+                                                            }`}
+                                                        style={{
+                                                            transform: isDragging && index === currentSlide
+                                                                ? `translateX(${translateX}px)`
+                                                                : undefined,
+                                                            transition: isDragging ? 'none' : undefined
+                                                        }}
+                                                    >
+                                                        {/* Image */}
+                                                        {promo.picture ? (
+                                                            <Image
+                                                                src={promo.picture}
+                                                                alt={promo.title}
+                                                                fill
+                                                                className="object-cover pointer-events-none"
+                                                                priority={index === 0}
+                                                                draggable={false}
+                                                            />
+                                                        ) : (
+                                                            <div className="absolute inset-0 bg-linear-to-br from-easternblue-400 to-easternblue-600 flex items-center justify-center">
+                                                                <div className="text-white text-6xl font-bold opacity-20">
+                                                                    No Image
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Overlay dengan title promo - Modern gradient */}
+                                                        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/85 via-black/60 to-transparent p-5 sm:p-7 pb-3 sm:pb-4">
+                                                            <div className="flex items-start gap-3 mb-4">
+                                                                <div className="w-1.5 h-16 sm:h-20 bg-linear-to-b from-white to-white/60 rounded-full shadow-lg"></div>
+                                                                <div className="flex-1">
+                                                                    <span className="text-white/90 text-xs sm:text-sm font-semibold tracking-wider uppercase block mb-2">
+                                                                        Promo Spesial
+                                                                    </span>
+                                                                    <h3 className="text-white text-xl sm:text-2xl font-bold leading-tight mb-1">
+                                                                        {promo.title}
+                                                                    </h3>
+                                                                    <p className="text-white/70 text-sm line-clamp-2">
+                                                                        {promo.description}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Dots Indicator di dalam overlay - di bawah title */}
+                                                            {index === currentSlide && promoImages.length > 1 && (
+                                                                <div className="flex justify-center gap-2.5 bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-full w-fit mx-auto border border-white/20 shadow-xl">
+                                                                    {promoImages.map((_, idx) => (
+                                                                        <button
+                                                                            key={idx}
+                                                                            onClick={() => goToSlide(idx)}
+                                                                            className={`transition-all duration-300 rounded-full ${idx === currentSlide
+                                                                                ? 'bg-white w-10 h-3 shadow-lg'
+                                                                                : 'bg-white/50 w-3 h-3 hover:bg-white/80 hover:scale-110'
+                                                                                }`}
+                                                                            aria-label={`Go to slide ${idx + 1}`}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
 
                                         {/* Swipe hint indicator */}
-                                        <div className="absolute top-1/2 left-4 right-4 -translate-y-1/2 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div className="w-1 h-12 bg-white/30 rounded-full"></div>
-                                            <div className="w-1 h-12 bg-white/30 rounded-full"></div>
-                                        </div>
+                                        {promoImages.length > 1 && (
+                                            <div className="absolute top-1/2 left-4 right-4 -translate-y-1/2 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="w-1 h-12 bg-white/30 rounded-full"></div>
+                                                <div className="w-1 h-12 bg-white/30 rounded-full"></div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -292,7 +354,7 @@ const Hero: React.FC = () => {
                                 <div className="absolute bottom-1/4 left-0 w-16 h-0.5 bg-linear-to-r from-white/40 to-transparent -rotate-45 shadow-lg"></div>
 
                                 {/* Premium badge accent */}
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/30 shadow-xl">
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-greenfresh-500/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-greenfresh-500/30 shadow-xl">
                                     <span className="text-white text-xs font-semibold tracking-wide">PROMO TERBARU</span>
                                 </div>
 

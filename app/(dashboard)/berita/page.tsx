@@ -112,9 +112,9 @@ const DEFAULT_FORM_ERRORS: FormErrorsType = {
 };
 
 const STATUS_OPTIONS: { value: BeritaStatus; label: string; color: string }[] = [
-    { value: 'active', label: 'Aktif', color: 'bg-green-500' },
-    { value: 'non_active', label: 'Tidak Aktif', color: 'bg-gray-500' },
-    { value: 'draft', label: 'Draft', color: 'bg-yellow-500' },
+    { value: 'active', label: 'Aktif', color: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700' },
+    { value: 'non_active', label: 'Tidak Aktif', color: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700' },
+    { value: 'draft', label: 'Draft', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700' },
 ];
 
 const CATEGORY_OPTIONS = [

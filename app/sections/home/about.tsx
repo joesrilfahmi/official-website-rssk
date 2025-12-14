@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { Play, ArrowRight } from 'lucide-react';
 import Button from '@/components/ui/custom/button';
 import Title from '@/components/ui/custom/title';
+import { Profile } from '@/config/profile';
+
 
 const About = () => {
     const [backImageLoaded, setBackImageLoaded] = useState(false);
@@ -78,7 +80,7 @@ const About = () => {
                         {/* Using Title Component */}
                         <Title
                             badge="Profil"
-                            title="RS Siti Khodijah Muhammadiyah Cabang Sepanjang"
+                            title={"RS" + " " + Profile.name + " " + Profile.subtitle}
                             badgeVariant="default"
                         />
 
