@@ -202,3 +202,69 @@ export interface DokterFormErrors {
   poli_id: string;
   jadwal: string;
 }
+
+// ============================================
+// KRITIK & SARAN TYPES
+// ============================================
+export type KritikSaranStatus = 'read' | 'unread';
+
+export interface Kategori {
+  id: string;
+  title: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UnitPelayanan {
+  id: string;
+  title: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface KritikSaran {
+  id: string;
+  nama: string;
+  no_hp: string;
+  unit_pelayanan_id: string;
+  kategori_id: string;
+  pesan: string;
+  status: KritikSaranStatus;
+  rating: number | null;
+  is_anonymus: boolean;
+  is_readed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KritikSaranWithRelations extends KritikSaran {
+  unit_pelayanan?: UnitPelayanan;
+  kategori?: Kategori;
+}
+
+export interface KritikSaranFormData {
+  nama: string;
+  no_hp: string;
+  unit_pelayanan_id: string;
+  kategori_id: string;
+  pesan: string;
+  rating: number | null;
+  is_anonymus: boolean;
+}
+
+export interface KritikSaranFormErrors {
+  nama: string;
+  no_hp: string;
+  unit_pelayanan_id: string;
+  kategori_id: string;
+  pesan: string;
+  rating: string;
+}
+
+export type KritikSaranSortField = 'nama' | 'kategori' | 'unit_pelayanan' | 'status' | 'rating' | 'created_at';
+export type KritikSaranSortOrder = 'asc' | 'desc';
+
+export interface DateRange {
+  from: Date | undefined;
+  to: Date | undefined;
+}

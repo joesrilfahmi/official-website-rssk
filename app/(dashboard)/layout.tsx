@@ -15,6 +15,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Separator } from '@/components/ui/separator';
 import { isAuthenticated } from '@/lib/auth';
+import Profile from '@/config/profile';
 
 export default function DashboardLayout({
     children,
@@ -65,7 +66,7 @@ export default function DashboardLayout({
                 <footer className="border-t py-4 px-4 bg-card">
                     <div className="flex flex-col sm:flex-row justify-center items-center gap-2">
                         <p className="text-sm text-muted-foreground text-center">
-                            Copyright © {new Date().getFullYear()} joesrilfahmi. All rights
+                            Copyright © {new Date().getFullYear()} {Profile.shortName}. All rights
                             reserved.
                         </p>
                     </div>

@@ -1,7 +1,6 @@
 'use client';
 
 import {
-    BadgeCheck,
     ChevronsUpDown,
     LogOut,
     User,
@@ -40,16 +39,18 @@ import { logout } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { getInitials } from '@/lib/utils';
 import { useState } from 'react';
+import type { UserRole } from '@/types';
 
-export function NavUser({
-    user,
-}: {
+interface NavUserProps {
     user: {
         name: string;
         email: string;
         avatar: string;
+        role: UserRole;
     };
-}) {
+}
+
+export function NavUser({ user }: NavUserProps) {
     const { isMobile } = useSidebar();
     const router = useRouter();
     const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -82,7 +83,7 @@ export function NavUser({
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-medium">{user.name}</span>
                                     <span className="truncate text-xs text-muted-foreground">
-                                        {user.email}
+                                        {user.role}
                                     </span>
                                 </div>
                                 <ChevronsUpDown className="ml-auto size-4" />
@@ -115,10 +116,6 @@ export function NavUser({
                                 <DropdownMenuItem onClick={handleProfile}>
                                     <User />
                                     Profile
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    <BadgeCheck />
-                                    Account Settings
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                             <DropdownMenuSeparator />

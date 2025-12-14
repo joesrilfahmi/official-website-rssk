@@ -5,12 +5,16 @@ import {
     LayoutDashboard,
     Tag,
     Newspaper,
-    ClipboardList,
     Calendar,
     Star,
     Bed,
     MessageSquare,
     Users,
+    ChevronDown,
+    Database,
+    Building2,
+    FolderTree,
+    Hospital,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -26,67 +30,95 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
     SidebarRail,
     useSidebar,
 } from '@/components/ui/sidebar';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { NavUser } from '@/components/nav-user';
 import { getCurrentUser } from '@/lib/auth';
 import Profile from '@/config/profile';
+import type { UserRole } from '@/types';
 
 const menuItems = [
     {
         title: 'Dashboard',
         icon: LayoutDashboard,
         url: '/dashboard',
-        access: ["administrator", "user"]
+        access: ["administrator", "user"] as UserRole[]
     },
     {
         title: 'Promo',
         icon: Tag,
         url: '/promo',
-        access: ["administrator", "user"]
+        access: ["administrator", "user"] as UserRole[]
     },
     {
         title: 'Berita',
         icon: Newspaper,
         url: '/berita',
-        access: ["administrator", "user"]
-    },
-    {
-        title: 'Daftar Poli',
-        icon: ClipboardList,
-        url: '/daftar-poli',
-        access: ["administrator", "user"]
+        access: ["administrator", "user"] as UserRole[]
     },
     {
         title: 'Jadwal Dokter',
         icon: Calendar,
         url: '/jadwal-dokter',
-        access: ["administrator", "user"]
+        access: ["administrator", "user"] as UserRole[]
     },
     {
         title: 'Layanan Unggulan',
         icon: Star,
         url: '/layanan-unggulan',
-        access: ["administrator", "user"]
+        access: ["administrator", "user"] as UserRole[]
     },
     {
         title: 'Kamar Inap',
         icon: Bed,
         url: '/kamar-inap',
-        access: ["administrator", "user"]
+        access: ["administrator", "user"] as UserRole[]
     },
     {
         title: 'Kritik & Saran',
         icon: MessageSquare,
         url: '/kritik-saran',
-        access: ["administrator", "user"]
+        access: ["administrator", "user"] as UserRole[]
+    },
+    {
+        title: 'Master Data',
+        icon: Database,
+        access: ["administrator"] as UserRole[],
+        subItems: [
+            {
+                title: 'Daftar Poli Dokter',
+                icon: Building2,
+                url: '/daftar-poli',
+                access: ["administrator", "user"] as UserRole[]
+            },
+            {
+                title: 'Daftar Kategori',
+                icon: FolderTree,
+                url: '/kategori',
+                access: ["administrator", "user"] as UserRole[]
+            },
+            {
+                title: 'Daftar Unit Pelayanan',
+                icon: Hospital,
+                url: '/unit-pelayanan',
+                access: ["administrator", "user"] as UserRole[]
+            },
+        ]
     },
     {
         title: 'Users',
         icon: Users,
         url: '/users',
-        access: ["administrator"]
+        access: ["administrator"] as UserRole[]
     }
 ];
 
@@ -99,6 +131,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         name: user?.nama || 'User',
         email: user?.username || 'user@example.com',
         avatar: '/avatars/default.jpg',
+        role: (user?.role || 'user') as UserRole,
     };
 
     const handleMenuClick = () => {
@@ -112,7 +145,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <div className="cursor-default">
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden bg-white">
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-full overflow-hidden bg-white">
                                     <Image
                                         src={Profile.logo}
                                         alt={Profile.shortName}
@@ -137,21 +170,67 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <SidebarMenu>
                             {menuItems
                                 .filter((item) => item.access.includes(user?.role || 'user'))
-                                .map((item) => (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton
-                                            asChild
-                                            isActive={pathname === item.url}
-                                            tooltip={item.title}
-                                            onClick={handleMenuClick}
-                                        >
-                                            <Link href={item.url}>
-                                                <item.icon className="h-4 w-4" />
-                                                <span>{item.title}</span>
-                                            </Link>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
+                                .map((item) => {
+                                    // Check if item has subItems (dropdown menu)
+                                    if (item.subItems) {
+                                        const isAnySubItemActive = item.subItems.some(
+                                            (subItem) => pathname === subItem.url
+                                        );
+
+                                        return (
+                                            <Collapsible
+                                                key={item.title}
+                                                asChild
+                                                defaultOpen={isAnySubItemActive}
+                                            >
+                                                <SidebarMenuItem>
+                                                    <CollapsibleTrigger asChild>
+                                                        <SidebarMenuButton tooltip={item.title}>
+                                                            <item.icon className="h-4 w-4" />
+                                                            <span>{item.title}</span>
+                                                            <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                                        </SidebarMenuButton>
+                                                    </CollapsibleTrigger>
+                                                    <CollapsibleContent>
+                                                        <SidebarMenuSub>
+                                                            {item.subItems.map((subItem) => (
+                                                                <SidebarMenuSubItem key={subItem.title}>
+                                                                    <SidebarMenuSubButton
+                                                                        asChild
+                                                                        isActive={pathname === subItem.url}
+                                                                        onClick={handleMenuClick}
+                                                                    >
+                                                                        <Link href={subItem.url}>
+                                                                            <subItem.icon className="h-4 w-4" />
+                                                                            <span>{subItem.title}</span>
+                                                                        </Link>
+                                                                    </SidebarMenuSubButton>
+                                                                </SidebarMenuSubItem>
+                                                            ))}
+                                                        </SidebarMenuSub>
+                                                    </CollapsibleContent>
+                                                </SidebarMenuItem>
+                                            </Collapsible>
+                                        );
+                                    }
+
+                                    // Regular menu item without dropdown
+                                    return (
+                                        <SidebarMenuItem key={item.title}>
+                                            <SidebarMenuButton
+                                                asChild
+                                                isActive={pathname === item.url}
+                                                tooltip={item.title}
+                                                onClick={handleMenuClick}
+                                            >
+                                                <Link href={item.url!}>
+                                                    <item.icon className="h-4 w-4" />
+                                                    <span>{item.title}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
