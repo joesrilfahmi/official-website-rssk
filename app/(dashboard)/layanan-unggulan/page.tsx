@@ -199,7 +199,7 @@ export default function LayananUnggulanPage() {
 
                 // Check user access
                 const currentUser = getCurrentUser();
-                if (!currentUser || currentUser.role !== 'administrator') {
+                if (!currentUser) {
                     setShowAccessDenied(true);
                     return;
                 }

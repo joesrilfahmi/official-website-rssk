@@ -20,7 +20,8 @@ export default function Navbar() {
         { label: 'Blog', href: '/sections/blog' },
         { label: 'Layanan Unggulan', href: '/sections/layanan-unggulan' },
         { label: 'Informasi', href: '/sections/informasi' },
-        { label: 'Kontak', href: '/sections/kontak' }
+        { label: 'Kontak', href: '/sections/kontak' },
+        { label: 'Kritik & Saran', href: '/sections/kritik-saran' }
     ], []);
 
     // Deteksi halaman yang memiliki hero section

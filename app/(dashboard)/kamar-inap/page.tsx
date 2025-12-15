@@ -209,7 +209,7 @@ export default function KamarInapPage() {
             try {
                 setLoading(true);
                 const currentUser = getCurrentUser();
-                if (!currentUser || currentUser.role !== 'administrator') {
+                if (!currentUser) {
                     setShowAccessDenied(true);
                     return;
                 }

@@ -12,9 +12,11 @@ import {
     Users,
     ChevronDown,
     Database,
-    Building2,
     FolderTree,
     Hospital,
+    FileText,
+    Printer,
+    Stethoscope,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -83,20 +85,34 @@ const menuItems = [
         url: '/kamar-inap',
         access: ["administrator", "user"] as UserRole[]
     },
+
     {
         title: 'Kritik & Saran',
         icon: MessageSquare,
-        url: '/kritik-saran',
-        access: ["administrator", "user"] as UserRole[]
+        access: ["administrator", "user"] as UserRole[],
+        subItems: [
+            {
+                title: 'Daftar Kritik & Saran',
+                icon: FileText,
+                url: '/kritik-saran',
+                access: ["administrator", "user"] as UserRole[]
+            },
+            {
+                title: 'Cetak Kritik & Saran',
+                icon: Printer,
+                url: '/cetak-kritik-saran',
+                access: ["administrator", "user"] as UserRole[]
+            },
+        ]
     },
     {
         title: 'Master Data',
         icon: Database,
-        access: ["administrator"] as UserRole[],
+        access: ["administrator", "user"] as UserRole[],
         subItems: [
             {
                 title: 'Daftar Poli Dokter',
-                icon: Building2,
+                icon: Stethoscope,
                 url: '/daftar-poli',
                 access: ["administrator", "user"] as UserRole[]
             },

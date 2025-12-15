@@ -1,51 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Quote, Star } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Button from '@/components/ui/custom/button';
 import Title from '@/components/ui/custom/title';
+import { supabase } from '@/lib/supabase/client';
 
 interface Review {
     id: string;
-    name: string;
-    review: string;
+    nama: string;
+    pesan: string;
+    rating: number;
 }
 
-const DUMMY_REVIEWS: Review[] = [
-    {
-        id: '1',
-        name: 'Win Winarto',
-        review: 'Saya sangat puas dengan pelayanan di pav Multazam, perawat nya ramah ramah, saya minta pulang pagi dengan suster nya langsung dijelaskan pengurusan berkas nya'
-    },
-    {
-        id: '2',
-        name: 'Aam Amrullah',
-        review: 'Alhamdulillah terimakasih untuk tim medis RS Siti Khadijah khususnya lantai 3 pav Jabal Rahmah atas perawatan selama ibuk saya opname memberikan pelayanan terbaik di dibantu dengan sangat ramah. Alhamdulillah ibuk skrang sudah rawat jalan. Jazakallah khairan'
-    },
-    {
-        id: '3',
-        name: 'Dici Rohmah',
-        review: 'Alhamdulillah kemarin September melahirkan SC ditangani dr amik yuliati Spog yang super ramah dan baik hati!🥰'
-    },
-    {
-        id: '4',
-        name: 'Ahmad Fauzi',
-        review: 'Pelayanan yang sangat memuaskan, dokter dan perawat sangat profesional. Fasilitasnya juga lengkap dan modern. Terima kasih RS Siti Khadijah!'
-    },
-    {
-        id: '5',
-        name: 'Siti Nurhaliza',
-        review: 'RS Siti Khadijah sangat recommended! Pelayanannya cepat, staf medis ramah, dan ruangan bersih. Alhamdulillah proses persalinan saya lancar.'
-    },
-    {
-        id: '6',
-        name: 'Budi Santoso',
-        review: 'Pengalaman berobat di sini sangat menyenangkan. Dokter yang menangani sangat teliti dan sabar menjelaskan kondisi kesehatan. Sukses terus RS Siti Khadijah!'
-    }
-];
-
 export default function ReviewSection() {
+    const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Embla Carousel - untuk semua ukuran layar
@@ -82,14 +52,67 @@ export default function ReviewSection() {
         emblaApi.on('reInit', onSelect);
     }, [emblaApi, onSelect]);
 
-    // Simulate loading
+    // Fetch data dari Supabase
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setLoading(false);
-        }, 500);
+        const fetchReviews = async () => {
+            try {
+                setLoading(true);
+                const { data, error } = await supabase
+                    .from('kritik_saran')
+                    .select('id, nama, pesan, rating')
+                    .gt('rating', 3) // Rating lebih dari 3
+                    .order('created_at', { ascending: false })
+                    .limit(10);
 
-        return () => clearTimeout(timer);
+                if (error) throw error;
+
+                setReviews(data || []);
+            } catch (error) {
+                console.error('Error fetching reviews:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReviews();
+
+        // Real-time subscription
+        const channel = supabase
+            .channel('kritik_saran_reviews')
+            .on('postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'kritik_saran',
+                    filter: 'rating=gt.3'
+                },
+                () => {
+                    fetchReviews();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
+
+    // Render star rating
+    const renderStars = (rating: number) => {
+        return (
+            <div className="flex gap-1 mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                        key={star}
+                        className={`w-5 h-5 ${star <= rating
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'fill-gray-200 text-gray-200'
+                            }`}
+                    />
+                ))}
+            </div>
+        );
+    };
 
     const renderReviewCard = (review: Review) => {
         return (
@@ -99,9 +122,12 @@ export default function ReviewSection() {
                     <Quote className="w-8 h-8 sm:w-10 sm:h-10 text-mariner-500" />
                 </div>
 
+                {/* Star Rating */}
+                {renderStars(review.rating)}
+
                 {/* Review Text */}
                 <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-6 grow">
-                    {review.review}
+                    {review.pesan}
                 </p>
 
                 {/* Divider */}
@@ -111,13 +137,13 @@ export default function ReviewSection() {
                 <div className="flex items-center gap-4">
                     {/* Avatar */}
                     <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-mariner-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">
-                        {review.name.charAt(0).toUpperCase()}
+                        {review.nama.charAt(0).toUpperCase()}
                     </div>
 
                     {/* Name */}
                     <div>
                         <h4 className="font-semibold text-mariner-500 text-base sm:text-lg">
-                            {review.name}
+                            {review.nama}
                         </h4>
                     </div>
                 </div>
@@ -149,6 +175,11 @@ export default function ReviewSection() {
                                 >
                                     <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-md">
                                         <div className="h-10 w-10 bg-gray-200 rounded mb-4"></div>
+                                        <div className="flex gap-1 mb-4">
+                                            {[...Array(5)].map((_, i) => (
+                                                <div key={i} className="h-5 w-5 bg-gray-200 rounded"></div>
+                                            ))}
+                                        </div>
                                         <div className="space-y-2 mb-6">
                                             <div className="h-4 w-full bg-gray-200 rounded"></div>
                                             <div className="h-4 w-full bg-gray-200 rounded"></div>
@@ -166,14 +197,29 @@ export default function ReviewSection() {
                     </div>
                 )}
 
+                {/* Empty State */}
+                {!loading && reviews.length === 0 && (
+                    <div className="text-center py-12">
+                        <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
+                            <Quote className="w-12 h-12 text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                            Belum Ada Review
+                        </h3>
+                        <p className="text-gray-500">
+                            Review dari pasien belum tersedia saat ini.
+                        </p>
+                    </div>
+                )}
+
                 {/* Content - Carousel */}
-                {!loading && (
+                {!loading && reviews.length > 0 && (
                     <>
                         {/* Carousel Container */}
                         <div className="-mx-4">
                             <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
                                 <div className="flex gap-4 md:gap-6">
-                                    {DUMMY_REVIEWS.map((review) => (
+                                    {reviews.map((review) => (
                                         <div
                                             key={review.id}
                                             className="flex-[0_0_85%] md:flex-[0_0_45%] lg:flex-[0_0_30%] min-w-0"

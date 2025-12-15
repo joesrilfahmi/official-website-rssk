@@ -22,48 +22,31 @@ import { formatDateTime } from '@/lib/utils';
 import { TablePagination } from '@/components/table/TablePagination';
 import { AccessDeniedDialog } from '@/components/access-denied-dialog';
 import { getCurrentUser } from '@/lib/auth';
+import type {
+    Kategori,
+    UnitPelayanan,
+    KritikSaranWithRelations,
+    KritikSaranSortField,
+    KritikSaranSortOrder,
+    KritikSaranFormData,
+    KritikSaranFormErrors
+} from '@/types';
 
-interface Kategori {
-    id: string;
-    title: string;
-}
+type KritikSaran = KritikSaranWithRelations;
+type SortField = KritikSaranSortField;
+type SortOrder = KritikSaranSortOrder;
 
-interface UnitPelayanan {
-    id: string;
-    title: string;
-}
-
-interface KritikSaran {
-    id: string;
-    nama: string;
-    no_hp: string;
-    unit_pelayanan_id: string;
-    kategori_id: string;
-    pesan: string;
-    status: 'read' | 'unread';
-    rating: number | null;
-    is_anonymus: boolean;
-    is_readed: boolean;
-    created_at: string;
-    updated_at: string;
-    unit_pelayanan?: UnitPelayanan;
-    kategori?: Kategori;
-}
-
-type SortField = 'nama' | 'kategori' | 'unit_pelayanan' | 'status' | 'rating' | 'created_at';
-type SortOrder = 'asc' | 'desc';
-
-const DEFAULT_FORM_DATA = {
+const DEFAULT_FORM_DATA: KritikSaranFormData = {
     nama: '',
     no_hp: '',
     unit_pelayanan_id: '',
     kategori_id: '',
     pesan: '',
-    rating: null as number | null,
+    rating: null,
     is_anonymus: false,
 };
 
-const DEFAULT_FORM_ERRORS = {
+const DEFAULT_FORM_ERRORS: KritikSaranFormErrors = {
     nama: '',
     no_hp: '',
     unit_pelayanan_id: '',
@@ -86,6 +69,7 @@ export default function KritikSaranPage() {
     const [selectedItem, setSelectedItem] = useState<KritikSaran | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [showAccessDenied, setShowAccessDenied] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     // Selection states
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -108,8 +92,8 @@ export default function KritikSaranPage() {
     const [sortField, setSortField] = useState<SortField>('created_at');
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-    const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
-    const [formErrors, setFormErrors] = useState(DEFAULT_FORM_ERRORS);
+    const [formData, setFormData] = useState<KritikSaranFormData>(DEFAULT_FORM_DATA);
+    const [formErrors, setFormErrors] = useState<KritikSaranFormErrors>(DEFAULT_FORM_ERRORS);
 
     // Debounce search
     useEffect(() => {
@@ -264,10 +248,13 @@ export default function KritikSaranPage() {
 
                 // Check user access
                 const currentUser = getCurrentUser();
-                if (!currentUser || currentUser.role !== 'administrator') {
+                if (!currentUser) {
                     setShowAccessDenied(true);
                     return;
                 }
+
+                // Set admin status
+                setIsAdmin(currentUser.role === 'administrator');
 
                 await Promise.all([
                     fetchKategori(),
@@ -335,6 +322,7 @@ export default function KritikSaranPage() {
     const currentData = filteredData.slice(startIndex, endIndex);
 
     const handleSelectAll = (checked: boolean) => {
+        if (!isAdmin) return;
         if (checked) {
             setSelectedIds(new Set(currentData.map(item => item.id)));
         } else {
@@ -343,6 +331,7 @@ export default function KritikSaranPage() {
     };
 
     const handleSelectOne = (id: string, checked: boolean) => {
+        if (!isAdmin) return;
         const newSelected = new Set(selectedIds);
         if (checked) {
             newSelected.add(id);
@@ -356,6 +345,11 @@ export default function KritikSaranPage() {
     const isSomeSelected = currentData.some(item => selectedIds.has(item.id)) && !isAllSelected;
 
     const handleOpenDialog = (item: KritikSaran | null = null) => {
+        if (!isAdmin) {
+            toast.error('Akses ditolak. Hanya administrator yang dapat mengakses fitur ini.');
+            return;
+        }
+
         if (item) {
             setSelectedItem(item);
             setFormData({
@@ -379,7 +373,7 @@ export default function KritikSaranPage() {
         setSelectedItem(item);
         setDetailDialogOpen(true);
 
-        // Mark as read
+        // Mark as read (all users can mark as read)
         if (!item.is_readed) {
             try {
                 const { error } = await supabase
@@ -436,6 +430,11 @@ export default function KritikSaranPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!isAdmin) {
+            toast.error('Akses ditolak. Hanya administrator yang dapat mengakses fitur ini.');
+            return;
+        }
+
         if (!validateForm()) return;
 
         setSubmitting(true);
@@ -482,6 +481,11 @@ export default function KritikSaranPage() {
     };
 
     const handleDelete = async () => {
+        if (!isAdmin) {
+            toast.error('Akses ditolak. Hanya administrator yang dapat mengakses fitur ini.');
+            return;
+        }
+
         if (!selectedItem) return;
         setSubmitting(true);
         const loadingToast = toast.loading('Menghapus data...');
@@ -507,6 +511,11 @@ export default function KritikSaranPage() {
     };
 
     const handleBulkDelete = async () => {
+        if (!isAdmin) {
+            toast.error('Akses ditolak. Hanya administrator yang dapat mengakses fitur ini.');
+            return;
+        }
+
         if (selectedIds.size === 0) return;
         setSubmitting(true);
         const loadingToast = toast.loading(`Menghapus ${selectedIds.size} data...`);
@@ -589,21 +598,23 @@ export default function KritikSaranPage() {
                     <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Kritik & Saran</h1>
                     <p className="text-muted-foreground mt-1">Kelola kritik dan saran dari pasien</p>
                 </div>
-                <div className="flex gap-2">
-                    {selectedIds.size > 0 && (
+                <div className="flex gap-2 self-end sm:self-auto">
+                    {isAdmin && selectedIds.size > 0 && (
                         <Button
                             variant="outline"
                             onClick={() => setBulkDeleteDialogOpen(true)}
-                            className="bg-red-600 hover:bg-red-700 text-white"
+                            className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Hapus ({selectedIds.size})
                         </Button>
                     )}
-                    <Button onClick={() => handleOpenDialog()}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Tambah
-                    </Button>
+                    {isAdmin && (
+                        <Button onClick={() => handleOpenDialog()}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Tambah
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -752,13 +763,15 @@ export default function KritikSaranPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-12">
-                                        <Checkbox
-                                            checked={isAllSelected}
-                                            onCheckedChange={handleSelectAll}
-                                            className={isSomeSelected ? "data-[state=checked]:bg-primary/50" : ""}
-                                        />
-                                    </TableHead>
+                                    {isAdmin && (
+                                        <TableHead className="w-12">
+                                            <Checkbox
+                                                checked={isAllSelected}
+                                                onCheckedChange={handleSelectAll}
+                                                className={isSomeSelected ? "data-[state=checked]:bg-primary/50" : ""}
+                                            />
+                                        </TableHead>
+                                    )}
                                     <TableHead className="w-16">No</TableHead>
                                     <TableHead>Nama</TableHead>
                                     <TableHead>No HP</TableHead>
@@ -773,19 +786,21 @@ export default function KritikSaranPage() {
                             <TableBody>
                                 {currentData.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={10} className="text-center text-muted-foreground h-32">
+                                        <TableCell colSpan={isAdmin ? 10 : 9} className="text-center text-muted-foreground h-32">
                                             Tidak ada data
                                         </TableCell>
                                     </TableRow>
                                 ) : (
                                     currentData.map((item, index) => (
                                         <TableRow key={item.id} className={!item.is_readed ? 'bg-blue-50 dark:bg-blue-950/20' : ''}>
-                                            <TableCell>
-                                                <Checkbox
-                                                    checked={selectedIds.has(item.id)}
-                                                    onCheckedChange={(checked) => handleSelectOne(item.id, checked as boolean)}
-                                                />
-                                            </TableCell>
+                                            {isAdmin && (
+                                                <TableCell>
+                                                    <Checkbox
+                                                        checked={selectedIds.has(item.id)}
+                                                        onCheckedChange={(checked) => handleSelectOne(item.id, checked as boolean)}
+                                                    />
+                                                </TableCell>
+                                            )}
                                             <TableCell className="font-medium">{startIndex + index + 1}</TableCell>
                                             <TableCell>{item.nama}</TableCell>
                                             <TableCell>{item.no_hp}</TableCell>
@@ -809,7 +824,7 @@ export default function KritikSaranPage() {
                                                                     variant="outline"
                                                                     size="icon"
                                                                     onClick={() => handleViewDetail(item)}
-                                                                    className="h-8 w-8"
+                                                                    className="h-8 w-8 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white dark:text-white hover:text-white"
                                                                 >
                                                                     <Eye className="h-4 w-4" />
                                                                 </Button>
@@ -817,39 +832,43 @@ export default function KritikSaranPage() {
                                                             <TooltipContent>Detail</TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    onClick={() => handleOpenDialog(item)}
-                                                                    className="h-8 w-8 bg-blue-600 hover:bg-blue-700 text-white"
-                                                                >
-                                                                    <Pencil className="h-4 w-4" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>Edit</TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    onClick={() => {
-                                                                        setSelectedItem(item);
-                                                                        setDeleteDialogOpen(true);
-                                                                    }}
-                                                                    className="h-8 w-8 bg-red-600 hover:bg-red-700 text-white"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>Hapus</TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
+                                                    {isAdmin && (
+                                                        <>
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="icon"
+                                                                            onClick={() => handleOpenDialog(item)}
+                                                                            className="h-8 w-8 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white dark:text-white hover:text-white"
+                                                                        >
+                                                                            <Pencil className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>Edit</TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="icon"
+                                                                            onClick={() => {
+                                                                                setSelectedItem(item);
+                                                                                setDeleteDialogOpen(true);
+                                                                            }}
+                                                                            className="h-8 w-8 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>Hapus</TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -1091,7 +1110,7 @@ export default function KritikSaranPage() {
                         <AlertDialogAction
                             onClick={handleDelete}
                             disabled={submitting}
-                            className="bg-red-600 hover:bg-red-700"
+                            className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
                         >
                             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {submitting ? 'Menghapus...' : 'Hapus'}
@@ -1114,7 +1133,7 @@ export default function KritikSaranPage() {
                         <AlertDialogAction
                             onClick={handleBulkDelete}
                             disabled={submitting}
-                            className="bg-red-600 hover:bg-red-700"
+                            className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
                         >
                             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {submitting ? 'Menghapus...' : 'Hapus Semua'}
