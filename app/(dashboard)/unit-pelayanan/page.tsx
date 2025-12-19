@@ -180,8 +180,14 @@ export default function UnitPelayananPage() {
             try {
                 setLoading(true);
 
+                // const currentUser = getCurrentUser();
+                // if (!currentUser || currentUser.role !== 'administrator') {
+                //     setShowAccessDenied(true);
+                //     return;
+                // }
+
                 const currentUser = getCurrentUser();
-                if (!currentUser || currentUser.role !== 'administrator') {
+                if (!currentUser) {
                     setShowAccessDenied(true);
                     return;
                 }
