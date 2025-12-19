@@ -135,7 +135,7 @@ const LayananUnggulan = () => {
 
                 {/* Content Grid - Display all data */}
                 {!loading && layananList.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 py-12">
                         {layananList.map((layanan, index) => (
                             <div key={layanan.id}>
                                 {renderLayananCard(layanan, index)}

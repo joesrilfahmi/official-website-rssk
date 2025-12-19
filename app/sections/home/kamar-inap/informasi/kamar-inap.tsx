@@ -126,7 +126,7 @@ const InformasiKamarInap = () => {
 
             {/* Facilities List - Fixed height with scroll */}
             <div className="mb-6 grow">
-                <div className="space-y-3 max-h-[180px] overflow-y-auto scrollbar-thin">
+                <div className="space-y-3 max-h-[180px] overflow-y-auto overflow-x-hidden scrollbar-modern">
                     {kamar.facilities && kamar.facilities.map((facility: string, index: number) => (
                         <div key={index} className="flex items-start gap-2">
                             <CheckCircle2 className="w-5 h-5 text-greenfresh-600 shrink-0 mt-0.5" />

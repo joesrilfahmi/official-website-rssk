@@ -197,11 +197,11 @@ const KenapaMemilih: React.FC = () => {
                     </div>
 
                     {/* Bottom CTA Button */}
-                    <div className="flex justify-center pt-4 sm:pt-6 md:pt-8 pb-2">
+                    {/* <div className="flex justify-center pt-4 sm:pt-6 md:pt-8 pb-2">
                         <Button variant="primary" size="lg">
                             Cari Dokter Kamu Disini
                         </Button>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </section>

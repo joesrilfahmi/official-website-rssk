@@ -262,21 +262,23 @@ const DokterSpesialis = () => {
         return (
             <div
                 onClick={() => setSelectedDokter(dokter)}
-                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-gray-100 hover:border-mariner-200"
+                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-gray-100 hover:border-mariner-200 h-full"
             >
-                <div className="flex flex-col items-center text-center">
+                <div className="flex flex-col items-center text-center h-full">
                     {/* Profile Image */}
-                    <div className="relative w-48 h-48 mb-4">
+                    <div className="relative w-56 h-56 mb-4 shrink-0">
                         {dokter.profile ? (
-                            <Image
-                                src={dokter.profile}
-                                alt={fullName}
-                                fill
-                                className="rounded-full object-cover"
-                                sizes="192px"
-                            />
+                            <div className="w-full h-full rounded-full overflow-hidden">
+                                <Image
+                                    src={dokter.profile}
+                                    alt={fullName}
+                                    fill
+                                    className="object-cover rounded-full"
+                                    sizes="224px"
+                                />
+                            </div>
                         ) : (
-                            <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center text-white text-5xl font-bold">
+                            <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center text-white text-6xl font-bold">
                                 {initial}
                             </div>
                         )}
