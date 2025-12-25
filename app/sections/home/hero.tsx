@@ -328,20 +328,6 @@ const Hero: React.FC = () => {
                                 <div className="absolute top-1/4 -right-10 w-28 h-28 bg-linear-to-br from-white/25 to-transparent rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
                                 <div className="absolute bottom-1/3 -left-10 w-36 h-36 bg-linear-to-tl from-white/20 to-transparent rounded-full blur-2xl"></div>
 
-                                {/* Premium accent elements - Multiple layers */}
-                                <div className="absolute top-10 right-10 w-5 h-5 bg-white rounded-full shadow-2xl animate-pulse"></div>
-                                <div className="absolute top-20 right-20 w-3 h-3 bg-white/70 rounded-full shadow-lg"></div>
-                                <div className="absolute top-14 right-24 w-2 h-2 bg-white/50 rounded-full shadow-md"></div>
-
-                                <div className="absolute bottom-20 right-12 w-4 h-4 bg-white/80 rounded-full shadow-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-                                <div className="absolute bottom-28 right-16 w-2.5 h-2.5 bg-white/60 rounded-full shadow-lg"></div>
-
-                                <div className="absolute top-24 left-10 w-3.5 h-3.5 bg-white/75 rounded-full shadow-lg"></div>
-                                <div className="absolute top-32 left-16 w-2 h-2 bg-white/50 rounded-full shadow-md animate-pulse" style={{ animationDelay: '1.5s' }}></div>
-
-                                <div className="absolute bottom-32 left-14 w-5 h-5 bg-white/85 rounded-full shadow-xl"></div>
-                                <div className="absolute bottom-40 left-8 w-2.5 h-2.5 bg-white/60 rounded-full shadow-md"></div>
-
                                 {/* Corner accent lines - Enhanced with gradient */}
                                 <div className="absolute top-0 right-0 w-24 h-24 border-r-[3px] border-t-[3px] border-white/40 rounded-tr-4xl"></div>
                                 <div className="absolute top-2 right-2 w-20 h-20 border-r-2 border-t-2 border-white/20 rounded-tr-3xl"></div>

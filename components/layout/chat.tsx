@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { X, MessageCircle, User } from 'lucide-react';
+import { X, User, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { Profile } from '@/config/profile';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -753,11 +753,11 @@ export default function ChatWidget() {
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-6 right-6 w-12 h-12 bg-linear-to-br from-easternblue-500 to-easternblue-600 hover:from-easternblue-600 hover:to-easternblue-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 z-80 group"
+                    className="fixed bottom-6 right-6 w-12 h-12 bg-linear-to-br from-easternblue-500 to-easternblue-600 hover:from-easternblue-600 hover:to-easternblue-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300  z-80 group hover:cursor-pointer"
                     aria-label="Buka Chat"
                 >
-                    <MessageCircle size={24} className="group-hover:scale-110 transition-transform" />
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+                    <MessageSquare size={24} />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
                 </button>
             )}
 
@@ -840,8 +840,8 @@ export default function ChatWidget() {
                                     <div className="flex-1 max-w-[75%]">
                                         <div
                                             className={`rounded-2xl px-4 py-3 ${message.sender === 'user'
-                                                    ? 'bg-easternblue-500 text-white rounded-tr-sm'
-                                                    : 'bg-white text-gray-800 rounded-tl-sm shadow-md border border-gray-100'
+                                                ? 'bg-easternblue-500 text-white rounded-tr-sm'
+                                                : 'bg-white text-gray-800 rounded-tl-sm shadow-md border border-gray-100'
                                                 }`}
                                         >
                                             {message.sender === 'bot' && message.text.includes('[Gambar Promo]') ? (

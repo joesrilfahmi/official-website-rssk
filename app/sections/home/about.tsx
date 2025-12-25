@@ -67,12 +67,6 @@ const About = () => {
                             </button>
 
                         </div>
-
-                        {/* Years badge - positioned more centered with enhanced design */}
-                        <div className="absolute top-[55%] right-[8%] sm:right-[12%] lg:right-[15%] transform -translate-y-1/2 bg-greenfresh-500 rounded-t-2xl rounded-br-2xl px-8 py-6 sm:px-10 sm:py-7 text-center shadow-2xl z-30">
-                            <div className="text-5xl sm:text-6xl font-bold text-white mb-1 drop-shadow-lg">58</div>
-                            <div className="text-white text-sm sm:text-base font-medium whitespace-nowrap">Tahun Bersama</div>
-                        </div>
                     </div>
 
                     {/* Right Side - Content Section */}
