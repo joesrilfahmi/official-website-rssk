@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Star, ArrowRight, CheckCircle } from 'lucide-react';
+import { Star, ArrowRight, CheckCircle, Phone, Mail, MapPin } from 'lucide-react';
 import Button from '@/components/ui/custom/button';
 import Input from '@/components/ui/custom/input';
 import Textarea from '@/components/ui/custom/textarea';
@@ -8,6 +8,7 @@ import Select from '@/components/ui/custom/select';
 import Title from '@/components/ui/custom/title';
 import Banner from '@/components/ui/custom/banner';
 import { supabase } from '@/lib/supabase/client';
+import { Profile } from '@/config/profile';
 
 interface Kategori {
     id: string;
@@ -218,6 +219,13 @@ const KritikSaran = () => {
                         {/* Banner Skeleton */}
                         <div className="h-48 bg-gray-200 rounded-3xl mb-12"></div>
 
+                        {/* Contact Cards Skeleton */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="bg-gray-200 rounded-3xl h-40"></div>
+                            ))}
+                        </div>
+
                         {/* Form Container Skeleton */}
                         <div className="mb-4 py-4">
                             <div className="max-w-4xl mx-auto px-4 relative">
@@ -301,6 +309,42 @@ const KritikSaran = () => {
                     title="Kritik & Saran"
                     subtitle="Suara Anda sangat berarti bagi kami untuk terus meningkatkan kualitas layanan"
                 />
+
+                {/* Contact Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 mt-12">
+                    {/* Phone Card */}
+                    <div className="bg-bittersweet-500 rounded-3xl p-8 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative pt-16">
+                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                            <div className="bg-white rounded-2xl p-4 shadow-lg border-4 border-bittersweet-500">
+                                <Phone className="w-8 h-8 text-bittersweet-500" />
+                            </div>
+                        </div>
+                        <h3 className="text-center font-semibold text-lg mb-2">Call Us Now</h3>
+                        <p className="text-center text-white font-medium">{Profile.phone}</p>
+                    </div>
+
+                    {/* Email Card */}
+                    <div className="bg-greenfresh-600 rounded-3xl p-8 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative pt-16">
+                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                            <div className="bg-white rounded-2xl p-4 shadow-lg border-4 border-greenfresh-600">
+                                <Mail className="w-8 h-8 text-greenfresh-600" />
+                            </div>
+                        </div>
+                        <h3 className="text-center font-semibold text-lg mb-2">Mail Us Now</h3>
+                        <p className="text-center text-white font-medium text-sm">{Profile.email}</p>
+                    </div>
+
+                    {/* Address Card */}
+                    <div className="bg-mariner-600 rounded-3xl p-8 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative pt-16">
+                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                            <div className="bg-white rounded-2xl p-4 shadow-lg border-4 border-mariner-600">
+                                <MapPin className="w-8 h-8 text-mariner-600" />
+                            </div>
+                        </div>
+                        <h3 className="text-center font-semibold text-lg mb-2">Address</h3>
+                        <p className="text-center text-white font-medium text-sm">{Profile.address}</p>
+                    </div>
+                </div>
 
                 <div className="mb-4 py-4">
                     <div className="max-w-4xl mx-auto px-4 relative">

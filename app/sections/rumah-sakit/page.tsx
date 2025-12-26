@@ -1,7 +1,8 @@
 // app/sections/layanan-unggulan/page.tsx
 import Footer from "@/components/layout/footer"
 import Navbar from "@/components/layout/navbar"
-import BackToTop from "@/components/layout/back-to-top"
+import Chat from "@/components/layout/chat"
+
 
 import RumahSakit from "./rumahsakit"
 import VisiMisi from "./visimisi"
@@ -14,7 +15,7 @@ export default function App() {
             <RumahSakit />
             <VisiMisi />
             <Pilihan />
-            <BackToTop />
+            <Chat />
             <Footer />
         </>
     )

@@ -1,37 +1,56 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, Phone, Mail, User, AtSign, Calendar, Clock } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowRight, Phone, Mail, User, AtSign } from 'lucide-react';
 import Button from '@/components/ui/custom/button';
 import Input from '@/components/ui/custom/input';
 import Select from '@/components/ui/custom/select';
 import Textarea from '@/components/ui/custom/textarea';
 import { supabase } from '@/lib/supabase/client';
 import Badge from '@/components/ui/custom/badge';
+import { Profile } from '@/config/profile';
 
-interface DoctorSpecialty {
+interface Poli {
     id: string;
-    name: string;
+    nama_poli: string;
+    status: string;
 }
 
-interface Doctor {
+interface Dokter {
     id: string;
-    name: string;
-    specialty_id: string;
+    gelar_depan: string | null;
+    nama: string;
+    gelar_belakang: string | null;
+    poli_id: string;
+    status: string;
+}
+
+interface JadwalDokter {
+    id: string;
+    dokter_id: string;
+    hari: string;
+    jam_mulai: string;
+    jam_selesai: string;
 }
 
 export default function PendaftaranSection() {
     const [loading, setLoading] = useState(false);
-    const [specialties, setSpecialties] = useState<DoctorSpecialty[]>([]);
-    const [doctors, setDoctors] = useState<Doctor[]>([]);
-    const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
-    const [loadingSpecialties, setLoadingSpecialties] = useState(true);
-    const [loadingDoctors, setLoadingDoctors] = useState(false);
+    const [poliList, setPoliList] = useState<Poli[]>([]);
+    const [dokterList, setDokterList] = useState<Dokter[]>([]);
+    const [filteredDokter, setFilteredDokter] = useState<Dokter[]>([]);
+    const [jadwalDokter, setJadwalDokter] = useState<JadwalDokter[]>([]);
+    const [availableDates, setAvailableDates] = useState<string[]>([]);
+    const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+
+    const [loadingPoli, setLoadingPoli] = useState(true);
+    const [loadingDokter, setLoadingDokter] = useState(false);
+    const [loadingJadwal, setLoadingJadwal] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        specialty: '',
+        phone: '',
+        poli: '',
         doctor: '',
         date: '',
         time: '',
@@ -41,7 +60,8 @@ export default function PendaftaranSection() {
     const [errors, setErrors] = useState({
         name: '',
         email: '',
-        specialty: '',
+        phone: '',
+        poli: '',
         doctor: '',
         date: '',
         time: '',
@@ -49,60 +69,225 @@ export default function PendaftaranSection() {
     });
 
     useEffect(() => {
-        fetchSpecialties();
-        fetchDoctors();
+        fetchPoli();
+        fetchAllDokter();
     }, []);
 
-    const fetchSpecialties = async () => {
-        setLoadingSpecialties(true);
+    const generateAvailableTimes = useCallback((selectedDate: string, jadwal: JadwalDokter[]) => {
+        const date = new Date(selectedDate + 'T00:00:00');
+        const dayOfWeek = date.getDay();
+
+        const hariMap: { [key: number]: string } = {
+            0: 'Minggu',
+            1: 'Senin',
+            2: 'Selasa',
+            3: 'Rabu',
+            4: 'Kamis',
+            5: 'Jumat',
+            6: 'Sabtu'
+        };
+
+        const hariName = hariMap[dayOfWeek];
+        const jadwalHariIni = jadwal.filter(j => j.hari === hariName);
+
+        if (jadwalHariIni.length === 0) {
+            setAvailableTimes([]);
+            return;
+        }
+
+        const times: string[] = [];
+
+        jadwalHariIni.forEach(jadwalItem => {
+            if (!jadwalItem.jam_mulai || !jadwalItem.jam_selesai) {
+                return;
+            }
+
+            const formatTime = (timeStr: string) => {
+                const parts = timeStr.split(':');
+                if (parts.length >= 2) {
+                    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+                }
+                return timeStr;
+            };
+
+            const jamMulai = formatTime(jadwalItem.jam_mulai);
+            const jamSelesai = formatTime(jadwalItem.jam_selesai);
+            const timeRange = `${jamMulai} - ${jamSelesai}`;
+            times.push(timeRange);
+        });
+
+        setAvailableTimes(times);
+    }, []);
+
+    const generateAvailableDates = useCallback((jadwal: JadwalDokter[]) => {
+        if (jadwal.length === 0) {
+            setAvailableDates([]);
+            return;
+        }
+
+        const hariMap: { [key: string]: number } = {
+            'Minggu': 0,
+            'Senin': 1,
+            'Selasa': 2,
+            'Rabu': 3,
+            'Kamis': 4,
+            'Jumat': 5,
+            'Sabtu': 6
+        };
+
+        const availableHari = jadwal.map(j => hariMap[j.hari]);
+        const dates: string[] = [];
+        const today = new Date();
+
+        for (let i = 0; i < 60; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            const dayOfWeek = date.getDay();
+
+            if (availableHari.includes(dayOfWeek)) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                dates.push(`${year}-${month}-${day}`);
+            }
+        }
+
+        setAvailableDates(dates);
+    }, []);
+
+    const fetchJadwalDokter = useCallback(async (dokterId: string) => {
+        setLoadingJadwal(true);
         try {
             const { data, error } = await supabase
-                .from('doctor_specialties')
+                .from('jadwal_dokter')
                 .select('*')
-                .order('name', { ascending: true });
+                .eq('dokter_id', dokterId)
+                .order('hari', { ascending: true });
 
             if (error) throw error;
-            setSpecialties(data || []);
+
+            const jadwalData = data || [];
+            setJadwalDokter(jadwalData);
+            generateAvailableDates(jadwalData);
+            setAvailableTimes([]);
         } catch (error) {
-            console.error('Error fetching specialties:', error);
+            console.error('Error fetching jadwal:', error);
+            setJadwalDokter([]);
+            setAvailableDates([]);
+            setAvailableTimes([]);
         } finally {
-            setLoadingSpecialties(false);
+            setLoadingJadwal(false);
         }
-    };
+    }, [generateAvailableDates]);
 
-    const fetchDoctors = async () => {
+    useEffect(() => {
+        if (formData.doctor) {
+            fetchJadwalDokter(formData.doctor);
+        } else {
+            setJadwalDokter([]);
+            setAvailableDates([]);
+            setAvailableTimes([]);
+        }
+    }, [formData.doctor, fetchJadwalDokter]);
+
+    useEffect(() => {
+        if (formData.date && jadwalDokter.length > 0) {
+            generateAvailableTimes(formData.date, jadwalDokter);
+        } else {
+            setAvailableTimes([]);
+        }
+    }, [formData.date, jadwalDokter, generateAvailableTimes]);
+
+    const fetchPoli = async () => {
+        setLoadingPoli(true);
         try {
             const { data, error } = await supabase
-                .from('doctors')
+                .from('poli')
                 .select('*')
-                .order('name', { ascending: true });
+                .eq('status', 'active')
+                .order('nama_poli', { ascending: true });
 
             if (error) throw error;
-            setDoctors(data || []);
+            setPoliList(data || []);
         } catch (error) {
-            console.error('Error fetching doctors:', error);
+            console.error('Error fetching poli:', error);
+        } finally {
+            setLoadingPoli(false);
         }
     };
 
-    const handleSpecialtyChange = (specialtyId: string) => {
-        setFormData({ ...formData, specialty: specialtyId, doctor: '' });
-        setErrors({ ...errors, specialty: '', doctor: '' });
+    const fetchAllDokter = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('dokter')
+                .select('*')
+                .eq('status', 'active')
+                .order('nama', { ascending: true });
 
-        if (specialtyId) {
-            setLoadingDoctors(true);
-            const filtered = doctors.filter(doc => doc.specialty_id === specialtyId);
-            setFilteredDoctors(filtered);
-            setLoadingDoctors(false);
-        } else {
-            setFilteredDoctors([]);
+            if (error) throw error;
+            setDokterList(data || []);
+        } catch (error) {
+            console.error('Error fetching dokter:', error);
         }
+    };
+
+    const handlePoliChange = (poliId: string) => {
+        setFormData({
+            ...formData,
+            poli: poliId,
+            doctor: '',
+            date: '',
+            time: ''
+        });
+        setErrors({ ...errors, poli: '', doctor: '', date: '', time: '' });
+
+        if (poliId) {
+            setLoadingDokter(true);
+            const filtered = dokterList.filter(doc => doc.poli_id === poliId);
+            setFilteredDokter(filtered);
+            setLoadingDokter(false);
+        } else {
+            setFilteredDokter([]);
+        }
+
+        setJadwalDokter([]);
+        setAvailableDates([]);
+        setAvailableTimes([]);
+    };
+
+    const handleDoctorChange = (doctorId: string) => {
+        setFormData({
+            ...formData,
+            doctor: doctorId,
+            date: '',
+            time: ''
+        });
+        setErrors({ ...errors, doctor: '', date: '', time: '' });
+    };
+
+    const handleDateChange = (date: string) => {
+        setFormData({
+            ...formData,
+            date: date,
+            time: ''
+        });
+        setErrors({ ...errors, date: '', time: '' });
+    };
+
+    const formatDoctorName = (doctor: Dokter) => {
+        const parts = [];
+        if (doctor.gelar_depan) parts.push(doctor.gelar_depan);
+        parts.push(doctor.nama);
+        if (doctor.gelar_belakang) parts.push(doctor.gelar_belakang);
+        return parts.join(' ');
     };
 
     const validateForm = () => {
         const newErrors = {
             name: '',
             email: '',
-            specialty: '',
+            phone: '',
+            poli: '',
             doctor: '',
             date: '',
             time: '',
@@ -124,8 +309,16 @@ export default function PendaftaranSection() {
             isValid = false;
         }
 
-        if (!formData.specialty) {
-            newErrors.specialty = 'Pilih spesialis terlebih dahulu';
+        if (!formData.phone.trim()) {
+            newErrors.phone = 'Nomor telepon wajib diisi';
+            isValid = false;
+        } else if (!/^[\d\s\-+()]+$/.test(formData.phone)) {
+            newErrors.phone = 'Format nomor telepon tidak valid';
+            isValid = false;
+        }
+
+        if (!formData.poli) {
+            newErrors.poli = 'Pilih poli terlebih dahulu';
             isValid = false;
         }
 
@@ -153,6 +346,39 @@ export default function PendaftaranSection() {
         return isValid;
     };
 
+    const sendWhatsAppMessage = () => {
+        const selectedPoli = poliList.find(p => p.id === formData.poli);
+        const selectedDokter = filteredDokter.find(d => d.id === formData.doctor);
+
+        const message = `*PENDAFTARAN JANJI TEMU*
+┌────────────────────┐
+        
+*Nama:* ${formData.name}
+*Email:* ${formData.email}
+*No. Telepon:* ${formData.phone}
+
+*Poli:* ${selectedPoli?.nama_poli || '-'}
+*Dokter:* ${selectedDokter ? formatDoctorName(selectedDokter) : '-'}
+*Tanggal:* ${new Date(formData.date + 'T00:00:00').toLocaleDateString('id-ID', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })}
+*Waktu:* ${formData.time}
+
+*Keluhan:*
+${formData.description}
+
+└────────────────────┘
+_Mohon konfirmasi ketersediaan jadwal._`;
+
+        const whatsappNumber = Profile.whatsapp.replace(/\D/g, '');
+        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+
+        window.open(whatsappUrl, '_blank');
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -163,13 +389,15 @@ export default function PendaftaranSection() {
         setLoading(true);
 
         try {
+            // Coba simpan ke database
             const { error } = await supabase
                 .from('appointments')
                 .insert([
                     {
                         name: formData.name,
                         email: formData.email,
-                        specialty_id: formData.specialty,
+                        phone: formData.phone,
+                        poli_id: formData.poli,
                         doctor_id: formData.doctor,
                         appointment_date: formData.date,
                         appointment_time: formData.time,
@@ -178,48 +406,70 @@ export default function PendaftaranSection() {
                     }
                 ]);
 
-            if (error) throw error;
+            // Jika ada error, tetap lanjut ke WhatsApp
+            if (error) {
+                console.warn('Data tidak tersimpan ke database:', error.message);
+            }
 
-            alert('Pendaftaran berhasil! Kami akan segera menghubungi Anda.');
+        } catch (error) {
+            console.error('Error submitting form:', error);
+        } finally {
+            // Selalu redirect ke WhatsApp, bahkan jika ada error
+            sendWhatsAppMessage();
 
             // Reset form
             setFormData({
                 name: '',
                 email: '',
-                specialty: '',
+                phone: '',
+                poli: '',
                 doctor: '',
                 date: '',
                 time: '',
                 description: ''
             });
-            setFilteredDoctors([]);
+            setFilteredDokter([]);
+            setJadwalDokter([]);
+            setAvailableDates([]);
+            setAvailableTimes([]);
             setErrors({
                 name: '',
                 email: '',
-                specialty: '',
+                phone: '',
+                poli: '',
                 doctor: '',
                 date: '',
                 time: '',
                 description: ''
             });
 
-        } catch (error) {
-            console.error('Error submitting form:', error);
-            alert('Terjadi kesalahan. Silakan coba lagi.');
-        } finally {
             setLoading(false);
         }
     };
 
-    // Convert specialties and doctors to SelectOption format
-    const specialtyOptions = specialties.map(specialty => ({
-        value: specialty.id,
-        label: specialty.name
+    const poliOptions = poliList.map(poli => ({
+        value: poli.id,
+        label: poli.nama_poli
     }));
 
-    const doctorOptions = filteredDoctors.map(doctor => ({
-        value: doctor.id,
-        label: doctor.name
+    const dokterOptions = filteredDokter.map(dokter => ({
+        value: dokter.id,
+        label: formatDoctorName(dokter)
+    }));
+
+    const dateOptions = availableDates.map(date => ({
+        value: date,
+        label: new Date(date + 'T00:00:00').toLocaleDateString('id-ID', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })
+    }));
+
+    const timeOptions = availableTimes.map(time => ({
+        value: time,
+        label: time
     }));
 
     return (
@@ -282,62 +532,77 @@ export default function PendaftaranSection() {
                                 />
                             </div>
 
-                            {/* Poli Spesialis & Nama Dokter */}
+                            {/* Phone */}
+                            <Input
+                                label="Nomor Telepon"
+                                type="tel"
+                                placeholder="08xx-xxxx-xxxx"
+                                value={formData.phone}
+                                onChange={(e) => {
+                                    setFormData({ ...formData, phone: e.target.value });
+                                    if (errors.phone) setErrors({ ...errors, phone: '' });
+                                }}
+                                icon={Phone}
+                                error={errors.phone}
+                                required
+                            />
+
+                            {/* Poli & Dokter */}
                             <div className="grid sm:grid-cols-2 gap-4">
                                 <Select
-                                    label="Poli Spesialis"
-                                    placeholder="Pilih spesialis"
-                                    value={formData.specialty}
-                                    onChange={handleSpecialtyChange}
-                                    options={specialtyOptions}
+                                    label="Poli"
+                                    placeholder="Pilih poli"
+                                    value={formData.poli}
+                                    onChange={handlePoliChange}
+                                    options={poliOptions}
                                     searchable
-                                    loading={loadingSpecialties}
-                                    error={errors.specialty}
+                                    loading={loadingPoli}
+                                    error={errors.poli}
                                     required
                                 />
                                 <Select
                                     label="Nama Dokter"
                                     placeholder="Pilih dokter"
                                     value={formData.doctor}
-                                    onChange={(value) => {
-                                        setFormData({ ...formData, doctor: value });
-                                        if (errors.doctor) setErrors({ ...errors, doctor: '' });
-                                    }}
-                                    options={doctorOptions}
+                                    onChange={handleDoctorChange}
+                                    options={dokterOptions}
                                     searchable
-                                    disabled={!formData.specialty}
-                                    loading={loadingDoctors}
+                                    disabled={!formData.poli}
+                                    loading={loadingDokter}
                                     error={errors.doctor}
-                                    helperText={!formData.specialty ? 'Pilih spesialis terlebih dahulu' : ''}
+                                    helperText={!formData.poli ? 'Pilih poli terlebih dahulu' : ''}
                                     required
                                 />
                             </div>
 
-                            {/* Tanggal & Time */}
+                            {/* Tanggal & Waktu - Tanpa searchable */}
                             <div className="grid sm:grid-cols-2 gap-4">
-                                <Input
+                                <Select
                                     label="Tanggal"
-                                    type="date"
+                                    placeholder="Pilih tanggal"
                                     value={formData.date}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, date: e.target.value });
-                                        if (errors.date) setErrors({ ...errors, date: '' });
-                                    }}
-                                    icon={Calendar}
+                                    onChange={handleDateChange}
+                                    options={dateOptions}
+                                    searchable={false}
+                                    disabled={!formData.doctor || loadingJadwal}
+                                    loading={loadingJadwal}
                                     error={errors.date}
+                                    helperText={!formData.doctor ? 'Pilih dokter terlebih dahulu' : loadingJadwal ? 'Memuat jadwal...' : availableDates.length === 0 && formData.doctor ? 'Tidak ada jadwal tersedia' : ''}
                                     required
-                                    min={new Date().toISOString().split('T')[0]}
                                 />
-                                <Input
+                                <Select
                                     label="Waktu"
-                                    type="time"
+                                    placeholder="Pilih waktu"
                                     value={formData.time}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, time: e.target.value });
+                                    onChange={(value) => {
+                                        setFormData({ ...formData, time: value });
                                         if (errors.time) setErrors({ ...errors, time: '' });
                                     }}
-                                    icon={Clock}
+                                    options={timeOptions}
+                                    searchable={false}
+                                    disabled={!formData.date}
                                     error={errors.time}
+                                    helperText={!formData.date ? 'Pilih tanggal terlebih dahulu' : availableTimes.length === 0 && formData.date ? 'Tidak ada waktu tersedia' : ''}
                                     required
                                 />
                             </div>
@@ -366,7 +631,7 @@ export default function PendaftaranSection() {
                                 className="w-full shadow-lg bg-bittersweet-500 hover:bg-bittersweet-600"
                                 disabled={loading}
                             >
-                                {loading ? 'Mengirim...' : 'Kirim Pendaftaran'}
+                                {loading ? 'Mengirim...' : 'Kirim ke WhatsApp'}
                                 <ArrowRight className="w-5 h-5" />
                             </Button>
                         </form>
@@ -383,7 +648,7 @@ export default function PendaftaranSection() {
                                 Informasi Pendaftaran
                             </h2>
                             <p className="text-white/90 text-base sm:text-lg leading-relaxed">
-                                Kini pendaftaran layanan kesehatan di RS Siti Khodijah semakin mudah melalui website kami. Cukup dengan beberapa langkah sederhana, Anda dapat memilih jadwal dokter, jenis layanan. Nikmati kemudahan ini kapan saja dan di mana saja, langsung dari perangkat Anda!
+                                Kini pendaftaran layanan kesehatan di {Profile.shortName} semakin mudah melalui website kami. Cukup dengan beberapa langkah sederhana, Anda dapat memilih jadwal dokter, jenis layanan. Nikmati kemudahan ini kapan saja dan di mana saja, langsung dari perangkat Anda!
                             </p>
                         </div>
 
@@ -394,15 +659,17 @@ export default function PendaftaranSection() {
                                 <div className="w-16 h-16 bg-bittersweet-500 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
                                     <Phone className="w-8 h-8 text-white" />
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-white/80 text-sm font-medium uppercase tracking-wide mb-1">
-                                        Pusat Informasi
+                                        WhatsApp
                                     </p>
-                                    <a
-                                        href="tel:0811-3326-757"
-                                        className="text-white text-xl sm:text-2xl font-bold hover:text-teal-300 transition-colors"
+
+                                    <a href={`https://wa.me/${Profile.whatsapp.replace(/\D/g, '')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-white text-xl sm:text-2xl font-bold hover:text-teal-300 transition-colors block truncate"
                                     >
-                                        0811-3326-757
+                                        {Profile.whatsapp}
                                     </a>
                                 </div>
                             </div>
@@ -412,22 +679,40 @@ export default function PendaftaranSection() {
                                 <div className="w-16 h-16 bg-teal-400 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
                                     <Mail className="w-8 h-8 text-white" />
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-white/80 text-sm font-medium uppercase tracking-wide mb-1">
                                         Email
                                     </p>
-                                    <a
-                                        href="mailto:humas@sitikhodijah.com"
-                                        className="text-white text-lg sm:text-xl font-bold hover:text-teal-300 transition-colors break-all"
+
+                                    <a href={`mailto:${Profile.email}`}
+                                        className="text-white text-lg sm:text-xl font-bold hover:text-teal-300 transition-colors block truncate"
                                     >
-                                        humas@sitikhodijah.com
+                                        {Profile.email}
+                                    </a>
+                                </div>
+                            </div>
+
+                            {/* Pusat Panggilan Card */}
+                            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 flex items-center gap-4 hover:bg-white/20 transition-all duration-300">
+                                <div className="w-16 h-16 bg-mariner-400 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
+                                    <Phone className="w-8 h-8 text-white" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-white/80 text-sm font-medium uppercase tracking-wide mb-1">
+                                        Pusat Panggilan
+                                    </p>
+
+                                    <a href={`tel:${Profile.pusatPanggilan}`}
+                                        className="text-white text-xl sm:text-2xl font-bold hover:text-teal-300 transition-colors block truncate"
+                                    >
+                                        {Profile.pusatPanggilan}
                                     </a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
+                </div >
+            </div >
+        </section >
     );
 }

@@ -50,22 +50,22 @@ export const rumahSakit: RumahSakit[] = [
   {
     name: "RS Siti Khodijah Muhammadiyah Cabang Sepanjang",
     url: "https://www.sitikhodijah.com",
-    alamat: "Jl. Contoh No. 123, Surabaya, Jawa Timur"
+    alamat: "Jl. Raya Bebekan, Bebekan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257"
   },
   {
     name: "RSU Assakinah Medika",
     url: "https://assekinah.com",
-    alamat: "Jl. Contoh No. 456, Sidoarjo, Jawa Timur"
+    alamat: "Jl. Raya Kebon Agung No.65, Sambang, Kebonagung, Kec. Sukodono, Kabupaten Sidoarjo, Jawa Timur 61258"
   },
   {
     name: "RS Moedjito Dwidjosiswojo",
     url: "https://moedjito.com",
-    alamat: "Jl. Contoh No. 789, Jombang, Jawa Timur"
+    alamat: "Jl. Hayam Wuruk No.9, Kepanjen, Kec. Jombang, Kabupaten Jombang, Jawa Timur 61411"
   },
   {
     name: "Klinik Siti Khodijah Prima",
     url: "https://klinik.sitikhodijah.com",
-    alamat: "Jl. Contoh No. 321, Surabaya, Jawa Timur"
+    alamat: "Jl. Raya Ketegan No.80, Ketegan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257"
   }
 ];
 

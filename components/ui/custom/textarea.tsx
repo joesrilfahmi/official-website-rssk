@@ -82,9 +82,11 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
               focus:outline-none focus:ring-2 focus:border-transparent
               transition-all duration-200
               placeholder:text-gray-400
+              text-gray-900
               ${showCharCount && maxLength ? 'pb-8' : ''}
               ${className}
             `}
+                        style={{ color: disabled ? undefined : '#111827' }}
                         {...props}
                     />
 
