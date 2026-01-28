@@ -5,10 +5,10 @@ export interface ImageValidationResult {
   error?: string;
 }
 
-const MAX_FILE_SIZE_MB = 5;
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024; // 5MB in bytes
-const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+const MAX_FILE_SIZE_KB = 300;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024; // 300KB in bytes
+const ALLOWED_TYPES = ["image/webp"];
+const ALLOWED_EXTENSIONS = [".webp"];
 
 /**
  * Validasi file gambar
@@ -20,7 +20,7 @@ export function validateImage(file: File): ImageValidationResult {
   if (!file) {
     return {
       valid: false,
-      error: 'File tidak ditemukan',
+      error: "File tidak ditemukan",
     };
   }
 
@@ -28,7 +28,7 @@ export function validateImage(file: File): ImageValidationResult {
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return {
       valid: false,
-      error: `Ukuran file melebihi ${MAX_FILE_SIZE_MB}MB. Ukuran file: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+      error: `Ukuran file melebihi ${MAX_FILE_SIZE_KB}KB. Ukuran file: ${(file.size / 1024).toFixed(2)}KB`,
     };
   }
 
@@ -36,18 +36,20 @@ export function validateImage(file: File): ImageValidationResult {
   if (!ALLOWED_TYPES.includes(file.type)) {
     return {
       valid: false,
-      error: `Tipe file tidak didukung. Hanya diperbolehkan: ${ALLOWED_EXTENSIONS.join(', ')}`,
+      error: `Tipe file tidak didukung. Hanya diperbolehkan: ${ALLOWED_EXTENSIONS.join(", ")}`,
     };
   }
 
   // Validasi ekstensi file
   const fileName = file.name.toLowerCase();
-  const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => fileName.endsWith(ext));
-  
+  const hasValidExtension = ALLOWED_EXTENSIONS.some((ext) =>
+    fileName.endsWith(ext),
+  );
+
   if (!hasValidExtension) {
     return {
       valid: false,
-      error: `Ekstensi file tidak valid. Hanya diperbolehkan: ${ALLOWED_EXTENSIONS.join(', ')}`,
+      error: `Ekstensi file tidak valid. Hanya diperbolehkan: ${ALLOWED_EXTENSIONS.join(", ")}`,
     };
   }
 
@@ -65,7 +67,7 @@ export function validateImages(files: File[]): ImageValidationResult {
   if (!files || files.length === 0) {
     return {
       valid: false,
-      error: 'Tidak ada file yang dipilih',
+      error: "Tidak ada file yang dipilih",
     };
   }
 
@@ -82,10 +84,10 @@ export function validateImages(files: File[]): ImageValidationResult {
 }
 
 /**
- * Get max file size in MB
+ * Get max file size in KB
  */
-export function getMaxFileSizeMB(): number {
-  return MAX_FILE_SIZE_MB;
+export function getMaxFileSizeKB(): number {
+  return MAX_FILE_SIZE_KB;
 }
 
 /**
@@ -106,11 +108,11 @@ export function getAllowedExtensions(): string[] {
  * Format file size to human readable
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
 
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
 }

@@ -3,8 +3,8 @@
 // ============================================
 // USER TYPES
 // ============================================
-export type UserRole = 'administrator' | 'user';
-export type UserStatus = 'active' | 'inactive';
+export type UserRole = "administrator" | "user";
+export type UserStatus = "active" | "inactive";
 
 export interface User {
   id: string;
@@ -45,7 +45,7 @@ export interface LayananUnggulan {
   title: string;
   description: string;
   urutan: number;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   created_at?: string;
   updated_at?: string;
 }
@@ -68,7 +68,7 @@ export interface KamarInap {
 // ============================================
 // BERITA TYPES
 // ============================================
-export type BeritaStatus = 'active' | 'non_active' | 'draft';
+export type BeritaStatus = "active" | "non_active" | "draft";
 
 export interface Berita {
   id: string;
@@ -96,7 +96,7 @@ export interface BeritaWithAuthor extends Berita {
 // ============================================
 // PROMO TYPES
 // ============================================
-export type PromoStatus = 'active' | 'non_active';
+export type PromoStatus = "active" | "non_active";
 
 export interface Promo {
   id: string;
@@ -131,7 +131,7 @@ export interface PromoWithCreator extends Promo {
 export interface Poli {
   id: string;
   nama_poli: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   created_at?: string;
   updated_at?: string;
 }
@@ -139,10 +139,18 @@ export interface Poli {
 // ============================================
 // DOKTER TYPES
 // ============================================
-export type DokterStatus = 'active' | 'inactive' | 'cuti' | 'libur';
-export type HariType = 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu' | 'Minggu';
-export type SortField = 'nama' | 'poli' | 'status' | 'created_at';
-export type SortOrder = 'asc' | 'desc';
+export type DokterStatus = "active" | "inactive" | "cuti" | "libur";
+export type HariType =
+  | "Senin"
+  | "Selasa"
+  | "Rabu"
+  | "Kamis"
+  | "Jumat"
+  | "Sabtu"
+  | "Minggu";
+export type JadwalType = "reguler" | "eksekutif";
+export type SortField = "nama" | "poli" | "status" | "created_at";
+export type SortOrder = "asc" | "desc";
 
 export interface Dokter {
   id: string;
@@ -164,6 +172,7 @@ export interface JadwalDokter {
   hari: HariType;
   jam_mulai: string;
   jam_selesai: string;
+  tipe_jadwal: JadwalType;
   created_at?: string;
   updated_at?: string;
   created_by?: string | null;
@@ -179,9 +188,10 @@ export interface DokterWithRelations extends Dokter {
 
 export interface JadwalFormData {
   id?: string;
-  hari: HariType | '';
+  hari: HariType | "";
   jam_mulai: string;
   jam_selesai: string;
+  tipe_jadwal: JadwalType;
   _temp_id: string;
 }
 
@@ -206,7 +216,7 @@ export interface DokterFormErrors {
 // ============================================
 // KRITIK & SARAN TYPES
 // ============================================
-export type KritikSaranStatus = 'read' | 'unread';
+export type KritikSaranStatus = "read" | "unread";
 
 export interface Kategori {
   id: string;
@@ -261,8 +271,14 @@ export interface KritikSaranFormErrors {
   rating: string;
 }
 
-export type KritikSaranSortField = 'nama' | 'kategori' | 'unit_pelayanan' | 'status' | 'rating' | 'created_at';
-export type KritikSaranSortOrder = 'asc' | 'desc';
+export type KritikSaranSortField =
+  | "nama"
+  | "kategori"
+  | "unit_pelayanan"
+  | "status"
+  | "rating"
+  | "created_at";
+export type KritikSaranSortOrder = "asc" | "desc";
 
 export interface DateRange {
   from: Date | undefined;
