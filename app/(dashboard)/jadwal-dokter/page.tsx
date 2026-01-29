@@ -783,7 +783,7 @@ export default function DokterPage() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-32" />
@@ -805,7 +805,7 @@ export default function DokterPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <Breadcrumb>
@@ -980,9 +980,9 @@ export default function DokterPage() {
                         <p className="font-medium">{getNamaLengkap(item)}</p>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
+                        <p className="font-medium">
                           {item.poli_detail?.nama_poli}
-                        </Badge>
+                        </p>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm space-y-1">
@@ -993,7 +993,6 @@ export default function DokterPage() {
                                 key={j.id}
                                 className="flex items-center gap-1 text-muted-foreground"
                               >
-                                <Clock className="w-3 h-3" />
                                 <span>
                                   {j.hari}: {j.jam_mulai}-{j.jam_selesai}
                                 </span>
