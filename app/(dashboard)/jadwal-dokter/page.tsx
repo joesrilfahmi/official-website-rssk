@@ -127,6 +127,21 @@ const HARI_OPTIONS: HariType[] = [
   "Minggu",
 ];
 
+// Helper function untuk generate opsi waktu
+const generateTimeOptions = () => {
+  const options = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const hourStr = hour.toString().padStart(2, "0");
+      const minuteStr = minute.toString().padStart(2, "0");
+      options.push(`${hourStr}.${minuteStr}`);
+    }
+  }
+  return options;
+};
+
+const TIME_OPTIONS = generateTimeOptions();
+
 export default function DokterPage() {
   const [dokterList, setDokterList] = useState<DokterWithRelations[]>([]);
   const [filteredDokter, setFilteredDokter] = useState<DokterWithRelations[]>(
@@ -1447,76 +1462,54 @@ export default function DokterPage() {
 
                             <div className="space-y-1">
                               <Label className="text-xs">Jam Mulai</Label>
-                              <Input
-                                type="text"
-                                placeholder="00.00"
+                              <Select
                                 value={jadwal.jam_mulai}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(
-                                    /[^0-9.]/g,
-                                    "",
-                                  );
-                                  const parts = value.split(".");
-
-                                  if (parts.length <= 2) {
-                                    let formatted = value;
-                                    if (parts[0] && parts[0].length > 2) {
-                                      formatted =
-                                        parts[0].slice(0, 2) +
-                                        (parts[1] !== undefined
-                                          ? "." + parts[1]
-                                          : "");
-                                    }
-                                    if (parts[1] && parts[1].length > 2) {
-                                      formatted =
-                                        parts[0] + "." + parts[1].slice(0, 2);
-                                    }
-                                    handleJadwalChange(
-                                      jadwal._temp_id,
-                                      "jam_mulai",
-                                      formatted,
-                                    );
-                                  }
-                                }}
+                                onValueChange={(value) =>
+                                  handleJadwalChange(
+                                    jadwal._temp_id,
+                                    "jam_mulai",
+                                    value,
+                                  )
+                                }
                                 disabled={submitting}
-                              />
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pilih jam" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {TIME_OPTIONS.map((time) => (
+                                    <SelectItem key={time} value={time}>
+                                      {time}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
 
                             <div className="space-y-1">
                               <Label className="text-xs">Jam Selesai</Label>
-                              <Input
-                                type="text"
-                                placeholder="00.00"
+                              <Select
                                 value={jadwal.jam_selesai}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(
-                                    /[^0-9.]/g,
-                                    "",
-                                  );
-                                  const parts = value.split(".");
-
-                                  if (parts.length <= 2) {
-                                    let formatted = value;
-                                    if (parts[0] && parts[0].length > 2) {
-                                      formatted =
-                                        parts[0].slice(0, 2) +
-                                        (parts[1] !== undefined
-                                          ? "." + parts[1]
-                                          : "");
-                                    }
-                                    if (parts[1] && parts[1].length > 2) {
-                                      formatted =
-                                        parts[0] + "." + parts[1].slice(0, 2);
-                                    }
-                                    handleJadwalChange(
-                                      jadwal._temp_id,
-                                      "jam_selesai",
-                                      formatted,
-                                    );
-                                  }
-                                }}
+                                onValueChange={(value) =>
+                                  handleJadwalChange(
+                                    jadwal._temp_id,
+                                    "jam_selesai",
+                                    value,
+                                  )
+                                }
                                 disabled={submitting}
-                              />
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pilih jam" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {TIME_OPTIONS.map((time) => (
+                                    <SelectItem key={time} value={time}>
+                                      {time}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         </div>
@@ -1606,76 +1599,54 @@ export default function DokterPage() {
 
                             <div className="space-y-1">
                               <Label className="text-xs">Jam Mulai</Label>
-                              <Input
-                                type="text"
-                                placeholder="00.00"
+                              <Select
                                 value={jadwal.jam_mulai}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(
-                                    /[^0-9.]/g,
-                                    "",
-                                  );
-                                  const parts = value.split(".");
-
-                                  if (parts.length <= 2) {
-                                    let formatted = value;
-                                    if (parts[0] && parts[0].length > 2) {
-                                      formatted =
-                                        parts[0].slice(0, 2) +
-                                        (parts[1] !== undefined
-                                          ? "." + parts[1]
-                                          : "");
-                                    }
-                                    if (parts[1] && parts[1].length > 2) {
-                                      formatted =
-                                        parts[0] + "." + parts[1].slice(0, 2);
-                                    }
-                                    handleJadwalChange(
-                                      jadwal._temp_id,
-                                      "jam_mulai",
-                                      formatted,
-                                    );
-                                  }
-                                }}
+                                onValueChange={(value) =>
+                                  handleJadwalChange(
+                                    jadwal._temp_id,
+                                    "jam_mulai",
+                                    value,
+                                  )
+                                }
                                 disabled={submitting}
-                              />
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pilih jam" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {TIME_OPTIONS.map((time) => (
+                                    <SelectItem key={time} value={time}>
+                                      {time}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
 
                             <div className="space-y-1">
                               <Label className="text-xs">Jam Selesai</Label>
-                              <Input
-                                type="text"
-                                placeholder="00.00"
+                              <Select
                                 value={jadwal.jam_selesai}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(
-                                    /[^0-9.]/g,
-                                    "",
-                                  );
-                                  const parts = value.split(".");
-
-                                  if (parts.length <= 2) {
-                                    let formatted = value;
-                                    if (parts[0] && parts[0].length > 2) {
-                                      formatted =
-                                        parts[0].slice(0, 2) +
-                                        (parts[1] !== undefined
-                                          ? "." + parts[1]
-                                          : "");
-                                    }
-                                    if (parts[1] && parts[1].length > 2) {
-                                      formatted =
-                                        parts[0] + "." + parts[1].slice(0, 2);
-                                    }
-                                    handleJadwalChange(
-                                      jadwal._temp_id,
-                                      "jam_selesai",
-                                      formatted,
-                                    );
-                                  }
-                                }}
+                                onValueChange={(value) =>
+                                  handleJadwalChange(
+                                    jadwal._temp_id,
+                                    "jam_selesai",
+                                    value,
+                                  )
+                                }
                                 disabled={submitting}
-                              />
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pilih jam" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {TIME_OPTIONS.map((time) => (
+                                    <SelectItem key={time} value={time}>
+                                      {time}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         </div>
