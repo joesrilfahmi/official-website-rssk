@@ -1018,7 +1018,7 @@ xl:grid-cols-4
 
                   {/* Pagination - Bawah */}
                   <Pagination>
-                    <PaginationContent className="gap-0.5">
+                    <PaginationContent className="gap-1">
                       <PaginationItem>
                         <PaginationPrevious
                           onClick={() =>
@@ -1335,7 +1335,7 @@ xl:grid-cols-4
               dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0 flex-col sm:flex-row">
+          <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
             <AlertDialogCancel
               disabled={submitting}
               className="w-full sm:w-auto"
@@ -1370,7 +1370,7 @@ xl:grid-cols-4
               Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0 flex-col sm:flex-row">
+          <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
             <AlertDialogCancel
               disabled={submitting}
               className="w-full sm:w-auto"
