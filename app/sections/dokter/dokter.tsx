@@ -1,16 +1,16 @@
 // app/sections/dokter/dokter.tsx
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
-import { Search, Calendar, X } from "lucide-react";
-import useEmblaCarousel from "embla-carousel-react";
-import Button from "@/components/ui/custom/button";
-import Title from "@/components/ui/custom/title";
 import Banner from "@/components/ui/custom/banner";
+import Button from "@/components/ui/custom/button";
 import Input from "@/components/ui/custom/input";
-import Select from "@/components/ui/custom/select";
 import Pills from "@/components/ui/custom/pills";
+import Select from "@/components/ui/custom/select";
+import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
+import useEmblaCarousel from "embla-carousel-react";
+import { Calendar, Search, X } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 
 // Types
 interface Poli {
@@ -309,7 +309,7 @@ const DokterSpesialis = () => {
               </th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b-2 border-gray-300">
                 <div className="flex items-center gap-2">
-                  <span>Jadwal Reguler</span>
+                  <span>Jadwal Bpjs</span>
                 </div>
               </th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b-2 border-gray-300">
