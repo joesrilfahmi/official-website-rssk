@@ -68,6 +68,12 @@ const menuItems = [
     access: ["administrator", "user"] as UserRole[],
   },
   {
+    title: "Kamar Inap",
+    icon: Bed,
+    url: "/kamar-inap",
+    access: ["administrator", "user"] as UserRole[],
+  },
+  {
     title: "Jadwal Dokter",
     icon: Calendar,
     url: "/jadwal-dokter",
@@ -77,12 +83,6 @@ const menuItems = [
     title: "Klinik Spesialis",
     icon: Star,
     url: "/klinik-spesialis",
-    access: ["administrator", "user"] as UserRole[],
-  },
-  {
-    title: "Kamar Inap",
-    icon: Bed,
-    url: "/kamar-inap",
     access: ["administrator", "user"] as UserRole[],
   },
 

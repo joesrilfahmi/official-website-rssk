@@ -1,5 +1,5 @@
 "use client";
-import Title from "@/components/ui/custom/title";
+import Banner from "@/components/ui/custom/banner";
 import { Activity, Bone, FileText, Heart, Stethoscope } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -513,10 +513,9 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
   return (
     <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <Title
+        <Banner
           title="Layanan Unggulan"
-          badgeVariant="default"
-          titleClassName="mt-8"
+          subtitle="Kami menyediakan layanan urologi terbaik untuk memenuhi kebutuhan kesehatan Anda."
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-12">
@@ -554,7 +553,7 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
               {currentService && (
                 <div className="space-y-6">
                   {/* Title */}
-                  <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                  <h2 className="text-3xl font-bold text-mariner-600 mb-6">
                     {currentService.title}
                   </h2>
 
@@ -565,7 +564,7 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
 
                   {/* Specializations */}
                   <div className="mt-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    <h3 className="text-xl font-semibold text-mariner-600 mb-4">
                       Layanan yang Tersedia:
                     </h3>
                     <ul className="space-y-3">
@@ -591,7 +590,7 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
 
                   {/* Jadwal Praktik Dokter Section */}
                   <div className="mt-8 pt-6 border-t border-gray-200">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    <h3 className="text-2xl font-bold text-mariner-600 mb-2">
                       Jadwal Praktik Dokter RS Siti Khodijah Muhammadiyah Cabang
                       Sepanjang
                     </h3>
@@ -609,7 +608,7 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
                         className={`px-6 py-3 font-medium transition-all ${
                           activeTab === "kondisi"
                             ? "text-mariner-600 border-b-2 border-mariner-600"
-                            : "text-gray-600 hover:text-gray-900"
+                            : "text-gray-600 hover:text-mariner-600"
                         }`}
                       >
                         Kondisi Medis
@@ -619,7 +618,7 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
                         className={`px-6 py-3 font-medium transition-all ${
                           activeTab === "teknologi"
                             ? "text-mariner-600 border-b-2 border-mariner-600"
-                            : "text-gray-600 hover:text-gray-900"
+                            : "text-gray-600 hover:text-mariner-600"
                         }`}
                       >
                         Teknologi Medis
@@ -629,7 +628,7 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
                         className={`px-6 py-3 font-medium transition-all ${
                           activeTab === "dokter"
                             ? "text-mariner-600 border-b-2 border-mariner-600"
-                            : "text-gray-600 hover:text-gray-900"
+                            : "text-gray-600 hover:text-mariner-600"
                         }`}
                       >
                         Dokter Kami
@@ -648,7 +647,7 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
                                   key={index}
                                   className="bg-white rounded-lg p-4 shadow-sm"
                                 >
-                                  <h4 className="font-semibold text-gray-900 mb-2">
+                                  <h4 className="font-semibold text-mariner-600 mb-2">
                                     {condition.title}
                                   </h4>
                                   <p className="text-gray-700 text-sm leading-relaxed">
@@ -670,7 +669,7 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
                                   key={index}
                                   className="bg-white rounded-lg p-4 shadow-sm"
                                 >
-                                  <h4 className="font-semibold text-gray-900 mb-2">
+                                  <h4 className="font-semibold text-mariner-600 mb-2">
                                     {tech.title}
                                   </h4>
                                   <p className="text-gray-700 text-sm leading-relaxed">
@@ -690,7 +689,7 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
                               key={index}
                               className="bg-white rounded-lg p-4 shadow-sm"
                             >
-                              <h4 className="font-semibold text-gray-900 mb-1">
+                              <h4 className="font-semibold text-mariner-600 mb-1">
                                 {doctor.name}
                               </h4>
                               <p className="text-gray-600 text-sm">

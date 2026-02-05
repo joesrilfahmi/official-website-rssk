@@ -53,6 +53,8 @@ export interface LayananUnggulan {
 // ============================================
 // KAMAR INAP TYPES
 // ============================================
+export type KamarInapStatus = "active" | "inactive";
+
 export interface KamarInap {
   id: string;
   title: string;
@@ -60,10 +62,35 @@ export interface KamarInap {
   price: number;
   facilities: string[];
   is_recommended: boolean;
-  urutan: number;
-  created_at?: string;
-  updated_at?: string;
+  image: string | null;
+  created_at: string;
+  updated_at: string;
 }
+
+export interface KamarInapFormData {
+  title: string;
+  description: string;
+  price: string;
+  facilities: string[];
+  is_recommended: boolean;
+  imageFile: File | null;
+  imageDeleted: boolean;
+  image: string;
+}
+
+export interface KamarInapFormErrors {
+  title: string;
+  description: string;
+  price: string;
+  facilities: string;
+}
+
+export type KamarInapSortField =
+  | "title"
+  | "price"
+  | "is_recommended"
+  | "created_at";
+export type KamarInapSortOrder = "asc" | "desc";
 
 // ============================================
 // BERITA TYPES
