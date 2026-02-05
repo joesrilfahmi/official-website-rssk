@@ -72,7 +72,6 @@ import {
   Loader2,
   Pencil,
   Plus,
-  RefreshCw,
   Search,
   Trash2,
   Upload,
@@ -127,13 +126,17 @@ const STATUS_OPTIONS: { value: PromoStatus; label: string; color: string }[] = [
   },
 ];
 
-const ITEMS_PER_PAGE_OPTIONS = [8, 12, 16, 24, 32];
+const SORT_OPTIONS = [
+  { value: "newest", label: "Terbaru" },
+  { value: "oldest", label: "Terlama" },
+  { value: "a-z", label: "A-Z" },
+  { value: "z-a", label: "Z-A" },
+] as const;
 
 export default function PromoPage() {
   const [promo, setPromo] = useState<PromoWithCreator[]>([]);
   const [filteredPromo, setFilteredPromo] = useState<PromoWithCreator[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
@@ -149,6 +152,9 @@ export default function PromoPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PromoStatus | "all">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">(
+    "newest",
+  );
 
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
   const [formErrors, setFormErrors] =
@@ -158,7 +164,7 @@ export default function PromoPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE_OPTIONS[0]);
+  const [itemsPerPage] = useState(8);
 
   useEffect(() => {
     const initUser = async () => {
@@ -236,9 +242,29 @@ export default function PromoPage() {
       filtered = filtered.filter((item) => item.status === statusFilter);
     }
 
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        case "a-z":
+          return a.title.localeCompare(b.title, "id");
+        case "z-a":
+          return b.title.localeCompare(a.title, "id");
+        default:
+          return 0;
+      }
+    });
+
     setFilteredPromo(filtered);
     setCurrentPage(1); // Reset to first page when filter changes
-  }, [promo, debouncedSearch, statusFilter]);
+  }, [promo, debouncedSearch, statusFilter, sortBy]);
 
   // Pagination calculations
   const paginatedPromo = useMemo(() => {
@@ -252,18 +278,6 @@ export default function PromoPage() {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleItemsPerPageChange = (value: string) => {
-    setItemsPerPage(Number(value));
-    setCurrentPage(1);
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchPromo();
-    setRefreshing(false);
-    toast.success("Data berhasil diperbarui");
   };
 
   const handleSelectItem = (id: string) => {
@@ -499,50 +513,38 @@ export default function PromoPage() {
 
   const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const validation = validateImage(file);
-      if (!validation.valid) {
-        setFormErrors({
-          ...formErrors,
-          picture: validation.error || "File tidak valid",
-        });
-        e.target.value = "";
-        return;
-      }
+    if (!file) return;
 
-      setFormData({
-        ...formData,
-        pictureFile: file,
-        pictureDeleted: false,
-      });
-      setFormErrors({ ...formErrors, picture: "" });
+    const validation = validateImage(file);
+    if (!validation.valid) {
+      setFormErrors({ ...formErrors, picture: validation.error || "" });
+      toast.error(validation.error || "File tidak valid");
+      return;
     }
-  };
 
-  const handleRemovePicture = () => {
     setFormData({
       ...formData,
-      picture: "",
-      pictureFile: null,
-      pictureDeleted: true,
+      pictureFile: file,
+      pictureDeleted: false,
     });
+    setFormErrors({ ...formErrors, picture: "" });
   };
 
   const getStatusBadge = (status: PromoStatus) => {
     const statusOption = STATUS_OPTIONS.find((opt) => opt.value === status);
+    if (!statusOption) return null;
+
     return (
-      <Badge variant="outline" className={statusOption?.color}>
-        {statusOption?.label}
+      <Badge variant="outline" className={statusOption.color}>
+        {statusOption.label}
       </Badge>
     );
   };
 
-  // Generate page numbers for pagination
   const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    const maxVisible = 5;
+    const pages: (number | "ellipsis")[] = [];
 
-    if (totalPages <= maxVisible) {
+    if (totalPages <= 7) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
@@ -592,22 +594,22 @@ export default function PromoPage() {
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Promo</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Promo</h1>
+            <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">
               Kelola promo dan penawaran spesial
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
             {selectedItems.length > 0 && (
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => setBulkDeleteDialogOpen(true)}
                 disabled={submitting}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-initial min-w-0"
               >
-                <Trash2 className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Hapus</span>
+                <Trash2 className="h-4 w-4 sm:mr-2 shrink-0" />
+                <span className="hidden sm:inline truncate">Hapus</span>
                 <span className="sm:hidden">({selectedItems.length})</span>
                 <span className="hidden sm:inline">
                   ({selectedItems.length})
@@ -617,11 +619,11 @@ export default function PromoPage() {
             <Button
               size="sm"
               onClick={() => handleOpenDialog()}
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-initial min-w-0"
             >
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Tambah Promo</span>
-              <span className="sm:hidden">Tambah</span>
+              <Plus className="h-4 w-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline truncate">Tambah Promo</span>
+              <span className="sm:hidden truncate">Tambah</span>
             </Button>
           </div>
         </div>
@@ -644,27 +646,29 @@ export default function PromoPage() {
               />
               <Label
                 htmlFor="select-all"
-                className="text-xs sm:text-sm text-muted-foreground cursor-pointer"
+                className="text-sm text-muted-foreground cursor-pointer"
               >
-                Pilih Semua
+                All
               </Label>
             </div>
           )}
 
           {/* Desktop: All filters in one row */}
           <div className="hidden sm:flex sm:items-center sm:gap-2 sm:ml-auto">
-            {/* Items per page */}
+            {/* Sort Filter */}
             <Select
-              value={itemsPerPage.toString()}
-              onValueChange={handleItemsPerPageChange}
+              value={sortBy}
+              onValueChange={(value) =>
+                setSortBy(value as "newest" | "oldest" | "a-z" | "z-a")
+              }
             >
-              <SelectTrigger className="w-[70px] h-9">
-                <SelectValue />
+              <SelectTrigger className="w-[120px] h-9">
+                <SelectValue placeholder="Urutan" />
               </SelectTrigger>
               <SelectContent>
-                {ITEMS_PER_PAGE_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option.toString()}>
-                    {option}
+                {SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -700,44 +704,26 @@ export default function PromoPage() {
                 className="pl-9 h-9"
               />
             </div>
-
-            {/* Refresh Button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleRefresh}
-                    disabled={refreshing}
-                    className="h-9 w-9"
-                  >
-                    <RefreshCw
-                      className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Refresh Data</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
         </div>
 
         {/* Mobile: Filters in separate rows */}
         <div className="flex sm:hidden flex-col gap-2">
           <div className="flex gap-2">
-            {/* Items per page */}
+            {/* Sort Filter */}
             <Select
-              value={itemsPerPage.toString()}
-              onValueChange={handleItemsPerPageChange}
+              value={sortBy}
+              onValueChange={(value) =>
+                setSortBy(value as "newest" | "oldest" | "a-z" | "z-a")
+              }
             >
-              <SelectTrigger className="flex-1 h-9 text-xs">
-                <SelectValue />
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Urutan" />
               </SelectTrigger>
               <SelectContent>
-                {ITEMS_PER_PAGE_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option.toString()}>
-                    {option}
+                {SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -750,7 +736,7 @@ export default function PromoPage() {
                 setStatusFilter(value as PromoStatus | "all")
               }
             >
-              <SelectTrigger className="flex-1 h-9 text-xs">
+              <SelectTrigger className="flex-1 h-9 text-sm">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -762,19 +748,6 @@ export default function PromoPage() {
                 ))}
               </SelectContent>
             </Select>
-
-            {/* Refresh Button */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="h-9 w-9"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-              />
-            </Button>
           </div>
 
           {/* Search - Full Width */}
@@ -793,16 +766,23 @@ export default function PromoPage() {
       {/* Content Section */}
       <div>
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div
+            className="grid grid-cols-1 gap-4
+sm:grid-cols-1
+md:grid-cols-2
+lg:grid-cols-3
+xl:grid-cols-4
+"
+          >
             {[...Array(8)].map((_, i) => (
               <Card key={i} className="overflow-hidden">
-                <Skeleton className="h-40 sm:h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
                 <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
-                  <Skeleton className="h-3 sm:h-4 w-3/4" />
-                  <Skeleton className="h-3 sm:h-4 w-full" />
-                  <Skeleton className="h-3 sm:h-4 w-2/3" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
                   <div className="flex gap-2">
-                    <Skeleton className="h-5 sm:h-6 w-16 sm:w-20" />
+                    <Skeleton className="h-6 w-20" />
                   </div>
                 </CardContent>
               </Card>
@@ -810,8 +790,8 @@ export default function PromoPage() {
           </div>
         ) : filteredPromo.length === 0 ? (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 sm:py-16">
-              <div className="rounded-full bg-muted p-3 mb-4">
+            <CardContent className="flex flex-col items-center justify-center py-10 sm:py-12 lg:py-16">
+              <div className="rounded-full bg-muted p-3 mb-3 sm:mb-4">
                 <File className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
               </div>
               <p className="text-base sm:text-lg font-semibold text-muted-foreground">
@@ -826,22 +806,29 @@ export default function PromoPage() {
           </Card>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div
+              className="grid grid-cols-1 gap-4
+sm:grid-cols-1
+md:grid-cols-2
+lg:grid-cols-3
+xl:grid-cols-4
+"
+            >
               {paginatedPromo.map((item) => (
                 <Card
                   key={item.id}
                   className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer relative"
                   onClick={() => handleOpenDetailDialog(item)}
                 >
-                  {/* Checkbox - Top Left */}
+                  {/* Checkbox - Top Left - ALWAYS VISIBLE */}
                   <div
-                    className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-3 left-3 z-10"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Checkbox
                       checked={selectedItems.includes(item.id)}
                       onCheckedChange={() => handleSelectItem(item.id)}
-                      className="bg-white dark:bg-gray-800 shadow-md h-4 w-4 sm:h-5 sm:w-5"
+                      className="bg-white dark:bg-gray-800 shadow-md h-5 w-5"
                     />
                   </div>
 
@@ -858,7 +845,7 @@ export default function PromoPage() {
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
-                        <Eye className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/20" />
+                        <Eye className="h-12 w-12 text-muted-foreground/20" />
                       </div>
                     )}
                   </div>
@@ -866,13 +853,13 @@ export default function PromoPage() {
                   {/* Content */}
                   <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                     <div>
-                      <div className="flex gap-1.5 sm:gap-2 flex-wrap mb-1.5 sm:mb-2">
+                      <div className="flex gap-2 flex-wrap mb-2">
                         {getStatusBadge(item.status)}
                       </div>
-                      <h3 className="font-semibold text-sm sm:text-base lg:text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                      <h3 className="font-semibold text-base lg:text-lg line-clamp-2 group-hover:text-primary transition-colors">
                         {item.title}
                       </h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-1 sm:mt-2">
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
                         {item.description}
                       </p>
                     </div>
@@ -880,26 +867,26 @@ export default function PromoPage() {
                     {/* Footer */}
                     <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
                       {/* User info & Date */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                        <Avatar className="h-4 w-4 sm:h-5 sm:w-5 shrink-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <Avatar className="h-5 w-5 shrink-0">
                           <AvatarImage
                             src={item.created_by_user?.avatar}
                             alt={item.created_by_user?.nama || "User"}
                           />
-                          <AvatarFallback className="text-[10px] sm:text-xs">
+                          <AvatarFallback className="text-xs">
                             {item.created_by_user?.nama
                               ?.charAt(0)
                               .toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="truncate text-[10px] sm:text-xs text-muted-foreground">
+                        <span className="truncate text-xs text-muted-foreground">
                           {item.created_by_user?.nama}
                         </span>
                         <span className="text-muted-foreground hidden sm:inline">
                           •
                         </span>
                         <Calendar className="h-3 w-3 shrink-0 hidden sm:block" />
-                        <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
+                        <span className="text-xs text-muted-foreground hidden sm:inline">
                           {new Date(item.created_at).toLocaleDateString(
                             "id-ID",
                             { day: "numeric", month: "short", year: "numeric" },
@@ -907,21 +894,21 @@ export default function PromoPage() {
                         </span>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex gap-1 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      {/* Action Buttons - ALWAYS VISIBLE */}
+                      <div className="flex gap-2 shrink-0">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 variant="secondary"
                                 size="icon"
-                                className="h-6 w-6 sm:h-8 sm:w-8 shadow-md"
+                                className="h-8 w-8 shadow-md"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenDialog(item);
                                 }}
                               >
-                                <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Edit</TooltipContent>
@@ -934,13 +921,13 @@ export default function PromoPage() {
                               <Button
                                 variant="destructive"
                                 size="icon"
-                                className="h-6 w-6 sm:h-8 sm:w-8 shadow-md"
+                                className="h-8 w-8 shadow-md"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenDeleteDialog(item);
                                 }}
                               >
-                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Hapus</TooltipContent>
@@ -955,67 +942,117 @@ export default function PromoPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col items-center gap-2 sm:gap-3 mt-4">
-                {/* Pagination - Tengah */}
-                <Pagination>
-                  <PaginationContent className="gap-1">
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() =>
-                          currentPage > 1 && handlePageChange(currentPage - 1)
-                        }
-                        className={`h-8 sm:h-9 px-2 sm:px-3 ${
-                          currentPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }`}
-                      />
-                    </PaginationItem>
+              <div className="mt-4 sm:mt-6">
+                {/* Desktop: Info Text (kiri) + Pagination (kanan) dalam satu baris */}
+                <div className="hidden sm:flex items-center justify-between gap-4">
+                  {/* Info Text - Kiri - DIPERBAIKI */}
+                  <div className="text-sm text-muted-foreground shrink-0">
+                    Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                    {Math.min(currentPage * itemsPerPage, filteredPromo.length)}{" "}
+                    dari {filteredPromo.length} data promo
+                  </div>
 
-                    {getPageNumbers().map((page, index) => (
-                      <PaginationItem key={index} className="hidden sm:block">
-                        {page === "ellipsis" ? (
-                          <PaginationEllipsis />
-                        ) : (
-                          <PaginationLink
-                            onClick={() => handlePageChange(page as number)}
-                            isActive={currentPage === page}
-                            className="cursor-pointer h-9"
-                          >
-                            {page}
-                          </PaginationLink>
-                        )}
+                  {/* Spacer untuk mendorong pagination ke kanan */}
+                  <div className="flex-1"></div>
+
+                  {/* Pagination - Kanan */}
+                  <div className="shrink-0">
+                    <Pagination>
+                      <PaginationContent className="gap-1">
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() =>
+                              currentPage > 1 &&
+                              handlePageChange(currentPage - 1)
+                            }
+                            className={`h-9 px-3 text-sm ${
+                              currentPage === 1
+                                ? "pointer-events-none opacity-50"
+                                : "cursor-pointer"
+                            }`}
+                          />
+                        </PaginationItem>
+
+                        {getPageNumbers().map((page, index) => (
+                          <PaginationItem key={index}>
+                            {page === "ellipsis" ? (
+                              <PaginationEllipsis />
+                            ) : (
+                              <PaginationLink
+                                onClick={() => handlePageChange(page as number)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer h-9"
+                              >
+                                {page}
+                              </PaginationLink>
+                            )}
+                          </PaginationItem>
+                        ))}
+
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() =>
+                              currentPage < totalPages &&
+                              handlePageChange(currentPage + 1)
+                            }
+                            className={`h-9 px-3 text-sm ${
+                              currentPage === totalPages
+                                ? "pointer-events-none opacity-50"
+                                : "cursor-pointer"
+                            }`}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                </div>
+
+                {/* Mobile: Stack vertical (Info Text di atas, Pagination di bawah) */}
+                <div className="flex sm:hidden flex-col items-center gap-3">
+                  {/* Info Text - Atas */}
+                  <div className="text-xs text-muted-foreground text-center px-2">
+                    Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                    {Math.min(currentPage * itemsPerPage, filteredPromo.length)}{" "}
+                    dari {filteredPromo.length} data promo
+                  </div>
+
+                  {/* Pagination - Bawah */}
+                  <Pagination>
+                    <PaginationContent className="gap-0.5">
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() =>
+                            currentPage > 1 && handlePageChange(currentPage - 1)
+                          }
+                          className={`h-8 px-2 text-xs ${
+                            currentPage === 1
+                              ? "pointer-events-none opacity-50"
+                              : "cursor-pointer"
+                          }`}
+                        />
                       </PaginationItem>
-                    ))}
 
-                    {/* Mobile only */}
-                    <PaginationItem className="sm:hidden">
-                      <div className="h-8 px-3 flex items-center justify-center text-sm font-medium">
-                        {currentPage} / {totalPages}
-                      </div>
-                    </PaginationItem>
+                      <PaginationItem>
+                        <div className="h-8 px-2 flex items-center justify-center text-xs font-medium min-w-[60px]">
+                          {currentPage} / {totalPages}
+                        </div>
+                      </PaginationItem>
 
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() =>
-                          currentPage < totalPages &&
-                          handlePageChange(currentPage + 1)
-                        }
-                        className={`h-8 sm:h-9 px-2 sm:px-3 ${
-                          currentPage === totalPages
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }`}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-
-                {/* Info Text - Bawah */}
-                <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                  Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
-                  {Math.min(currentPage * itemsPerPage, filteredPromo.length)}{" "}
-                  dari {filteredPromo.length} data promo
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() =>
+                            currentPage < totalPages &&
+                            handlePageChange(currentPage + 1)
+                          }
+                          className={`h-8 px-2 text-xs ${
+                            currentPage === totalPages
+                              ? "pointer-events-none opacity-50"
+                              : "cursor-pointer"
+                          }`}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
                 </div>
               </div>
             )}
@@ -1025,7 +1062,7 @@ export default function PromoPage() {
 
       {/* Form Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">
               {selectedPromo ? "Edit Promo" : "Tambah Promo Baru"}
@@ -1038,7 +1075,7 @@ export default function PromoPage() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-xs sm:text-sm">
+              <Label htmlFor="title" className="text-sm">
                 Judul Promo <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -1052,17 +1089,15 @@ export default function PromoPage() {
                 }}
                 disabled={submitting}
                 placeholder="Masukkan judul promo"
-                className={`text-sm ${formErrors.title ? "border-red-500" : ""}`}
+                className={formErrors.title ? "border-red-500" : ""}
               />
               {formErrors.title && (
-                <p className="text-xs sm:text-sm text-red-500">
-                  {formErrors.title}
-                </p>
+                <p className="text-sm text-red-500">{formErrors.title}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-xs sm:text-sm">
+              <Label htmlFor="description" className="text-sm">
                 Deskripsi <span className="text-red-500">*</span>
               </Label>
               <Textarea
@@ -1076,25 +1111,23 @@ export default function PromoPage() {
                 }}
                 disabled={submitting}
                 placeholder="Masukkan deskripsi promo"
-                className={`min-h-[120px] sm:min-h-[150px] resize-y text-sm ${
+                className={`min-h-[150px] resize-y ${
                   formErrors.description ? "border-red-500" : ""
                 }`}
               />
               {formErrors.description && (
-                <p className="text-xs sm:text-sm text-red-500">
-                  {formErrors.description}
-                </p>
+                <p className="text-sm text-red-500">{formErrors.description}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="picture" className="text-xs sm:text-sm">
+              <Label htmlFor="picture" className="text-sm">
                 Gambar Promo
               </Label>
 
               {(formData.picture || formData.pictureFile) &&
               !formData.pictureDeleted ? (
-                <div className="relative w-full h-40 sm:h-48 rounded-md overflow-hidden border">
+                <div className="relative w-full h-48 rounded-md overflow-hidden border">
                   <Image
                     src={
                       formData.pictureFile
@@ -1110,48 +1143,34 @@ export default function PromoPage() {
                     type="button"
                     variant="destructive"
                     size="icon"
-                    className="absolute top-2 right-2 h-7 w-7 sm:h-8 sm:w-8"
-                    onClick={handleRemovePicture}
+                    className="absolute top-2 right-2 h-8 w-8"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        pictureFile: null,
+                        pictureDeleted: true,
+                      });
+                    }}
+                    disabled={submitting}
                   >
-                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
                 <>
                   <div
-                    className={`relative border-2 border-dashed rounded-lg p-4 sm:p-6 transition-colors ${
-                      formErrors.picture
-                        ? "border-red-500"
-                        : "border-muted-foreground/25"
-                    } hover:border-muted-foreground/50`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.add(
-                        "border-primary",
-                        "bg-primary/5",
-                      );
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.remove(
-                        "border-primary",
-                        "bg-primary/5",
-                      );
-                    }}
+                    className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors"
                     onDrop={(e) => {
                       e.preventDefault();
-                      e.currentTarget.classList.remove(
-                        "border-primary",
-                        "bg-primary/5",
-                      );
-                      const file = e.dataTransfer.files?.[0];
+                      const file = e.dataTransfer.files[0];
                       if (file) {
                         const validation = validateImage(file);
                         if (!validation.valid) {
                           setFormErrors({
                             ...formErrors,
-                            picture: validation.error || "File tidak valid",
+                            picture: validation.error || "",
                           });
+                          toast.error(validation.error || "File tidak valid");
                           return;
                         }
                         setFormData({
@@ -1162,6 +1181,7 @@ export default function PromoPage() {
                         setFormErrors({ ...formErrors, picture: "" });
                       }
                     }}
+                    onDragOver={(e) => e.preventDefault()}
                   >
                     <Input
                       id="picture"
@@ -1175,21 +1195,19 @@ export default function PromoPage() {
                       htmlFor="picture"
                       className="flex flex-col items-center justify-center cursor-pointer"
                     >
-                      <div className="rounded-full bg-muted p-2 sm:p-3 mb-2">
-                        <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+                      <div className="rounded-full bg-muted p-3 mb-2">
+                        <Upload className="h-6 w-6 text-muted-foreground" />
                       </div>
-                      <p className="text-xs sm:text-sm font-medium mb-1">
+                      <p className="text-sm font-medium mb-1">
                         Klik untuk upload atau drag & drop
                       </p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         Format: WebP, Max: 300KB
                       </p>
                     </label>
                   </div>
                   {formErrors.picture && (
-                    <p className="text-xs sm:text-sm text-red-500">
-                      {formErrors.picture}
-                    </p>
+                    <p className="text-sm text-red-500">{formErrors.picture}</p>
                   )}
                 </>
               )}
@@ -1197,7 +1215,7 @@ export default function PromoPage() {
 
             {selectedPromo && (
               <div className="space-y-2">
-                <Label htmlFor="status" className="text-xs sm:text-sm">
+                <Label htmlFor="status" className="text-sm">
                   Status <span className="text-red-500">*</span>
                 </Label>
                 <Select
@@ -1207,7 +1225,7 @@ export default function PromoPage() {
                   }}
                   disabled={submitting}
                 >
-                  <SelectTrigger className="text-sm">
+                  <SelectTrigger>
                     <SelectValue placeholder="Pilih status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1221,25 +1239,18 @@ export default function PromoPage() {
               </div>
             )}
 
-            <DialogFooter className="gap-2 sm:gap-0">
+            <DialogFooter className="gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCloseDialog}
                 disabled={submitting}
-                size="sm"
-                className="flex-1 sm:flex-none"
               >
                 Batal
               </Button>
-              <Button
-                type="submit"
-                disabled={submitting}
-                size="sm"
-                className="flex-1 sm:flex-none"
-              >
+              <Button type="submit" disabled={submitting}>
                 {submitting && (
-                  <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
@@ -1250,7 +1261,7 @@ export default function PromoPage() {
 
       {/* Detail Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">
               Detail Promo
@@ -1259,7 +1270,7 @@ export default function PromoPage() {
           {selectedPromo && (
             <div className="space-y-3 sm:space-y-4">
               {selectedPromo.picture && (
-                <div className="relative w-full h-48 sm:h-64 rounded-lg overflow-hidden">
+                <div className="relative w-full h-48 sm:h-56 md:h-64 rounded-lg overflow-hidden">
                   <Image
                     src={selectedPromo.picture}
                     alt={selectedPromo.title}
@@ -1304,11 +1315,7 @@ export default function PromoPage() {
             </div>
           )}
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={handleCloseDetailDialog}
-              size="sm"
-            >
+            <Button variant="outline" onClick={handleCloseDetailDialog}>
               Tutup
             </Button>
           </DialogFooter>
@@ -1317,7 +1324,7 @@ export default function PromoPage() {
 
       {/* Delete Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base sm:text-lg">
               Hapus Promo?
@@ -1328,17 +1335,17 @@ export default function PromoPage() {
               dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
+          <AlertDialogFooter className="gap-2 sm:gap-0 flex-col sm:flex-row">
             <AlertDialogCancel
               disabled={submitting}
-              className="flex-1 sm:flex-none"
+              className="w-full sm:w-auto"
             >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white flex-1 sm:flex-none"
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto"
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitting ? "Menghapus..." : "Hapus"}
@@ -1352,7 +1359,7 @@ export default function PromoPage() {
         open={bulkDeleteDialogOpen}
         onOpenChange={setBulkDeleteDialogOpen}
       >
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base sm:text-lg">
               Hapus Beberapa Promo?
@@ -1363,17 +1370,17 @@ export default function PromoPage() {
               Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
+          <AlertDialogFooter className="gap-2 sm:gap-0 flex-col sm:flex-row">
             <AlertDialogCancel
               disabled={submitting}
-              className="flex-1 sm:flex-none"
+              className="w-full sm:w-auto"
             >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
               disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white flex-1 sm:flex-none"
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto"
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitting
