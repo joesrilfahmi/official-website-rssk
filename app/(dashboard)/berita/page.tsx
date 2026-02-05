@@ -398,7 +398,7 @@ export default function BeritaPage() {
         }
 
         const uploadResult = await uploadFile({
-          bucket: "berita-thumbnails",
+          bucket: "berita",
           folder: "images",
           file: formData.thumbnailFile,
         });

@@ -1,30 +1,8 @@
 // app/(dashboard)/jadwal-dokter/page.tsx
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { formatDateIndonesia } from "@/lib/utils";
-import Image from "next/image";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { AccessDeniedDialog } from "@/components/access-denied-dialog";
+import { TablePagination } from "@/components/table/TablePagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,27 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Loader2,
-  Search,
-  RefreshCw,
-  ArrowUpDown,
-  X,
-  Eye,
-  Clock,
-  ImagePlus,
-} from "lucide-react";
-import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -65,32 +23,74 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TablePagination } from "@/components/table/TablePagination";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AccessDeniedDialog } from "@/components/access-denied-dialog";
-import { getCurrentUser } from "@/lib/auth";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { uploadFile, deleteFile, getFilePathFromUrl } from "@/lib/upload";
+import { getCurrentUser } from "@/lib/auth";
+import { supabase } from "@/lib/supabase/client";
+import { deleteFile, getFilePathFromUrl, uploadFile } from "@/lib/upload";
+import { formatDateIndonesia } from "@/lib/utils";
 import { validateImage } from "@/lib/validasi/validasiImage";
 import type {
-  DokterStatus,
-  HariType,
-  JadwalType,
-  SortField,
-  SortOrder,
-  Poli,
-  DokterWithRelations,
   DokterFormData,
   DokterFormErrors,
+  DokterStatus,
+  DokterWithRelations,
+  HariType,
   JadwalDokter,
+  JadwalType,
+  Poli,
+  SortField,
+  SortOrder,
 } from "@/types";
+import {
+  ArrowUpDown,
+  Clock,
+  Eye,
+  ImagePlus,
+  Loader2,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const DEFAULT_FORM_DATA: DokterFormData = {
   gelar_depan: "",
@@ -591,7 +591,7 @@ export default function DokterPage() {
 
       if (formData.profileFile) {
         const uploadResult = await uploadFile({
-          bucket: "dokter-profiles",
+          bucket: "dokter",
           folder: currentUserId,
           file: formData.profileFile,
         });

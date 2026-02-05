@@ -1,0 +1,24 @@
+-- Policy untuk INSERT/UPLOAD file ke bucket promo
+CREATE POLICY "Enable upload for authenticated users"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'promo');
+
+-- Policy untuk SELECT/READ file dari bucket promo
+CREATE POLICY "Enable read access for all users"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'promo');
+
+-- Policy untuk UPDATE file di bucket promo
+CREATE POLICY "Enable update for authenticated users"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (bucket_id = 'promo')
+WITH CHECK (bucket_id = 'promo');
+
+-- Policy untuk DELETE file di bucket promo
+CREATE POLICY "Enable delete for authenticated users"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'promo');

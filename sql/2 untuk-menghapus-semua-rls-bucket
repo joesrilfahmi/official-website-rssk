@@ -1,0 +1,13 @@
+-- Hapus policy lama jika ada
+DROP POLICY IF EXISTS "Enable upload for authenticated users" ON storage.objects;
+DROP POLICY IF EXISTS "Enable read access for all users" ON storage.objects;
+DROP POLICY IF EXISTS "Enable update for authenticated users" ON storage.objects;
+DROP POLICY IF EXISTS "Enable delete for authenticated users" ON storage.objects;
+
+-- Policy baru yang lebih permisif untuk bucket kamar-inap
+CREATE POLICY "Allow all operations on kamar-inap bucket"
+ON storage.objects
+FOR ALL
+TO public
+USING (bucket_id = 'kamar-inap')
+WITH CHECK (bucket_id = 'kamar-inap');

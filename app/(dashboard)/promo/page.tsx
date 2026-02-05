@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -63,6 +65,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -121,6 +124,7 @@ export default function PromoPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState<PromoWithCreator | null>(
     null,
@@ -137,6 +141,8 @@ export default function PromoPage() {
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
   const [formErrors, setFormErrors] =
     useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
+
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   useEffect(() => {
     const initUser = async () => {
@@ -222,6 +228,52 @@ export default function PromoPage() {
     await fetchPromo();
     setRefreshing(false);
     toast.success("Data berhasil diperbarui");
+  };
+
+  const handleSelectItem = (id: string) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedItems(filteredPromo.map((item) => item.id));
+    } else {
+      setSelectedItems([]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedItems.length === 0) return;
+
+    setSubmitting(true);
+
+    try {
+      for (const id of selectedItems) {
+        const promo = filteredPromo.find((item) => item.id === id);
+        if (promo?.picture) {
+          const path = getFilePathFromUrl(promo.picture, "promo");
+          if (path) {
+            await deleteFile("promo", path);
+          }
+        }
+
+        const { error } = await supabase.from("promo").delete().eq("id", id);
+
+        if (error) throw error;
+      }
+
+      toast.success(`${selectedItems.length} promo berhasil dihapus`);
+      setSelectedItems([]);
+      setBulkDeleteDialogOpen(false);
+      fetchPromo();
+    } catch (error) {
+      console.error("Error deleting promos:", error);
+      toast.error("Gagal menghapus promo");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleOpenDialog = (promo?: PromoWithCreator) => {
@@ -325,7 +377,7 @@ export default function PromoPage() {
         }
 
         const uploadResult = await uploadFile({
-          bucket: "promo-pictures",
+          bucket: "promo",
           folder: "images",
           file: formData.pictureFile,
         });
@@ -470,15 +522,48 @@ export default function PromoPage() {
             Kelola promo dan penawaran spesial
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="mr-2 h-4 w-4" />
-          Tambah Promo
-        </Button>
+        <div className="flex gap-2">
+          {selectedItems.length > 0 && (
+            <Button
+              variant="destructive"
+              onClick={() => setBulkDeleteDialogOpen(true)}
+              disabled={submitting}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Hapus ({selectedItems.length})
+            </Button>
+          )}
+          <Button onClick={() => handleOpenDialog()}>
+            <Plus className="mr-2 h-4 w-4" />
+            Tambah Promo
+          </Button>
+        </div>
       </div>
 
       <div>
-        <div className="flex justify-end pt-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex justify-between items-center pt-4">
+          {/* Checkbox Select All - Left side */}
+          {filteredPromo.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={
+                  selectedItems.length === filteredPromo.length &&
+                  filteredPromo.length > 0
+                }
+                onCheckedChange={handleSelectAll}
+                id="select-all"
+              />
+              <Label
+                htmlFor="select-all"
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
+                Pilih Semua
+              </Label>
+            </div>
+          )}
+
+          {/* Filters - Right side */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center ml-auto">
             {/* Status */}
             <Select
               value={statusFilter}
@@ -566,9 +651,21 @@ export default function PromoPage() {
             {filteredPromo.map((item) => (
               <Card
                 key={item.id}
-                className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer"
+                className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer relative"
                 onClick={() => handleOpenDetailDialog(item)}
               >
+                {/* Checkbox - Top Left - Show on hover */}
+                <div
+                  className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={selectedItems.includes(item.id)}
+                    onCheckedChange={() => handleSelectItem(item.id)}
+                    className="bg-white dark:bg-gray-800 shadow-md"
+                  />
+                </div>
+
                 <div className="relative h-48 bg-muted overflow-hidden rounded-t-xl -mt-6">
                   {item.picture ? (
                     <Image
@@ -597,51 +694,70 @@ export default function PromoPage() {
                       {item.description}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage
-                        src={item.created_by_user?.avatar}
-                        alt={item.created_by_user?.nama || "User"}
-                      />
-                      <AvatarFallback className="text-xs">
-                        {item.created_by_user?.nama?.charAt(0).toUpperCase() ||
-                          "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="truncate">
-                      {item.created_by_user?.nama}
-                    </span>
-                    <span>•</span>
-                    <Calendar className="h-3 w-3" />
-                    <span>
-                      {new Date(item.created_at).toLocaleDateString("id-ID")}
-                    </span>
-                  </div>
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenDialog(item);
-                      }}
-                    >
-                      <Pencil className="mr-2 h-3 w-3" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenDeleteDialog(item);
-                      }}
-                    >
-                      <Trash2 className="mr-2 h-3 w-3" />
-                      Hapus
-                    </Button>
+                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground pt-2 border-t">
+                    {/* User info & Date - Left */}
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage
+                          src={item.created_by_user?.avatar}
+                          alt={item.created_by_user?.nama || "User"}
+                        />
+                        <AvatarFallback className="text-xs">
+                          {item.created_by_user?.nama
+                            ?.charAt(0)
+                            .toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate">
+                        {item.created_by_user?.nama}
+                      </span>
+                      <span>•</span>
+                      <Calendar className="h-3 w-3" />
+                      <span>
+                        {new Date(item.created_at).toLocaleDateString("id-ID")}
+                      </span>
+                    </div>
+
+                    {/* Action Buttons - Right - Show on hover */}
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="secondary"
+                              size="icon"
+                              className="h-8 w-8 shadow-md"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDialog(item);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="h-8 w-8 shadow-md"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDeleteDialog(item);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Hapus</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -689,7 +805,7 @@ export default function PromoPage() {
               <Label htmlFor="description">
                 Deskripsi <span className="text-red-500">*</span>
               </Label>
-              <textarea
+              <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => {
@@ -700,9 +816,9 @@ export default function PromoPage() {
                 }}
                 disabled={submitting}
                 placeholder="Masukkan deskripsi promo"
-                className={`w-full min-h-[150px] p-3 rounded-md border ${
-                  formErrors.description ? "border-red-500" : "border-input"
-                } bg-background resize-y`}
+                className={`min-h-[150px] resize-y ${
+                  formErrors.description ? "border-red-500" : ""
+                }`}
               />
               {formErrors.description && (
                 <p className="text-sm text-red-500">{formErrors.description}</p>
@@ -711,46 +827,108 @@ export default function PromoPage() {
 
             <div className="space-y-2">
               <Label htmlFor="picture">Gambar Promo</Label>
-              <Input
-                id="picture"
-                type="file"
-                accept="image/webp"
-                onChange={handlePictureChange}
-                disabled={submitting}
-                className={formErrors.picture ? "border-red-500" : ""}
-              />
-              {formErrors.picture && (
-                <p className="text-sm text-red-500">{formErrors.picture}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Format: WebP, Max: 300KB
-              </p>
 
+              {/* Preview Image - Show when picture exists */}
               {(formData.picture || formData.pictureFile) &&
-                !formData.pictureDeleted && (
-                  <div className="relative w-full h-48 mt-2 rounded-md overflow-hidden border">
-                    <Image
-                      src={
-                        formData.pictureFile
-                          ? URL.createObjectURL(formData.pictureFile)
-                          : formData.picture
+              !formData.pictureDeleted ? (
+                <div className="relative w-full h-48 rounded-md overflow-hidden border">
+                  <Image
+                    src={
+                      formData.pictureFile
+                        ? URL.createObjectURL(formData.pictureFile)
+                        : formData.picture
+                    }
+                    alt="Preview"
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={handleRemovePicture}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                /* Upload Area - Show when no picture */
+                <>
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                      formErrors.picture
+                        ? "border-red-500"
+                        : "border-muted-foreground/25"
+                    } hover:border-muted-foreground/50`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.add(
+                        "border-primary",
+                        "bg-primary/5",
+                      );
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove(
+                        "border-primary",
+                        "bg-primary/5",
+                      );
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove(
+                        "border-primary",
+                        "bg-primary/5",
+                      );
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) {
+                        const validation = validateImage(file);
+                        if (!validation.valid) {
+                          setFormErrors({
+                            ...formErrors,
+                            picture: validation.error || "File tidak valid",
+                          });
+                          return;
+                        }
+                        setFormData({
+                          ...formData,
+                          pictureFile: file,
+                          pictureDeleted: false,
+                        });
+                        setFormErrors({ ...formErrors, picture: "" });
                       }
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                      unoptimized
+                    }}
+                  >
+                    <Input
+                      id="picture"
+                      type="file"
+                      accept="image/webp"
+                      onChange={handlePictureChange}
+                      disabled={submitting}
+                      className="hidden"
                     />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={handleRemovePicture}
+                    <label
+                      htmlFor="picture"
+                      className="flex flex-col items-center justify-center cursor-pointer"
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
+                      <div className="rounded-full bg-muted p-3 mb-2">
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium mb-1">
+                        Klik untuk upload atau drag & drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Format: WebP, Max: 300KB
+                      </p>
+                    </label>
                   </div>
-                )}
+                  {formErrors.picture && (
+                    <p className="text-sm text-red-500">{formErrors.picture}</p>
+                  )}
+                </>
+              )}
             </div>
 
             {selectedPromo && (
@@ -876,6 +1054,35 @@ export default function PromoPage() {
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitting ? "Menghapus..." : "Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Beberapa Promo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus{" "}
+              <strong>{selectedItems.length} promo</strong> yang dipilih?
+              Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={submitting}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white"
+            >
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {submitting
+                ? "Menghapus..."
+                : `Hapus ${selectedItems.length} Promo`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
