@@ -170,15 +170,38 @@ export interface PromoWithCreator extends Promo {
 }
 
 // ============================================
-// POLI TYPES
+// POLI TYPES (UPDATED)
 // ============================================
+export type PoliStatus = "active" | "inactive";
+
 export interface Poli {
   id: string;
   nama_poli: string;
-  status: "active" | "inactive";
+  icon: string;
+  description: string;
+  urutan: number;
+  status: PoliStatus;
   created_at?: string;
   updated_at?: string;
 }
+
+export interface PoliFormData {
+  nama_poli: string;
+  icon: string;
+  description: string;
+  urutan: number;
+  status: PoliStatus;
+}
+
+export interface PoliFormErrors {
+  nama_poli: string;
+  icon: string;
+  description: string;
+  urutan: string;
+}
+
+export type PoliSortField = "nama_poli" | "urutan" | "created_at";
+export type PoliSortOrder = "asc" | "desc";
 
 // ============================================
 // DOKTER TYPES
