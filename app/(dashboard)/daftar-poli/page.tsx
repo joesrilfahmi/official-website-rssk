@@ -60,7 +60,7 @@ import {
 } from "@/components/ui/tooltip";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase/client";
-import { formatDateTime } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import { Poli } from "@/types/index";
 import * as Icons from "lucide-react";
 import {
@@ -121,6 +121,9 @@ export default function DaftarPoliPage() {
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [selectedPoli, setSelectedPoli] = useState<PoliExtended | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive"
+  >("all");
 
   // Access control state
   const [showAccessDenied, setShowAccessDenied] = useState(false);
@@ -152,7 +155,6 @@ export default function DaftarPoliPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Apply filters and sorting
   const applyFilters = useCallback(() => {
     let filtered = [...poli];
 
@@ -165,6 +167,14 @@ export default function DaftarPoliPage() {
           p.description.toLowerCase().includes(query) ||
           p.icon.toLowerCase().includes(query),
       );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((p) => {
+        const isActive = p.status === "active";
+        return statusFilter === "active" ? isActive : !isActive;
+      });
     }
 
     // Apply sorting
@@ -187,7 +197,7 @@ export default function DaftarPoliPage() {
     setFilteredPoli(filtered);
     setCurrentPage(1);
     setSelectedIds(new Set());
-  }, [debouncedSearch, poli, sortField, sortOrder]);
+  }, [debouncedSearch, poli, sortField, sortOrder, statusFilter]);
 
   useEffect(() => {
     applyFilters();
@@ -671,6 +681,32 @@ export default function DaftarPoliPage() {
                 </SelectContent>
               </Select>
 
+              {/* Status Filter */}
+              <Select
+                value={statusFilter}
+                onValueChange={(value: "all" | "active" | "inactive") =>
+                  setStatusFilter(value)
+                }
+              >
+                <SelectTrigger className="w-[180px]">
+                  <div className="flex items-center gap-2">
+                    <Icons.Filter className="h-4 w-4" />
+                    <span>
+                      {statusFilter === "all"
+                        ? "Semua Status"
+                        : statusFilter === "active"
+                          ? "Aktif"
+                          : "Nonaktif"}
+                    </span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="active">Aktif</SelectItem>
+                  <SelectItem value="inactive">Nonaktif</SelectItem>
+                </SelectContent>
+              </Select>
+
               {/* Reset Button */}
               {showReset && (
                 <Button variant="outline" onClick={handleResetFilters}>
@@ -848,7 +884,7 @@ export default function DaftarPoliPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedPoli ? "Edit Poli" : "Tambah Poli"}
@@ -898,8 +934,12 @@ export default function DaftarPoliPage() {
                   }}
                   placeholder="Masukkan deskripsi poli"
                   disabled={submitting}
-                  className={formErrors.description ? "border-red-500" : ""}
                   rows={4}
+                  className={cn(
+                    "min-h-[150px] resize-y",
+                    formErrors.description &&
+                      "border-red-500 focus-visible:ring-red-500",
+                  )}
                 />
                 {formErrors.description && (
                   <p className="text-sm text-red-500">
