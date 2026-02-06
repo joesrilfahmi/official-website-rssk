@@ -170,7 +170,7 @@ export interface PromoWithCreator extends Promo {
 }
 
 // ============================================
-// POLI TYPES (UPDATED)
+// POLI TYPES
 // ============================================
 export type PoliStatus = "active" | "inactive";
 

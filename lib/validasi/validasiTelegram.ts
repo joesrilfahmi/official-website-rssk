@@ -2,95 +2,92 @@
 // FILE: src/lib/validasi/validasiTelegram.ts
 // ============================================
 
-export interface ValidationResult {
-    isValid: boolean;
-    message: string;
+export interface TelegramValidationResult {
+  valid: boolean;
+  errors: string[];
 }
 
-export const validasiIdTelegram = (id_telegram: string): ValidationResult => {
-    // Jika kosong, itu valid (field optional)
-    if (!id_telegram.trim()) {
-        return { isValid: true, message: '' };
-    }
+/**
+ * Validasi ID Telegram
+ * - Field adalah optional (boleh kosong)
+ * - Jika diisi, harus berupa angka saja
+ * - Minimal 5 digit, maksimal 20 digit
+ */
+export const validasiIdTelegram = (
+  id_telegram: string,
+): TelegramValidationResult => {
+  const errors: string[] = [];
 
-    // Cek apakah hanya berisi angka
-    if (!/^\d+$/.test(id_telegram)) {
-        return {
-            isValid: false,
-            message: 'ID Telegram harus berupa angka saja'
-        };
-    }
+  // Jika kosong, itu valid (field optional)
+  if (!id_telegram.trim()) {
+    return { valid: true, errors: [] };
+  }
 
-    // Cek panjang digit
-    if (id_telegram.length < 5) {
-        return {
-            isValid: false,
-            message: 'ID Telegram minimal 5 digit'
-        };
-    }
+  // Cek apakah hanya berisi angka
+  if (!/^\d+$/.test(id_telegram)) {
+    errors.push("ID Telegram harus berupa angka saja");
+  }
 
-    if (id_telegram.length > 20) {
-        return {
-            isValid: false,
-            message: 'ID Telegram maksimal 20 digit'
-        };
-    }
+  // Cek panjang digit
+  if (id_telegram.length < 5) {
+    errors.push("ID Telegram minimal 5 digit");
+  }
 
-    return { isValid: true, message: '' };
+  if (id_telegram.length > 20) {
+    errors.push("ID Telegram maksimal 20 digit");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
 };
 
 export interface ValidasiTelegramOptions {
-    required?: boolean;
-    minLength?: number;
-    maxLength?: number;
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
 }
 
+/**
+ * Validasi ID Telegram dengan opsi custom
+ */
 export const validasiIdTelegramWithOptions = (
-    id_telegram: string,
-    options: ValidasiTelegramOptions = {}
-): ValidationResult => {
-    const {
-        required = false,
-        minLength = 5,
-        maxLength = 20
-    } = options;
+  id_telegram: string,
+  options: ValidasiTelegramOptions = {},
+): TelegramValidationResult => {
+  const { required = false, minLength = 5, maxLength = 20 } = options;
 
-    // Cek apakah field required
-    if (required && !id_telegram.trim()) {
-        return {
-            isValid: false,
-            message: 'ID Telegram wajib diisi'
-        };
-    }
+  const errors: string[] = [];
 
-    // Jika kosong dan tidak required
-    if (!id_telegram.trim()) {
-        return { isValid: true, message: '' };
-    }
+  // Cek apakah field required
+  if (required && !id_telegram.trim()) {
+    errors.push("ID Telegram wajib diisi");
+    return { valid: false, errors };
+  }
 
-    // Cek apakah hanya berisi angka
-    if (!/^\d+$/.test(id_telegram)) {
-        return {
-            isValid: false,
-            message: 'ID Telegram harus berupa angka saja'
-        };
-    }
+  // Jika kosong dan tidak required
+  if (!id_telegram.trim()) {
+    return { valid: true, errors: [] };
+  }
 
-    // Cek minimum length
-    if (id_telegram.length < minLength) {
-        return {
-            isValid: false,
-            message: `ID Telegram minimal ${minLength} digit`
-        };
-    }
+  // Cek apakah hanya berisi angka
+  if (!/^\d+$/.test(id_telegram)) {
+    errors.push("ID Telegram harus berupa angka saja");
+  }
 
-    // Cek maximum length
-    if (id_telegram.length > maxLength) {
-        return {
-            isValid: false,
-            message: `ID Telegram maksimal ${maxLength} digit`
-        };
-    }
+  // Cek minimum length
+  if (id_telegram.length < minLength) {
+    errors.push(`ID Telegram minimal ${minLength} digit`);
+  }
 
-    return { isValid: true, message: '' };
+  // Cek maximum length
+  if (id_telegram.length > maxLength) {
+    errors.push(`ID Telegram maksimal ${maxLength} digit`);
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
 };

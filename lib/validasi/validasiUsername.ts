@@ -2,9 +2,9 @@
 // FILE: src/lib/validasi/validasiUsername.ts
 // ============================================
 
-export interface ValidationResult {
-  isValid: boolean;
-  message: string;
+export interface UsernameValidationResult {
+  valid: boolean;
+  errors: string[];
 }
 
 /**
@@ -16,69 +16,53 @@ export interface ValidationResult {
  * - Tidak boleh dimulai dengan angka
  * - Tidak boleh menggunakan karakter non-ASCII
  */
-export function validasiUsername(username: string): ValidationResult {
+export function validasiUsername(username: string): UsernameValidationResult {
+  const errors: string[] = [];
+
   // Konversi ke lowercase
   const normalizedUsername = username.toLowerCase().trim();
 
   // Cek jika kosong
   if (!normalizedUsername) {
-    return {
-      isValid: false,
-      message: 'Username wajib diisi',
-    };
+    errors.push("Username wajib diisi");
+    return { valid: false, errors };
   }
 
   // Cek panjang karakter
   if (normalizedUsername.length < 3) {
-    return {
-      isValid: false,
-      message: 'Username minimal 3 karakter',
-    };
+    errors.push("Username minimal 3 karakter");
   }
 
   if (normalizedUsername.length > 20) {
-    return {
-      isValid: false,
-      message: 'Username maksimal 20 karakter',
-    };
+    errors.push("Username maksimal 20 karakter");
   }
 
   // Cek mengandung spasi
-  if (normalizedUsername.includes(' ')) {
-    return {
-      isValid: false,
-      message: 'Username tidak boleh mengandung spasi',
-    };
+  if (normalizedUsername.includes(" ")) {
+    errors.push("Username tidak boleh mengandung spasi");
   }
 
   // Cek karakter yang diizinkan (a-z, 0-9, _)
   const validCharPattern = /^[a-z0-9_]+$/;
   if (!validCharPattern.test(normalizedUsername)) {
-    return {
-      isValid: false,
-      message: 'Username hanya boleh menggunakan huruf (a-z), angka (0-9), dan underscore (_)',
-    };
+    errors.push(
+      "Username hanya boleh menggunakan huruf (a-z), angka (0-9), dan underscore (_)",
+    );
   }
 
   // Cek tidak boleh dimulai dengan angka
   if (/^[0-9]/.test(normalizedUsername)) {
-    return {
-      isValid: false,
-      message: 'Username tidak boleh dimulai dengan angka',
-    };
+    errors.push("Username tidak boleh dimulai dengan angka");
   }
 
   // Cek karakter non-ASCII
   if (!/^[\x00-\x7F]*$/.test(normalizedUsername)) {
-    return {
-      isValid: false,
-      message: 'Username tidak boleh mengandung karakter non-ASCII',
-    };
+    errors.push("Username tidak boleh mengandung karakter non-ASCII");
   }
 
   return {
-    isValid: true,
-    message: 'Username valid',
+    valid: errors.length === 0,
+    errors,
   };
 }
 
@@ -87,13 +71,13 @@ export function validasiUsername(username: string): ValidationResult {
  * (Fungsi ini perlu diintegrasikan dengan API backend)
  */
 export async function checkUsernameAvailability(
-  username: string
-): Promise<ValidationResult> {
+  username: string,
+): Promise<UsernameValidationResult> {
   try {
-    const response = await fetch('/api/auth/check-username', {
-      method: 'POST',
+    const response = await fetch("/api/auth/check-username", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username: username.toLowerCase() }),
     });
@@ -102,19 +86,19 @@ export async function checkUsernameAvailability(
 
     if (!data.available) {
       return {
-        isValid: false,
-        message: 'Username sudah digunakan',
+        valid: false,
+        errors: ["Username sudah digunakan"],
       };
     }
 
     return {
-      isValid: true,
-      message: 'Username tersedia',
+      valid: true,
+      errors: [],
     };
-  } catch (error) {
+  } catch {
     return {
-      isValid: false,
-      message: 'Gagal memeriksa ketersediaan username',
+      valid: false,
+      errors: ["Gagal memeriksa ketersediaan username"],
     };
   }
 }

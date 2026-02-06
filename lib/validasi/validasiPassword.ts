@@ -2,10 +2,10 @@
 // FILE: src/lib/validasi/validasiPassword.ts
 // ============================================
 
-export interface ValidationResult {
-  isValid: boolean;
-  message: string;
-  requirements?: {
+export interface PasswordValidationResult {
+  valid: boolean;
+  errors: string[];
+  requirements: {
     minLength: boolean;
     hasUpperCase: boolean;
     hasLowerCase: boolean;
@@ -13,6 +13,7 @@ export interface ValidationResult {
     hasSpecialChar: boolean;
     noSpaces: boolean;
   };
+  strength: "weak" | "fair" | "good" | "strong";
 }
 
 /**
@@ -24,7 +25,7 @@ export interface ValidationResult {
  * - Harus mengandung simbol / karakter khusus
  * - Tidak boleh mengandung spasi
  */
-export function validasiPassword(password: string): ValidationResult {
+export function validasiPassword(password: string): PasswordValidationResult {
   const requirements = {
     minLength: password.length >= 8,
     hasUpperCase: /[A-Z]/.test(password),
@@ -34,76 +35,67 @@ export function validasiPassword(password: string): ValidationResult {
     noSpaces: !/\s/.test(password),
   };
 
-  const allRequirementsMet = Object.values(requirements).every((req) => req === true);
+  const errors: string[] = [];
 
+  // Cek jika kosong
   if (!password) {
+    errors.push("Password wajib diisi");
     return {
-      isValid: false,
-      message: 'Password wajib diisi',
+      valid: false,
+      errors,
       requirements,
+      strength: "weak",
     };
   }
 
+  // Cek setiap requirement
   if (!requirements.minLength) {
-    return {
-      isValid: false,
-      message: 'Password minimal 8 karakter',
-      requirements,
-    };
+    errors.push("Password minimal 8 karakter");
   }
 
   if (!requirements.hasUpperCase) {
-    return {
-      isValid: false,
-      message: 'Password harus mengandung huruf besar (A-Z)',
-      requirements,
-    };
+    errors.push("Password harus mengandung huruf besar (A-Z)");
   }
 
   if (!requirements.hasLowerCase) {
-    return {
-      isValid: false,
-      message: 'Password harus mengandung huruf kecil (a-z)',
-      requirements,
-    };
+    errors.push("Password harus mengandung huruf kecil (a-z)");
   }
 
   if (!requirements.hasNumber) {
-    return {
-      isValid: false,
-      message: 'Password harus mengandung angka (0-9)',
-      requirements,
-    };
+    errors.push("Password harus mengandung angka (0-9)");
   }
 
   if (!requirements.hasSpecialChar) {
-    return {
-      isValid: false,
-      message: 'Password harus mengandung simbol / karakter khusus (!@#$%^&*()_+...)',
-      requirements,
-    };
+    errors.push(
+      "Password harus mengandung simbol / karakter khusus (!@#$%^&*()_+...)",
+    );
   }
 
   if (!requirements.noSpaces) {
-    return {
-      isValid: false,
-      message: 'Password tidak boleh mengandung spasi',
-      requirements,
-    };
+    errors.push("Password tidak boleh mengandung spasi");
   }
 
-  if (allRequirementsMet) {
-    return {
-      isValid: true,
-      message: 'Password valid',
-      requirements,
-    };
+  // Hitung strength berdasarkan requirements yang terpenuhi
+  const metRequirements = Object.values(requirements).filter(
+    (req) => req === true,
+  ).length;
+  let strength: "weak" | "fair" | "good" | "strong";
+
+  if (metRequirements <= 2) {
+    strength = "weak";
+  } else if (metRequirements <= 4) {
+    strength = "fair";
+  } else if (metRequirements === 5) {
+    strength = "good";
+  } else {
+    strength = "strong";
   }
 
   return {
-    isValid: false,
-    message: 'Password tidak memenuhi kriteria',
+    valid: errors.length === 0,
+    errors,
     requirements,
+    strength,
   };
 }
 
@@ -112,24 +104,18 @@ export function validasiPassword(password: string): ValidationResult {
  */
 export function validasiKonfirmasiPassword(
   password: string,
-  confirmPassword: string
-): ValidationResult {
-  if (!confirmPassword) {
-    return {
-      isValid: false,
-      message: 'Konfirmasi password wajib diisi',
-    };
-  }
+  confirmPassword: string,
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
 
-  if (password !== confirmPassword) {
-    return {
-      isValid: false,
-      message: 'Password dan konfirmasi password tidak cocok',
-    };
+  if (!confirmPassword) {
+    errors.push("Konfirmasi password wajib diisi");
+  } else if (password !== confirmPassword) {
+    errors.push("Password dan konfirmasi password tidak cocok");
   }
 
   return {
-    isValid: true,
-    message: 'Konfirmasi password valid',
+    valid: errors.length === 0,
+    errors,
   };
 }
