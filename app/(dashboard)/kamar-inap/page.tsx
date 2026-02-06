@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -58,11 +59,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase/client";
 import { deleteFile, getFilePathFromUrl, uploadFile } from "@/lib/upload";
 import { formatDateTime } from "@/lib/utils";
 import { validateImage } from "@/lib/validasi/validasiImage";
+import { KamarInapWithCreator } from "@/types/index";
 import {
+  Calendar,
   Eye,
   File,
   Loader2,
@@ -76,18 +80,6 @@ import {
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
-interface KamarInap {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  facilities: string[];
-  is_recommended: boolean;
-  image: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 interface FormDataType {
   title: string;
@@ -151,17 +143,19 @@ const SUGGESTED_FACILITIES = [
 ];
 
 export default function KamarInapPage() {
-  const [kamarInap, setKamarInap] = useState<KamarInap[]>([]);
-  const [filteredKamarInap, setFilteredKamarInap] = useState<KamarInap[]>([]);
+  const [kamarInap, setKamarInap] = useState<KamarInapWithCreator[]>([]);
+  const [filteredKamarInap, setFilteredKamarInap] = useState<
+    KamarInapWithCreator[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [selectedKamarInap, setSelectedKamarInap] = useState<KamarInap | null>(
-    null,
-  );
+  const [selectedKamarInap, setSelectedKamarInap] =
+    useState<KamarInapWithCreator | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   const [showAccessDenied, setShowAccessDenied] = useState(false);
 
@@ -186,6 +180,16 @@ export default function KamarInapPage() {
   const [itemsPerPage] = useState(8);
 
   useEffect(() => {
+    const initUser = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    initUser();
+  }, []);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
     }, 300);
@@ -199,7 +203,23 @@ export default function KamarInapPage() {
 
       const { data, error } = await supabase
         .from("kamar_inap")
-        .select("*")
+        .select(
+          `
+                    *,
+                    created_by_user:users!kamar_inap_created_by_fkey(
+                        id,
+                        nama,
+                        username,
+                        avatar
+                    ),
+                    updated_by_user:users!kamar_inap_updated_by_fkey(
+                        id,
+                        nama,
+                        username,
+                        avatar
+                    )
+                `,
+        )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -325,7 +345,7 @@ export default function KamarInapPage() {
     }
   };
 
-  const handleOpenDialog = (kamarItem?: KamarInap) => {
+  const handleOpenDialog = (kamarItem?: KamarInapWithCreator) => {
     if (kamarItem) {
       setSelectedKamarInap(kamarItem);
       setFormData({
@@ -357,7 +377,7 @@ export default function KamarInapPage() {
     }, 200);
   };
 
-  const handleOpenDetailDialog = (kamarItem: KamarInap) => {
+  const handleOpenDetailDialog = (kamarItem: KamarInapWithCreator) => {
     setSelectedKamarInap(kamarItem);
     setDetailDialogOpen(true);
   };
@@ -369,7 +389,7 @@ export default function KamarInapPage() {
     }, 200);
   };
 
-  const handleOpenDeleteDialog = (kamarItem: KamarInap) => {
+  const handleOpenDeleteDialog = (kamarItem: KamarInapWithCreator) => {
     setSelectedKamarInap(kamarItem);
     setDeleteDialogOpen(true);
   };
@@ -466,6 +486,7 @@ export default function KamarInapPage() {
             facilities: formData.facilities,
             is_recommended: formData.is_recommended,
             image: imageUrl,
+            updated_by: currentUserId,
             updated_at: new Date().toISOString(),
           })
           .eq("id", selectedKamarInap.id);
@@ -481,6 +502,7 @@ export default function KamarInapPage() {
           facilities: formData.facilities,
           is_recommended: formData.is_recommended,
           image: imageUrl,
+          created_by: currentUserId,
         });
 
         if (error) throw error;
@@ -938,16 +960,30 @@ xl:grid-cols-4
 
                     {/* Footer */}
                     <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
-                      {/* Date info */}
+                      {/* User info & Date */}
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="text-xs text-muted-foreground">
+                        <Avatar className="h-5 w-5 shrink-0">
+                          <AvatarImage
+                            src={item.created_by_user?.avatar}
+                            alt={item.created_by_user?.nama || "User"}
+                          />
+                          <AvatarFallback className="text-xs">
+                            {item.created_by_user?.nama
+                              ?.charAt(0)
+                              .toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {item.created_by_user?.nama}
+                        </span>
+                        <span className="text-muted-foreground hidden sm:inline">
+                          •
+                        </span>
+                        <Calendar className="h-3 w-3 shrink-0 hidden sm:block" />
+                        <span className="text-xs text-muted-foreground hidden sm:inline">
                           {new Date(item.created_at).toLocaleDateString(
                             "id-ID",
-                            {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            },
+                            { day: "numeric", month: "short", year: "numeric" },
                           )}
                         </span>
                       </div>
@@ -1096,21 +1132,23 @@ xl:grid-cols-4
                         />
                       </PaginationItem>
 
-                      {getPageNumbers().map((page, index) => (
-                        <PaginationItem key={index}>
-                          {page === "ellipsis" ? (
-                            <PaginationEllipsis />
-                          ) : (
-                            <PaginationLink
-                              onClick={() => handlePageChange(page as number)}
-                              isActive={currentPage === page}
-                              className="cursor-pointer h-9 w-9"
-                            >
-                              {page}
-                            </PaginationLink>
-                          )}
-                        </PaginationItem>
-                      ))}
+                      {getPageNumbers()
+                        .slice(0, 5)
+                        .map((page, index) => (
+                          <PaginationItem key={index}>
+                            {page === "ellipsis" ? (
+                              <PaginationEllipsis />
+                            ) : (
+                              <PaginationLink
+                                onClick={() => handlePageChange(page as number)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer h-9 w-9"
+                              >
+                                {page}
+                              </PaginationLink>
+                            )}
+                          </PaginationItem>
+                        ))}
 
                       <PaginationItem>
                         <PaginationNext
@@ -1134,7 +1172,7 @@ xl:grid-cols-4
         )}
       </div>
 
-      {/* Add/Edit Dialog */}
+      {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -1510,8 +1548,19 @@ xl:grid-cols-4
                     </div>
                   )}
                 <div className="flex items-center gap-2 mt-3 text-xs sm:text-sm text-muted-foreground">
+                  <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
+                    <AvatarImage
+                      src={selectedKamarInap.created_by_user?.avatar}
+                      alt={selectedKamarInap.created_by_user?.nama || "User"}
+                    />
+                    <AvatarFallback className="text-xs">
+                      {selectedKamarInap.created_by_user?.nama
+                        ?.charAt(0)
+                        .toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
                   <span>
-                    Ditambahkan pada{" "}
+                    Dibuat oleh {selectedKamarInap.created_by_user?.nama} •{" "}
                     {formatDateTime(selectedKamarInap.created_at)}
                   </span>
                 </div>
