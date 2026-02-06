@@ -12,7 +12,6 @@ import {
   MessageSquare,
   Newspaper,
   Printer,
-  Star,
   Stethoscope,
   Tag,
   Users,
@@ -79,13 +78,6 @@ const menuItems = [
     url: "/jadwal-dokter",
     access: ["administrator", "user"] as UserRole[],
   },
-  {
-    title: "Klinik Spesialis",
-    icon: Star,
-    url: "/klinik-spesialis",
-    access: ["administrator", "user"] as UserRole[],
-  },
-
   {
     title: "Kritik & Saran",
     icon: MessageSquare,
