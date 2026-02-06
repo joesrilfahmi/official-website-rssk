@@ -65,6 +65,23 @@ export interface KamarInap {
   image: string | null;
   created_at: string;
   updated_at: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+}
+
+export interface KamarInapWithCreator extends KamarInap {
+  created_by_user?: {
+    id: string;
+    nama: string;
+    username: string;
+    avatar?: string;
+  };
+  updated_by_user?: {
+    id: string;
+    nama: string;
+    username: string;
+    avatar?: string;
+  };
 }
 
 export interface KamarInapFormData {
