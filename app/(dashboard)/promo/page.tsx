@@ -1075,52 +1075,6 @@ xl:grid-cols-4
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-sm">
-                Judul Promo <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => {
-                  setFormData({ ...formData, title: e.target.value });
-                  if (formErrors.title) {
-                    setFormErrors({ ...formErrors, title: "" });
-                  }
-                }}
-                disabled={submitting}
-                placeholder="Masukkan judul promo"
-                className={formErrors.title ? "border-red-500" : ""}
-              />
-              {formErrors.title && (
-                <p className="text-sm text-red-500">{formErrors.title}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm">
-                Deskripsi <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => {
-                  setFormData({ ...formData, description: e.target.value });
-                  if (formErrors.description) {
-                    setFormErrors({ ...formErrors, description: "" });
-                  }
-                }}
-                disabled={submitting}
-                placeholder="Masukkan deskripsi promo"
-                className={`min-h-[150px] resize-y ${
-                  formErrors.description ? "border-red-500" : ""
-                }`}
-              />
-              {formErrors.description && (
-                <p className="text-sm text-red-500">{formErrors.description}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="picture" className="text-sm">
                 Gambar Promo
               </Label>
@@ -1210,6 +1164,51 @@ xl:grid-cols-4
                     <p className="text-sm text-red-500">{formErrors.picture}</p>
                   )}
                 </>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="title" className="text-sm">
+                Judul Promo <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  if (formErrors.title) {
+                    setFormErrors({ ...formErrors, title: "" });
+                  }
+                }}
+                disabled={submitting}
+                placeholder="Masukkan judul promo"
+                className={formErrors.title ? "border-red-500" : ""}
+              />
+              {formErrors.title && (
+                <p className="text-sm text-red-500">{formErrors.title}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-sm">
+                Deskripsi <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => {
+                  setFormData({ ...formData, description: e.target.value });
+                  if (formErrors.description) {
+                    setFormErrors({ ...formErrors, description: "" });
+                  }
+                }}
+                disabled={submitting}
+                placeholder="Masukkan deskripsi promo"
+                className={`min-h-[150px] resize-y ${
+                  formErrors.description ? "border-red-500" : ""
+                }`}
+              />
+              {formErrors.description && (
+                <p className="text-sm text-red-500">{formErrors.description}</p>
               )}
             </div>
 

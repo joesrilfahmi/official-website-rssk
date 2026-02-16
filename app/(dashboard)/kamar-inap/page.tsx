@@ -1187,6 +1187,106 @@ xl:grid-cols-4
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="image" className="text-sm">
+                Gambar <span className="text-red-500">*</span>
+              </Label>
+              {(formData.imageFile ||
+                (formData.image && !formData.imageDeleted)) && (
+                <>
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                    <Image
+                      src={
+                        formData.imageFile
+                          ? URL.createObjectURL(formData.imageFile)
+                          : formData.image
+                      }
+                      alt="Preview"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 600px"
+                      unoptimized
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          imageFile: null,
+                          image: "",
+                          imageDeleted: true,
+                        })
+                      }
+                      disabled={submitting}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
+              {!formData.imageFile &&
+                (!formData.image || formData.imageDeleted) && (
+                  <>
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${
+                        formErrors.image ? "border-red-500" : ""
+                      }`}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files[0];
+                        if (file) {
+                          const validation = validateImage(file);
+                          if (!validation.valid) {
+                            setFormErrors({
+                              ...formErrors,
+                              image: validation.error || "",
+                            });
+                            toast.error(validation.error || "File tidak valid");
+                            return;
+                          }
+                          setFormData({
+                            ...formData,
+                            imageFile: file,
+                            imageDeleted: false,
+                          });
+                          setFormErrors({ ...formErrors, image: "" });
+                        }
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                    >
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/webp"
+                        onChange={handleImageChange}
+                        disabled={submitting}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="image"
+                        className="flex flex-col items-center justify-center cursor-pointer"
+                      >
+                        <div className="rounded-full bg-muted p-3 mb-2">
+                          <Upload className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm font-medium mb-1">
+                          Klik untuk upload atau drag & drop
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Format: WebP, Max: 300KB
+                        </p>
+                      </label>
+                    </div>
+                    {formErrors.image && (
+                      <p className="text-sm text-red-500">{formErrors.image}</p>
+                    )}
+                  </>
+                )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="title" className="text-sm">
                 Nama Kamar <span className="text-red-500">*</span>
               </Label>
@@ -1363,106 +1463,6 @@ xl:grid-cols-4
                   Tandai sebagai kamar rekomendasi
                 </Label>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="image" className="text-sm">
-                Gambar <span className="text-red-500">*</span>
-              </Label>
-              {(formData.imageFile ||
-                (formData.image && !formData.imageDeleted)) && (
-                <>
-                  <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                    <Image
-                      src={
-                        formData.imageFile
-                          ? URL.createObjectURL(formData.imageFile)
-                          : formData.image
-                      }
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 600px"
-                      unoptimized
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          imageFile: null,
-                          image: "",
-                          imageDeleted: true,
-                        })
-                      }
-                      disabled={submitting}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </>
-              )}
-              {!formData.imageFile &&
-                (!formData.image || formData.imageDeleted) && (
-                  <>
-                    <div
-                      className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${
-                        formErrors.image ? "border-red-500" : ""
-                      }`}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const file = e.dataTransfer.files[0];
-                        if (file) {
-                          const validation = validateImage(file);
-                          if (!validation.valid) {
-                            setFormErrors({
-                              ...formErrors,
-                              image: validation.error || "",
-                            });
-                            toast.error(validation.error || "File tidak valid");
-                            return;
-                          }
-                          setFormData({
-                            ...formData,
-                            imageFile: file,
-                            imageDeleted: false,
-                          });
-                          setFormErrors({ ...formErrors, image: "" });
-                        }
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                    >
-                      <Input
-                        id="image"
-                        type="file"
-                        accept="image/webp"
-                        onChange={handleImageChange}
-                        disabled={submitting}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="image"
-                        className="flex flex-col items-center justify-center cursor-pointer"
-                      >
-                        <div className="rounded-full bg-muted p-3 mb-2">
-                          <Upload className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm font-medium mb-1">
-                          Klik untuk upload atau drag & drop
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Format: WebP, Max: 300KB
-                        </p>
-                      </label>
-                    </div>
-                    {formErrors.image && (
-                      <p className="text-sm text-red-500">{formErrors.image}</p>
-                    )}
-                  </>
-                )}
             </div>
 
             {selectedKamarInap && (

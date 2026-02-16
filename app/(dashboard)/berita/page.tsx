@@ -1266,6 +1266,108 @@ xl:grid-cols-4
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="thumbnail" className="text-sm">
+                Thumbnail <span className="text-red-500">*</span>
+              </Label>
+              {(formData.thumbnailFile ||
+                (formData.thumbnail && !formData.thumbnailDeleted)) && (
+                <>
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                    <Image
+                      src={
+                        formData.thumbnailFile
+                          ? URL.createObjectURL(formData.thumbnailFile)
+                          : formData.thumbnail
+                      }
+                      alt="Preview"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 600px"
+                      unoptimized
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          thumbnailFile: null,
+                          thumbnail: "",
+                          thumbnailDeleted: true,
+                        })
+                      }
+                      disabled={submitting}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
+              {!formData.thumbnailFile &&
+                (!formData.thumbnail || formData.thumbnailDeleted) && (
+                  <>
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${
+                        formErrors.thumbnail ? "border-red-500" : ""
+                      }`}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files[0];
+                        if (file) {
+                          const validation = validateImage(file);
+                          if (!validation.valid) {
+                            setFormErrors({
+                              ...formErrors,
+                              thumbnail: validation.error || "",
+                            });
+                            toast.error(validation.error || "File tidak valid");
+                            return;
+                          }
+                          setFormData({
+                            ...formData,
+                            thumbnailFile: file,
+                            thumbnailDeleted: false,
+                          });
+                          setFormErrors({ ...formErrors, thumbnail: "" });
+                        }
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                    >
+                      <Input
+                        id="thumbnail"
+                        type="file"
+                        accept="image/webp"
+                        onChange={handleThumbnailChange}
+                        disabled={submitting}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="thumbnail"
+                        className="flex flex-col items-center justify-center cursor-pointer"
+                      >
+                        <div className="rounded-full bg-muted p-3 mb-2">
+                          <Upload className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm font-medium mb-1">
+                          Klik untuk upload atau drag & drop
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Format: WebP, Max: 300KB
+                        </p>
+                      </label>
+                    </div>
+                    {formErrors.thumbnail && (
+                      <p className="text-sm text-red-500">
+                        {formErrors.thumbnail}
+                      </p>
+                    )}
+                  </>
+                )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="title" className="text-sm">
                 Judul <span className="text-red-500">*</span>
               </Label>
@@ -1428,108 +1530,6 @@ xl:grid-cols-4
                   </div>
                 </div>
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="thumbnail" className="text-sm">
-                Thumbnail <span className="text-red-500">*</span>
-              </Label>
-              {(formData.thumbnailFile ||
-                (formData.thumbnail && !formData.thumbnailDeleted)) && (
-                <>
-                  <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                    <Image
-                      src={
-                        formData.thumbnailFile
-                          ? URL.createObjectURL(formData.thumbnailFile)
-                          : formData.thumbnail
-                      }
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 600px"
-                      unoptimized
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          thumbnailFile: null,
-                          thumbnail: "",
-                          thumbnailDeleted: true,
-                        })
-                      }
-                      disabled={submitting}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </>
-              )}
-              {!formData.thumbnailFile &&
-                (!formData.thumbnail || formData.thumbnailDeleted) && (
-                  <>
-                    <div
-                      className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${
-                        formErrors.thumbnail ? "border-red-500" : ""
-                      }`}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const file = e.dataTransfer.files[0];
-                        if (file) {
-                          const validation = validateImage(file);
-                          if (!validation.valid) {
-                            setFormErrors({
-                              ...formErrors,
-                              thumbnail: validation.error || "",
-                            });
-                            toast.error(validation.error || "File tidak valid");
-                            return;
-                          }
-                          setFormData({
-                            ...formData,
-                            thumbnailFile: file,
-                            thumbnailDeleted: false,
-                          });
-                          setFormErrors({ ...formErrors, thumbnail: "" });
-                        }
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                    >
-                      <Input
-                        id="thumbnail"
-                        type="file"
-                        accept="image/webp"
-                        onChange={handleThumbnailChange}
-                        disabled={submitting}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="thumbnail"
-                        className="flex flex-col items-center justify-center cursor-pointer"
-                      >
-                        <div className="rounded-full bg-muted p-3 mb-2">
-                          <Upload className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm font-medium mb-1">
-                          Klik untuk upload atau drag & drop
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Format: WebP, Max: 300KB
-                        </p>
-                      </label>
-                    </div>
-                    {formErrors.thumbnail && (
-                      <p className="text-sm text-red-500">
-                        {formErrors.thumbnail}
-                      </p>
-                    )}
-                  </>
-                )}
             </div>
 
             {selectedBerita && (
