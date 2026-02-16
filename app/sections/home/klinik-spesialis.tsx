@@ -3,15 +3,25 @@
 import Button from "@/components/ui/custom/button";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
-import { LayananUnggulan as LayananUnggulanType } from "@/types/index";
 import useEmblaCarousel from "embla-carousel-react";
 import * as Icons from "lucide-react";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
+interface Poli {
+  id: string;
+  nama_poli: string;
+  icon: string;
+  description: string;
+  status: string;
+  urutan: number;
+  created_at: string;
+  updated_at: string;
+}
+
 const LayananUnggulan = () => {
-  const [layananList, setLayananList] = useState<LayananUnggulanType[]>([]);
+  const [layananList, setLayananList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Embla Carousel - untuk tablet dan mobile
@@ -28,8 +38,9 @@ const LayananUnggulan = () => {
     const fetchLayanan = async () => {
       try {
         const { data, error } = await supabase
-          .from("layanan_unggulan")
+          .from("poli")
           .select("*")
+          .eq("status", "active")
           .order("urutan", { ascending: true })
           .limit(6);
 
@@ -37,7 +48,7 @@ const LayananUnggulan = () => {
 
         setLayananList(data || []);
       } catch (error) {
-        console.error("Error fetching layanan:", error);
+        console.error("Error fetching poli:", error);
       } finally {
         setLoading(false);
       }
@@ -47,10 +58,10 @@ const LayananUnggulan = () => {
 
     // Real-time subscription
     const channel = supabase
-      .channel("layanan_unggulan_public")
+      .channel("poli_public")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "layanan_unggulan" },
+        { event: "*", schema: "public", table: "poli" },
         () => {
           fetchLayanan();
         },
@@ -62,7 +73,7 @@ const LayananUnggulan = () => {
     };
   }, []);
 
-  const renderLayananCard = (layanan: LayananUnggulanType, index: number) => {
+  const renderLayananCard = (layanan: Poli, index: number) => {
     const IconComponent = Icons[
       layanan.icon as keyof typeof Icons
     ] as React.ElementType;
@@ -83,7 +94,7 @@ const LayananUnggulan = () => {
         {/* Content - Flex grow to push button to bottom */}
         <div className="relative z-10 flex flex-col grow">
           <h3 className="text-xl sm:text-2xl font-bold text-mariner-500 mb-3 sm:mb-4 line-clamp-2 min-h-14">
-            {layanan.title}
+            {layanan.nama_poli}
           </h3>
           <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4 sm:mb-6 line-clamp-3 grow">
             {layanan.description}

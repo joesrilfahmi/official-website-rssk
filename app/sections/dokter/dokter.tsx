@@ -28,9 +28,7 @@ interface JadwalDokter {
 
 interface Dokter {
   id: string;
-  gelar_depan: string | null;
   nama: string;
-  gelar_belakang: string | null;
   poli_id: string;
   profile: string | null;
   status: string;
@@ -58,6 +56,11 @@ const HARI_ORDER: Record<string, number> = {
   Sabtu: 6,
   Minggu: 7,
 };
+
+interface JadwalGroup {
+  reguler: JadwalDokter[];
+  eksekutif: JadwalDokter[];
+}
 
 const DokterSpesialis = () => {
   const [poliList, setPoliList] = useState<Poli[]>([]);
@@ -190,8 +193,7 @@ const DokterSpesialis = () => {
     return dokterList.filter((dokter) => {
       if (!searchQuery) return true;
 
-      const fullName =
-        `${dokter.gelar_depan || ""} ${dokter.nama} ${dokter.gelar_belakang || ""}`.toLowerCase();
+      const fullName = dokter.nama.toLowerCase();
       const poliName = dokter.poli?.nama_poli?.toLowerCase() || "";
       const query = searchQuery.toLowerCase();
 
@@ -213,8 +215,7 @@ const DokterSpesialis = () => {
     return dokterList.filter((dokter) => {
       // Filter by search query
       if (searchQuery) {
-        const fullName =
-          `${dokter.gelar_depan || ""} ${dokter.nama} ${dokter.gelar_belakang || ""}`.toLowerCase();
+        const fullName = dokter.nama.toLowerCase();
         const poliName = dokter.poli?.nama_poli?.toLowerCase() || "";
         const query = searchQuery.toLowerCase();
 
@@ -276,10 +277,7 @@ const DokterSpesialis = () => {
     };
 
     // Group jadwal by hari and tipe
-    const jadwalByHari: Record<
-      string,
-      { reguler: JadwalDokter[]; eksekutif: JadwalDokter[] }
-    > = {};
+    const jadwalByHari: Record<string, JadwalGroup> = {};
 
     jadwalList.forEach((jadwal) => {
       if (!jadwalByHari[jadwal.hari]) {
@@ -309,7 +307,7 @@ const DokterSpesialis = () => {
               </th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b-2 border-gray-300">
                 <div className="flex items-center gap-2">
-                  <span>Jadwal Bpjs</span>
+                  <span>Jadwal BPJS</span>
                 </div>
               </th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b-2 border-gray-300">
@@ -321,7 +319,9 @@ const DokterSpesialis = () => {
           </thead>
           <tbody>
             {sortedHari.map((hari) => {
-              const { reguler, eksekutif } = jadwalByHari[hari];
+              const jadwalGroup = jadwalByHari[hari];
+              const reguler = jadwalGroup.reguler;
+              const eksekutif = jadwalGroup.eksekutif;
               const maxRows = Math.max(reguler.length, eksekutif.length, 1);
 
               return Array.from({ length: maxRows }).map((_, index) => (
@@ -369,8 +369,6 @@ const DokterSpesialis = () => {
   };
 
   const renderDokterCard = (dokter: Dokter) => {
-    const fullName =
-      `${dokter.gelar_depan || ""} ${dokter.nama} ${dokter.gelar_belakang || ""}`.trim();
     const initial = dokter.nama.charAt(0).toUpperCase();
 
     return (
@@ -385,7 +383,7 @@ const DokterSpesialis = () => {
               <div className="w-full h-full rounded-full overflow-hidden">
                 <Image
                   src={dokter.profile}
-                  alt={fullName}
+                  alt={dokter.nama}
                   fill
                   className="object-cover rounded-full"
                   sizes="224px"
@@ -400,7 +398,7 @@ const DokterSpesialis = () => {
 
           {/* Doctor Name */}
           <h3 className="text-xl font-bold text-mariner-500 mb-2 group-hover:text-mariner-600 transition-colors">
-            {fullName}
+            {dokter.nama}
           </h3>
 
           {/* Specialization */}
@@ -609,9 +607,9 @@ const DokterSpesialis = () => {
                   )}
                 </div>
 
-                {/* Full Name with Titles */}
+                {/* Full Name */}
                 <h3 className="text-3xl font-bold text-mariner-500 mb-3">
-                  {`${selectedDokter.gelar_depan || ""} ${selectedDokter.nama} ${selectedDokter.gelar_belakang || ""}`.trim()}
+                  {selectedDokter.nama}
                 </h3>
 
                 {/* Poli Name */}
