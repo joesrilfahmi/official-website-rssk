@@ -82,7 +82,7 @@ const About = () => {
 
             {/* Description */}
             <p className="text-gray-700 text-base sm:text-lg leading-relaxed mt-5 sm:mt-6">
-              Rumah Sakit Siti Khodijah adalah rumah sakit tipe B dan merupakan
+              Rumah Sakit {Profile.name} adalah rumah sakit tipe B dan merupakan
               salah satu amal usaha kesehatan milik Persyarikatan Muhammadiyah
               dibawah naungan Pimpinan Cabang Muhammadiyah Sepanjang yang
               didukung dengan fasilitas yang modern dan sumber daya insani yang

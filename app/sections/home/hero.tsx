@@ -171,8 +171,9 @@ const Hero: React.FC = () => {
               </div>
 
               <p className="text-xl text-white/90 leading-relaxed max-w-xl">
-                Memilih rumah sakit yang tepat untuk kesehatan Anda dan keluarga
-                merupakan keputusan yang sangat penting.
+                Selamat Datang di Rumah Sakit {Profile.name} {Profile.subtitle}.
+                Kami memastikan layanan eksekutif yang bermanfaat bagi
+                masyarakat.
               </p>
 
               <div className="flex flex-wrap gap-4 pt-4">

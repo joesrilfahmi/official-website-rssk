@@ -1,8 +1,9 @@
 "use client";
+import { Profile } from "@/config/profile";
 
 export default function VisiMisi() {
   const visiPoints = [
-    "Terwujudnya Rumah Sakit Siti Khodijah Muhammadiyah Cabang Sepanjang Yang Unggul, Profesional, Islami, Dan Terpercaya Di Jawa Timur.",
+    `Terwujudnya Rumah Sakit ${Profile.name} ${Profile.subtitle} Yang Unggul, Profesional, Islami, Dan Terpercaya Di Jawa Timur.`,
   ];
 
   const misiPoints = [
@@ -39,23 +40,26 @@ export default function VisiMisi() {
         {/* Hospital Profile */}
         <div className="space-y-8 mb-12">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-mariner-500">
-            RS Siti Khodijah Muhammadiyah Cabang Sepanjang
+            RS {Profile.name} {Profile.subtitle}
           </h2>
           <p className="text-gray-700 leading-relaxed text-justify">
-            RS Siti Khodijah Muhammadiyah Cabang Sepanjang merupakan rumah sakit
-            yang berkomitmen memberikan pelayanan kesehatan terbaik dengan
-            nilai-nilai Islami. Kami mengintegrasikan standar pelayanan medis
-            modern dengan pendekatan yang humanis dan berakhlak mulia. Dengan
-            fasilitas lengkap dan tenaga medis profesional, kami siap melayani
-            masyarakat dengan sepenuh hati. Rumah sakit kami dilengkapi dengan
-            berbagai layanan unggulan seperti Trauma & Injury Center, Heart &
-            Stroke Care, Cancer Care, dan layanan spesialisasi lainnya yang
-            terus berkembang mengikuti kebutuhan masyarakat. Sebagai bagian dari
-            Persyarikatan Muhammadiyah, kami tidak hanya fokus pada pengobatan,
-            tetapi juga pada pencegahan dan edukasi kesehatan kepada masyarakat.
-            Kami percaya bahwa kesehatan adalah hak setiap individu, dan kami
-            berupaya memberikan akses pelayanan kesehatan yang berkualitas dan
-            terjangkau.
+            RS {Profile.name} {Profile.subtitle} berlokasi strategis di kawasan
+            Sepanjang, Sidoarjo, dengan area yang terus berkembang guna
+            mendukung pelayanan kesehatan yang berkualitas. Rumah sakit
+            dilengkapi dengan beragam fasilitas kesehatan modern, mulai dari
+            poliklinik rawat jalan berbagai spesialis hingga ruang rawat inap
+            dengan kapasitas ratusan tempat tidur. RS Siti Khodijah Muhammadiyah
+            Cabang Sepanjang telah meraih akreditasi paripurna dari Komisi
+            Akreditasi Rumah Sakit (KARS) sebagai bukti komitmen dalam menjaga
+            mutu layanan dan keselamatan pasien sesuai standar nasional.
+            Pencapaian ini merupakan wujud nyata dedikasi rumah sakit dalam
+            memberikan pelayanan kesehatan yang profesional, aman, dan
+            terpercaya bagi masyarakat. Untuk menjaga kenyamanan pasien, RS Siti
+            Khodijah Muhammadiyah Cabang Sepanjang menghadirkan fasilitas rawat
+            inap dengan konsep modern, salah satunya adalah President Suite
+            dengan desain kamar rawat inap satu pasien satu kamar, yang
+            memberikan suasana yang lebih privat, nyaman, dan bersahabat bagi
+            pasien maupun keluarga
           </p>
         </div>
 
