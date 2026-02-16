@@ -221,9 +221,7 @@ export type SortOrder = "asc" | "desc";
 
 export interface Dokter {
   id: string;
-  gelar_depan: string | null;
   nama: string;
-  gelar_belakang: string | null;
   poli_id: string;
   profile: string | null;
   status: DokterStatus;
@@ -262,10 +260,9 @@ export interface JadwalFormData {
   _temp_id: string;
 }
 
+// ✅ gelar_depan dan gelar_belakang dihapus
 export interface DokterFormData {
-  gelar_depan: string;
   nama: string;
-  gelar_belakang: string;
   poli_id: string;
   profile: string;
   status: DokterStatus;

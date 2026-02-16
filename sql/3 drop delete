@@ -1,0 +1,5 @@
+-- Drop semua trigger yang konflik dengan frontend deleteFile()
+DROP TRIGGER IF EXISTS trigger_delete_kamar_inap_image ON kamar_inap;
+DROP TRIGGER IF EXISTS trigger_delete_berita_thumbnail ON berita;
+DROP TRIGGER IF EXISTS trigger_delete_promo_picture ON promo;
+DROP TRIGGER IF EXISTS trigger_delete_dokter_profile ON dokter;

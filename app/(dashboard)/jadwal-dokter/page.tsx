@@ -2,7 +2,6 @@
 "use client";
 
 import { AccessDeniedDialog } from "@/components/access-denied-dialog";
-import { TablePagination } from "@/components/table/TablePagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +23,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -37,6 +36,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -44,14 +52,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
@@ -61,7 +61,6 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase/client";
 import { deleteFile, getFilePathFromUrl, uploadFile } from "@/lib/upload";
-import { formatDateIndonesia } from "@/lib/utils";
 import { validateImage } from "@/lib/validasi/validasiImage";
 import type {
   DokterFormData,
@@ -72,30 +71,25 @@ import type {
   JadwalDokter,
   JadwalType,
   Poli,
-  SortField,
-  SortOrder,
 } from "@/types";
 import {
-  ArrowUpDown,
+  Calendar,
   Clock,
-  Eye,
-  ImagePlus,
+  File,
   Loader2,
   Pencil,
   Plus,
-  RefreshCw,
   Search,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const DEFAULT_FORM_DATA: DokterFormData = {
-  gelar_depan: "",
   nama: "",
-  gelar_belakang: "",
   poli_id: "",
   profile: "",
   status: "active",
@@ -110,12 +104,40 @@ const DEFAULT_FORM_ERRORS: DokterFormErrors = {
   jadwal: "",
 };
 
-const STATUS_OPTIONS: { value: DokterStatus; label: string }[] = [
-  { value: "active", label: "Aktif" },
-  { value: "inactive", label: "Tidak Aktif" },
-  { value: "cuti", label: "Cuti" },
-  { value: "libur", label: "Libur" },
-];
+const STATUS_OPTIONS: { value: DokterStatus; label: string; color: string }[] =
+  [
+    {
+      value: "active",
+      label: "Aktif",
+      color:
+        "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700",
+    },
+    {
+      value: "inactive",
+      label: "Tidak Aktif",
+      color:
+        "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700",
+    },
+    {
+      value: "cuti",
+      label: "Cuti",
+      color:
+        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700",
+    },
+    {
+      value: "libur",
+      label: "Libur",
+      color:
+        "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-300 dark:border-orange-700",
+    },
+  ];
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Terbaru" },
+  { value: "oldest", label: "Terlama" },
+  { value: "a-z", label: "A-Z" },
+  { value: "z-a", label: "Z-A" },
+] as const;
 
 const HARI_OPTIONS: HariType[] = [
   "Senin",
@@ -127,7 +149,6 @@ const HARI_OPTIONS: HariType[] = [
   "Minggu",
 ];
 
-// Helper function untuk generate opsi waktu
 const generateTimeOptions = () => {
   const options = [];
   for (let hour = 0; hour < 24; hour++) {
@@ -142,133 +163,62 @@ const generateTimeOptions = () => {
 
 const TIME_OPTIONS = generateTimeOptions();
 
-export default function DokterPage() {
+export default function JadwalDokterPage() {
   const [dokterList, setDokterList] = useState<DokterWithRelations[]>([]);
   const [filteredDokter, setFilteredDokter] = useState<DokterWithRelations[]>(
     [],
   );
   const [poliList, setPoliList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedDokter, setSelectedDokter] =
     useState<DokterWithRelations | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
-
   const [showAccessDenied, setShowAccessDenied] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [itemsPerPage, setItemsPerPage] = useState<number | "all">(10);
   const [statusFilter, setStatusFilter] = useState<DokterStatus | "all">("all");
   const [poliFilter, setPoliFilter] = useState<string>("all");
-
-  const [sortField, setSortField] = useState<SortField>("created_at");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">(
+    "newest",
+  );
 
   const [formData, setFormData] = useState<DokterFormData>(DEFAULT_FORM_DATA);
   const [formErrors, setFormErrors] =
     useState<DokterFormErrors>(DEFAULT_FORM_ERRORS);
 
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(8);
+
+  useEffect(() => {
+    const initUser = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      } else {
+        setShowAccessDenied(true);
+      }
+    };
+    initUser();
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setCurrentPage(1);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const getNamaLengkap = (dokter: DokterWithRelations) => {
-    const parts = [];
-    if (dokter.gelar_depan) parts.push(dokter.gelar_depan);
-    parts.push(dokter.nama);
-    if (dokter.gelar_belakang) parts.push(dokter.gelar_belakang);
-    return parts.join(" ");
-  };
-
-  const sortJadwalByHari = (jadwal: JadwalDokter[] | undefined) => {
-    if (!jadwal || jadwal.length === 0) return [];
-
-    const hariOrder: Record<HariType, number> = {
-      Senin: 1,
-      Selasa: 2,
-      Rabu: 3,
-      Kamis: 4,
-      Jumat: 5,
-      Sabtu: 6,
-      Minggu: 7,
-    };
-
-    return [...jadwal].sort((a, b) => {
-      const orderA = hariOrder[a.hari as HariType] || 999;
-      const orderB = hariOrder[b.hari as HariType] || 999;
-      return orderA - orderB;
-    });
-  };
-
-  const applyFilters = useCallback(() => {
-    let filtered = [...dokterList];
-
-    if (debouncedSearch.trim()) {
-      const query = debouncedSearch.toLowerCase();
-      filtered = filtered.filter(
-        (d) =>
-          getNamaLengkap(d).toLowerCase().includes(query) ||
-          d.poli_detail?.nama_poli.toLowerCase().includes(query),
-      );
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((d) => d.status === statusFilter);
-    }
-
-    if (poliFilter !== "all") {
-      filtered = filtered.filter((d) => d.poli_id === poliFilter);
-    }
-
-    filtered.sort((a, b) => {
-      let compareValue = 0;
-
-      if (sortField === "nama") {
-        compareValue = getNamaLengkap(a).localeCompare(getNamaLengkap(b), "id");
-      } else if (sortField === "poli") {
-        compareValue = (a.poli_detail?.nama_poli || "").localeCompare(
-          b.poli_detail?.nama_poli || "",
-          "id",
-        );
-      } else if (sortField === "status") {
-        compareValue = a.status.localeCompare(b.status);
-      } else if (sortField === "created_at") {
-        compareValue =
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      }
-
-      return sortOrder === "asc" ? compareValue : -compareValue;
-    });
-
-    setFilteredDokter(filtered);
-  }, [
-    dokterList,
-    debouncedSearch,
-    statusFilter,
-    poliFilter,
-    sortField,
-    sortOrder,
-  ]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
-
-  const fetchDokter = async () => {
+  const fetchDokter = useCallback(async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from("dokter")
         .select(
@@ -284,166 +234,161 @@ export default function DokterPage() {
 
       if (error) throw error;
       setDokterList(data || []);
+      setFilteredDokter(data || []);
     } catch (error) {
       console.error("Error fetching dokter:", error);
       toast.error("Gagal memuat data dokter");
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchPoli = async () => {
+  const fetchPoli = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("poli")
         .select("*")
         .eq("status", "active")
         .order("nama_poli");
-
       if (error) throw error;
       setPoliList(data || []);
     } catch (error) {
       console.error("Error fetching poli:", error);
-      toast.error("Gagal memuat data poli");
     }
-  };
-
-  useEffect(() => {
-    const initData = async () => {
-      setLoading(true);
-      try {
-        const user = await getCurrentUser();
-        if (!user) {
-          setShowAccessDenied(true);
-          return;
-        }
-        setCurrentUserId(user.id);
-
-        await Promise.all([fetchDokter(), fetchPoli()]);
-      } catch (error) {
-        console.error("Error initializing:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initData();
   }, []);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchDokter();
-    setRefreshing(false);
-    toast.success("Data berhasil direfresh");
-  };
+  useEffect(() => {
+    fetchDokter();
+    fetchPoli();
+  }, [fetchDokter, fetchPoli]);
 
-  const getStatusBadge = (status: DokterStatus) => {
-    const variants: Record<
-      DokterStatus,
-      {
-        variant: "default" | "secondary" | "destructive" | "outline";
-        label: string;
+  useEffect(() => {
+    let filtered = [...dokterList];
+
+    if (debouncedSearch) {
+      filtered = filtered.filter(
+        (item) =>
+          item.nama.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          item.poli_detail?.nama_poli
+            .toLowerCase()
+            .includes(debouncedSearch.toLowerCase()),
+      );
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((item) => item.status === statusFilter);
+    }
+
+    if (poliFilter !== "all") {
+      filtered = filtered.filter((item) => item.poli_id === poliFilter);
+    }
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        case "a-z":
+          return a.nama.localeCompare(b.nama, "id");
+        case "z-a":
+          return b.nama.localeCompare(a.nama, "id");
+        default:
+          return 0;
       }
-    > = {
-      active: { variant: "default", label: "Aktif" },
-      inactive: { variant: "secondary", label: "Tidak Aktif" },
-      cuti: { variant: "outline", label: "Cuti" },
-      libur: { variant: "destructive", label: "Libur" },
-    };
+    });
 
-    const config = variants[status];
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    setFilteredDokter(filtered);
+    setCurrentPage(1);
+  }, [dokterList, debouncedSearch, statusFilter, poliFilter, sortBy]);
+
+  const paginatedDokter = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredDokter.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredDokter, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredDokter.length / itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSortChange = (value: string) => {
-    const [field, order] = value.split("-") as [SortField, SortOrder];
-    setSortField(field);
-    setSortOrder(order);
+  const getPageNumbers = () => {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push("ellipsis");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push("ellipsis");
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push("ellipsis");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push("ellipsis");
+        pages.push(totalPages);
+      }
+    }
+    return pages;
   };
 
-  const getSortLabel = () => {
-    const labels: Record<SortField, string> = {
-      nama: sortOrder === "asc" ? "Nama (A-Z)" : "Nama (Z-A)",
-      poli: sortOrder === "asc" ? "Poli (A-Z)" : "Poli (Z-A)",
-      status: sortOrder === "asc" ? "Status (A-Z)" : "Status (Z-A)",
-      created_at: sortOrder === "asc" ? "Terlama" : "Terbaru",
-    };
-    return labels[sortField];
+  const handleSelectItem = (id: string) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
   };
-
-  const sortOptions = [
-    { value: "created_at-desc", label: "Terbaru" },
-    { value: "created_at-asc", label: "Terlama" },
-    { value: "nama-asc", label: "Nama (A-Z)" },
-    { value: "nama-desc", label: "Nama (Z-A)" },
-    { value: "poli-asc", label: "Poli (A-Z)" },
-    { value: "poli-desc", label: "Poli (Z-A)" },
-  ];
-
-  const showReset =
-    sortField !== "created_at" ||
-    sortOrder !== "desc" ||
-    searchQuery !== "" ||
-    statusFilter !== "all" ||
-    poliFilter !== "all";
-
-  const handleResetFilters = () => {
-    setSortField("created_at");
-    setSortOrder("desc");
-    setSearchQuery("");
-    setStatusFilter("all");
-    setPoliFilter("all");
-  };
-
-  const handleOpenDeleteDialog = (item: DokterWithRelations) => {
-    setSelectedDokter(item);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleOpenPreview = (item: DokterWithRelations) => {
-    setSelectedDokter(item);
-    setPreviewDialogOpen(true);
-  };
-
-  const totalItems = filteredDokter.length;
-  const totalPages =
-    itemsPerPage === "all" ? 1 : Math.ceil(totalItems / itemsPerPage);
-  const startIndex =
-    itemsPerPage === "all" ? 0 : (currentPage - 1) * itemsPerPage;
-  const endIndex =
-    itemsPerPage === "all" ? totalItems : startIndex + itemsPerPage;
-  const currentDokter = filteredDokter.slice(startIndex, endIndex);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allIds = new Set(currentDokter.map((d) => d.id));
-      setSelectedIds(allIds);
+      setSelectedItems(paginatedDokter.map((item) => item.id));
     } else {
-      setSelectedIds(new Set());
+      setSelectedItems([]);
     }
   };
 
-  const handleSelectOne = (id: string, checked: boolean) => {
-    const newSelected = new Set(selectedIds);
-    if (checked) {
-      newSelected.add(id);
-    } else {
-      newSelected.delete(id);
-    }
-    setSelectedIds(newSelected);
+  const sortJadwalByHari = (jadwal: JadwalDokter[] | undefined) => {
+    if (!jadwal || jadwal.length === 0) return [];
+    const hariOrder: Record<HariType, number> = {
+      Senin: 1,
+      Selasa: 2,
+      Rabu: 3,
+      Kamis: 4,
+      Jumat: 5,
+      Sabtu: 6,
+      Minggu: 7,
+    };
+    return [...jadwal].sort((a, b) => {
+      const orderA = hariOrder[a.hari as HariType] || 999;
+      const orderB = hariOrder[b.hari as HariType] || 999;
+      return orderA - orderB;
+    });
   };
 
-  const isAllSelected =
-    currentDokter.length > 0 &&
-    currentDokter.every((d) => selectedIds.has(d.id));
-  const isSomeSelected =
-    currentDokter.some((d) => selectedIds.has(d.id)) && !isAllSelected;
+  const getStatusBadge = (status: DokterStatus) => {
+    const statusOption = STATUS_OPTIONS.find((opt) => opt.value === status);
+    if (!statusOption) return null;
+    return (
+      <Badge variant="outline" className={statusOption.color}>
+        {statusOption.label}
+      </Badge>
+    );
+  };
 
   const handleOpenDialog = (item?: DokterWithRelations) => {
     if (item) {
       setSelectedDokter(item);
       setFormData({
-        gelar_depan: item.gelar_depan || "",
         nama: item.nama,
-        gelar_belakang: item.gelar_belakang || "",
         poli_id: item.poli_id,
         profile: item.profile || "",
         status: item.status,
@@ -468,12 +413,21 @@ export default function DokterPage() {
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
-    setSelectedDokter(null);
-    setFormData({ ...DEFAULT_FORM_DATA });
-    setFormErrors({ ...DEFAULT_FORM_ERRORS });
+    setTimeout(() => {
+      setSelectedDokter(null);
+      setFormData({ ...DEFAULT_FORM_DATA });
+      setFormErrors({ ...DEFAULT_FORM_ERRORS });
+    }, 200);
+  };
 
-    const input = document.getElementById("profile-upload") as HTMLInputElement;
-    if (input) input.value = "";
+  const handleOpenDetailDialog = (item: DokterWithRelations) => {
+    setSelectedDokter(item);
+    setDetailDialogOpen(true);
+  };
+
+  const handleOpenDeleteDialog = (item: DokterWithRelations) => {
+    setSelectedDokter(item);
+    setDeleteDialogOpen(true);
   };
 
   const handleAddJadwal = (tipe: JadwalType) => {
@@ -508,6 +462,17 @@ export default function DokterPage() {
     });
   };
 
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validation = validateImage(file);
+    if (!validation.valid) {
+      toast.error(validation.error || "File tidak valid");
+      return;
+    }
+    setFormData({ ...formData, profileFile: file, profileDeleted: false });
+  };
+
   const validateForm = () => {
     const errors: DokterFormErrors = { ...DEFAULT_FORM_ERRORS };
     let isValid = true;
@@ -516,7 +481,6 @@ export default function DokterPage() {
       errors.nama = "Nama dokter wajib diisi";
       isValid = false;
     }
-
     if (!formData.poli_id) {
       errors.poli_id = "Poli wajib dipilih";
       isValid = false;
@@ -524,45 +488,23 @@ export default function DokterPage() {
 
     if (formData.jadwal.length > 0) {
       const timeFormatRegex = /^\d{2}\.\d{2}$/;
-
       for (const j of formData.jadwal) {
         if (!j.hari || !j.jam_mulai || !j.jam_selesai || !j.tipe_jadwal) {
           errors.jadwal = "Semua field jadwal harus diisi";
           isValid = false;
           break;
         }
-
         if (
           !timeFormatRegex.test(j.jam_mulai) ||
           !timeFormatRegex.test(j.jam_selesai)
         ) {
-          errors.jadwal = "Format jam harus 00.00 (contoh: 08.00, 14.30)";
+          errors.jadwal = "Format jam harus 00.00";
           isValid = false;
           break;
         }
-
-        const [jamMulaiHour, jamMulaiMinute] = j.jam_mulai
-          .split(".")
-          .map(Number);
-        const [jamSelesaiHour, jamSelesaiMinute] = j.jam_selesai
-          .split(".")
-          .map(Number);
-
-        if (
-          jamMulaiHour > 23 ||
-          jamMulaiMinute > 59 ||
-          jamSelesaiHour > 23 ||
-          jamSelesaiMinute > 59
-        ) {
-          errors.jadwal = "Jam tidak valid (Jam: 00-23, Menit: 00-59)";
-          isValid = false;
-          break;
-        }
-
-        const mulaiInMinutes = jamMulaiHour * 60 + jamMulaiMinute;
-        const selesaiInMinutes = jamSelesaiHour * 60 + jamSelesaiMinute;
-
-        if (selesaiInMinutes <= mulaiInMinutes) {
+        const [mH, mM] = j.jam_mulai.split(".").map(Number);
+        const [sH, sM] = j.jam_selesai.split(".").map(Number);
+        if (sH * 60 + sM <= mH * 60 + mM) {
           errors.jadwal = "Jam selesai harus lebih besar dari jam mulai";
           isValid = false;
           break;
@@ -576,14 +518,12 @@ export default function DokterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      toast.error("Mohon lengkapi semua field yang wajib diisi");
+      return;
+    }
 
     setSubmitting(true);
-    const loadingToast = toast.loading(
-      selectedDokter ? "Mengupdate dokter..." : "Menambahkan dokter...",
-    );
-
     let newUploadedPath: string | null = null;
 
     try {
@@ -595,11 +535,9 @@ export default function DokterPage() {
           folder: currentUserId,
           file: formData.profileFile,
         });
-
         if (!uploadResult.success) {
           throw new Error(uploadResult.error || "Gagal mengupload profile");
         }
-
         finalProfileUrl = uploadResult.url || null;
         newUploadedPath = uploadResult.path || null;
       } else if (formData.profileDeleted) {
@@ -609,9 +547,7 @@ export default function DokterPage() {
       }
 
       const dokterData = {
-        gelar_depan: formData.gelar_depan || null,
         nama: formData.nama,
-        gelar_belakang: formData.gelar_belakang || null,
         poli_id: formData.poli_id,
         profile: finalProfileUrl,
         status: formData.status,
@@ -629,10 +565,8 @@ export default function DokterPage() {
           .eq("id", selectedDokter.id)
           .select()
           .single();
-
         if (error) throw error;
         dokterId = data.id;
-
         await supabase.from("jadwal_dokter").delete().eq("dokter_id", dokterId);
       } else {
         const { data, error } = await supabase
@@ -640,7 +574,6 @@ export default function DokterPage() {
           .insert([dokterData])
           .select()
           .single();
-
         if (error) throw error;
         dokterId = data.id;
       }
@@ -654,11 +587,9 @@ export default function DokterPage() {
           tipe_jadwal: j.tipe_jadwal as JadwalType,
           created_by: currentUserId,
         }));
-
         const { error: jadwalError } = await supabase
           .from("jadwal_dokter")
           .insert(jadwalToInsert);
-
         if (jadwalError) throw jadwalError;
       }
 
@@ -670,30 +601,22 @@ export default function DokterPage() {
           selectedDokter.profile,
           "dokter-profiles",
         );
-        if (oldPath) {
-          await deleteFile("dokter-profiles", oldPath);
-        }
+        if (oldPath) await deleteFile("dokter-profiles", oldPath);
       }
 
       toast.success(
         selectedDokter
-          ? "Dokter berhasil diupdate"
+          ? "Dokter berhasil diperbarui"
           : "Dokter berhasil ditambahkan",
-        { id: loadingToast },
       );
-
-      await fetchDokter();
       handleCloseDialog();
+      fetchDokter();
     } catch (error) {
       console.error("Error saving dokter:", error);
-
-      if (newUploadedPath) {
-        await deleteFile("dokter-profiles", newUploadedPath);
-      }
-
-      const errorMessage =
-        error instanceof Error ? error.message : "Gagal menyimpan data dokter";
-      toast.error(errorMessage, { id: loadingToast });
+      if (newUploadedPath) await deleteFile("dokter-profiles", newUploadedPath);
+      toast.error(
+        error instanceof Error ? error.message : "Gagal menyimpan data dokter",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -703,825 +626,902 @@ export default function DokterPage() {
     if (!selectedDokter) return;
     setSubmitting(true);
 
-    const loadingToast = toast.loading("Menghapus dokter...");
-
     try {
       if (selectedDokter.profile) {
         const path = getFilePathFromUrl(
           selectedDokter.profile,
           "dokter-profiles",
         );
-        if (path) {
-          await deleteFile("dokter-profiles", path);
-        }
+        if (path) await deleteFile("dokter-profiles", path);
       }
-
       const { error } = await supabase
         .from("dokter")
         .delete()
         .eq("id", selectedDokter.id);
-
       if (error) throw error;
 
-      toast.success("Dokter berhasil dihapus", { id: loadingToast });
-      await fetchDokter();
+      toast.success("Dokter berhasil dihapus");
       setDeleteDialogOpen(false);
       setSelectedDokter(null);
+      fetchDokter();
     } catch (error) {
       console.error("Error deleting dokter:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Gagal menghapus dokter";
-      toast.error(errorMessage, { id: loadingToast });
+      toast.error("Gagal menghapus dokter");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
+    if (selectedItems.length === 0) return;
     setSubmitting(true);
 
-    const loadingToast = toast.loading(
-      `Menghapus ${selectedIds.size} dokter...`,
-    );
-
     try {
-      const idsArray = Array.from(selectedIds);
-
-      for (const id of idsArray) {
+      for (const id of selectedItems) {
         const item = dokterList.find((d) => d.id === id);
         if (item?.profile) {
           const path = getFilePathFromUrl(item.profile, "dokter-profiles");
-          if (path) {
-            await deleteFile("dokter-profiles", path);
-          }
+          if (path) await deleteFile("dokter-profiles", path);
         }
+        const { error } = await supabase.from("dokter").delete().eq("id", id);
+        if (error) throw error;
       }
 
-      const { error } = await supabase
-        .from("dokter")
-        .delete()
-        .in("id", idsArray);
-
-      if (error) throw error;
-
-      toast.success(`${selectedIds.size} dokter berhasil dihapus`, {
-        id: loadingToast,
-      });
-      await fetchDokter();
+      toast.success(`${selectedItems.length} dokter berhasil dihapus`);
+      setSelectedItems([]);
       setBulkDeleteDialogOpen(false);
-      setSelectedIds(new Set());
+      fetchDokter();
     } catch (error) {
       console.error("Error bulk deleting:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Gagal menghapus data";
-      toast.error(errorMessage, { id: loadingToast });
+      toast.error("Gagal menghapus data");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Jadwal Dokter</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <h1 className="text-2xl font-bold mt-2">Jadwal Dokter</h1>
+    <div className="space-y-4 md:space-y-6">
+      {/* Breadcrumb */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Jadwal Dokter</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+              Jadwal Dokter
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">
+              Kelola data dokter dan jadwal praktik
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+            {selectedItems.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setBulkDeleteDialogOpen(true)}
+                disabled={submitting}
+                className="flex-1 sm:flex-initial min-w-0"
+              >
+                <Trash2 className="h-4 w-4 sm:mr-2 shrink-0" />
+                <span className="hidden sm:inline truncate">Hapus</span>
+                <span className="sm:hidden">({selectedItems.length})</span>
+                <span className="hidden sm:inline">
+                  ({selectedItems.length})
+                </span>
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => handleOpenDialog()}
+              className="flex-1 sm:flex-initial min-w-0"
+            >
+              <Plus className="h-4 w-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline truncate">Tambah Dokter</span>
+              <span className="sm:hidden truncate">Tambah</span>
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="mr-2 h-4 w-4" />
-          Tambah Dokter
-        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <CardTitle>Daftar Dokter ({totalItems})</CardTitle>
-
-              <div className="flex gap-3 w-full sm:w-auto">
-                <div className="relative grow sm:grow-0 sm:w-64">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Cari nama dokter, poli..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="shrink-0"
-                  title="Perbarui data table"
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-                  />
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Select
-                value={statusFilter}
-                onValueChange={(value) =>
-                  setStatusFilter(value as DokterStatus | "all")
+      {/* Filter Bar */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {paginatedDokter.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={
+                  selectedItems.length === paginatedDokter.length &&
+                  paginatedDokter.length > 0
                 }
+                onCheckedChange={handleSelectAll}
+                id="select-all"
+              />
+              <Label
+                htmlFor="select-all"
+                className="text-sm text-muted-foreground cursor-pointer"
               >
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Semua Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  {STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                All
+              </Label>
+            </div>
+          )}
 
-              <Select value={poliFilter} onValueChange={setPoliFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Semua Poli" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Poli</SelectItem>
-                  {poliList.map((poli) => (
-                    <SelectItem key={poli.id} value={poli.id}>
-                      {poli.nama_poli}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Desktop filters */}
+          <div className="hidden sm:flex sm:items-center sm:gap-2 sm:ml-auto">
+            <Select
+              value={sortBy}
+              onValueChange={(value) =>
+                setSortBy(value as "newest" | "oldest" | "a-z" | "z-a")
+              }
+            >
+              <SelectTrigger className="w-[120px] h-9">
+                <SelectValue placeholder="Urutan" />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <Select
-                value={`${sortField}-${sortOrder}`}
-                onValueChange={handleSortChange}
-              >
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <div className="flex items-center gap-2">
-                    <ArrowUpDown className="h-4 w-4" />
-                    <span>{getSortLabel()}</span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) =>
+                setStatusFilter(value as DokterStatus | "all")
+              }
+            >
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Status</SelectItem>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              {showReset && (
-                <Button variant="outline" onClick={handleResetFilters}>
-                  <X className="h-4 w-4 mr-2" />
-                  Reset Filter
-                </Button>
-              )}
+            <Select value={poliFilter} onValueChange={setPoliFilter}>
+              <SelectTrigger className="w-[150px] h-9">
+                <SelectValue placeholder="Semua Poli" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Poli</SelectItem>
+                {poliList.map((poli) => (
+                  <SelectItem key={poli.id} value={poli.id}>
+                    {poli.nama_poli}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="relative w-[200px] lg:w-[250px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Cari dokter, poli..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9"
+              />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={isAllSelected}
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Select all"
-                      className={
-                        isSomeSelected
-                          ? "data-[state=checked]:bg-primary/50"
-                          : ""
-                      }
-                    />
-                  </TableHead>
-                  <TableHead className="w-16">No</TableHead>
-                  <TableHead>Dokter</TableHead>
-                  <TableHead>Poli</TableHead>
-                  <TableHead>Jadwal</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[220px]">Tanggal</TableHead>
-                  <TableHead className="text-right w-40">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentDokter.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center text-muted-foreground h-32"
-                    >
-                      {searchQuery ||
-                      statusFilter !== "all" ||
-                      poliFilter !== "all"
-                        ? "Tidak ada data yang sesuai dengan filter"
-                        : "Belum ada data dokter"}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  currentDokter.map((item, index) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.has(item.id)}
-                          onCheckedChange={(checked) =>
-                            handleSelectOne(item.id, checked as boolean)
-                          }
-                          aria-label={`Select ${item.nama}`}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {startIndex + index + 1}
-                      </TableCell>
-                      <TableCell>
-                        <p className="font-medium">{getNamaLengkap(item)}</p>
-                      </TableCell>
-                      <TableCell>
-                        <p className="font-medium">
-                          {item.poli_detail?.nama_poli}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm space-y-1">
-                          {sortJadwalByHari(item.jadwal)
-                            .slice(0, 2)
-                            .map((j) => (
-                              <div
-                                key={j.id}
-                                className="flex items-center gap-1 text-muted-foreground"
-                              >
-                                <span>
-                                  {j.hari}: {j.jam_mulai}-{j.jam_selesai}
-                                </span>
-                              </div>
-                            ))}
-                          {(item.jadwal?.length || 0) > 2 && (
-                            <div className="text-xs text-muted-foreground">
-                              +{(item.jadwal?.length || 0) - 2} jadwal lainnya
-                            </div>
-                          )}
-                          {(item.jadwal?.length || 0) === 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              Belum ada jadwal
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(item.status)}</TableCell>
-                      <TableCell>
-                        <div className="text-xs space-y-2">
-                          <div className="space-y-0.5">
-                            <p className="text-muted-foreground">
-                              <span className="font-medium">Dibuat:</span>{" "}
-                              {formatDateIndonesia(item.created_at)}
-                            </p>
-                            {item.created_by_user && (
-                              <span className="text-muted-foreground">
-                                oleh {item.created_by_user.nama}
-                              </span>
-                            )}
-                          </div>
-                          <div className="space-y-0.5 pt-1 border-t">
-                            <p className="text-muted-foreground">
-                              <span className="font-medium">Diupdate:</span>{" "}
-                              {formatDateIndonesia(item.updated_at)}
-                            </p>
-                            {item.updated_by_user && (
-                              <span className="text-muted-foreground">
-                                oleh {item.updated_by_user.nama}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => handleOpenPreview(item)}
-                                  className="h-8 w-8"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Preview</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => handleOpenDialog(item)}
-                                  className="h-8 w-8 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white dark:text-white hover:text-white"
-                                  disabled={submitting}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Edit</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => handleOpenDeleteDialog(item)}
-                                  className="h-8 w-8 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
-                                  disabled={submitting}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Hapus</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+        </div>
+
+        {/* Mobile filters */}
+        <div className="flex sm:hidden flex-col gap-2">
+          <div className="flex gap-2">
+            <Select
+              value={sortBy}
+              onValueChange={(value) =>
+                setSortBy(value as "newest" | "oldest" | "a-z" | "z-a")
+              }
+            >
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Urutan" />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={statusFilter}
+              onValueChange={(value) =>
+                setStatusFilter(value as DokterStatus | "all")
+              }
+            >
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={poliFilter} onValueChange={setPoliFilter}>
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Poli" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Poli</SelectItem>
+                {poliList.map((poli) => (
+                  <SelectItem key={poli.id} value={poli.id}>
+                    {poli.nama_poli}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={itemsPerPage}
-            totalItems={totalItems}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-            startIndex={startIndex}
-            endIndex={endIndex}
-          />
-        </CardContent>
-      </Card>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Cari dokter, poli..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+        </div>
+      </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedDokter ? "Edit Dokter" : "Tambah Dokter Baru"}
-            </DialogTitle>
-            <DialogDescription>
-              Isi form di bawah untuk{" "}
-              {selectedDokter ? "mengupdate" : "menambahkan"} data dokter
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Foto Profile</Label>
+      {/* Content */}
+      <div>
+        {loading ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(8)].map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <Skeleton className="h-48 w-full" />
+                <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredDokter.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-10 sm:py-12 lg:py-16">
+              <div className="rounded-full bg-muted p-3 mb-3 sm:mb-4">
+                <File className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+              </div>
+              <p className="text-base sm:text-lg font-semibold text-muted-foreground">
+                Tidak ada dokter ditemukan
+              </p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                {searchQuery || statusFilter !== "all" || poliFilter !== "all"
+                  ? "Coba ubah filter pencarian"
+                  : "Mulai dengan menambahkan dokter baru"}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {paginatedDokter.map((item) => (
+                <Card
+                  key={item.id}
+                  className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer relative"
+                  onClick={() => handleOpenDetailDialog(item)}
+                >
+                  {/* Checkbox */}
+                  <div
+                    className="absolute top-3 left-3 z-10"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={selectedItems.includes(item.id)}
+                      onCheckedChange={() => handleSelectItem(item.id)}
+                      className="bg-white dark:bg-gray-800 shadow-md h-5 w-5"
+                    />
+                  </div>
 
-                {selectedDokter?.profile &&
-                  !formData.profileFile &&
-                  !formData.profileDeleted && (
-                    <div className="space-y-2">
-                      <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                        <Image
-                          src={selectedDokter.profile}
-                          alt="Current profile"
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setFormData({
-                              ...formData,
-                              profileDeleted: true,
-                            });
-                          }}
-                          disabled={submitting}
-                          className="w-full sm:w-auto"
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Hapus & Upload Baru
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Profile saat ini. Klik tombol di atas untuk
-                        menggantinya.
-                      </p>
-                    </div>
-                  )}
-
-                {(!selectedDokter?.profile ||
-                  formData.profileDeleted ||
-                  formData.profileFile) && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-center w-full">
-                      <label
-                        htmlFor="profile-upload"
-                        className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80 transition-colors"
-                      >
-                        {formData.profileFile ? (
-                          <div className="relative w-full h-full">
-                            <Image
-                              src={URL.createObjectURL(formData.profileFile)}
-                              alt="Preview"
-                              fill
-                              className="object-cover rounded-lg"
-                              unoptimized
-                            />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-2 right-2"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setFormData({
-                                  ...formData,
-                                  profileFile: null,
-                                  profileDeleted: false,
-                                });
-                                const input = document.getElementById(
-                                  "profile-upload",
-                                ) as HTMLInputElement;
-                                if (input) input.value = "";
-                              }}
-                              disabled={submitting}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <ImagePlus className="w-10 h-10 mb-3 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground">
-                              <span className="font-semibold">
-                                Klik untuk upload
-                              </span>{" "}
-                              atau drag and drop
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              WebP (MAX. 300KB)
-                            </p>
-                          </div>
-                        )}
-                        <Input
-                          id="profile-upload"
-                          type="file"
-                          className="hidden"
-                          accept="image/webp"
-                          disabled={submitting}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const validationResult = validateImage(file);
-                              if (!validationResult.valid) {
-                                toast.error(
-                                  validationResult.error || "File tidak valid",
-                                );
-                                e.target.value = "";
-                                return;
-                              }
-
-                              setFormData({
-                                ...formData,
-                                profileFile: file,
-                                profileDeleted: false,
-                              });
-
-                              toast.success("Gambar siap untuk diupload!");
-                            }
-                          }}
-                        />
-                      </label>
-                    </div>
-
-                    {formData.profileFile && (
-                      <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                            ✓ {formData.profileFile.name}
-                          </p>
-                          <p className="text-xs text-green-600 dark:text-green-400">
-                            {(formData.profileFile.size / 1024).toFixed(2)} KB -
-                            Siap diupload
-                          </p>
-                        </div>
+                  {/* Foto Dokter */}
+                  <div className="relative h-48 bg-muted overflow-hidden rounded-t-xl -mt-6">
+                    {item.profile ? (
+                      <Image
+                        src={item.profile}
+                        alt={item.nama}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Avatar className="h-24 w-24">
+                          <AvatarFallback className="text-4xl bg-muted-foreground/10">
+                            {item.nama.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                       </div>
                     )}
                   </div>
+
+                  {/* Content */}
+                  <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+                    <div>
+                      <div className="flex gap-2 flex-wrap mb-2">
+                        {getStatusBadge(item.status)}
+                        <Badge variant="outline" className="text-xs">
+                          {item.poli_detail?.nama_poli || "-"}
+                        </Badge>
+                      </div>
+                      <h3 className="font-semibold text-base lg:text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                        {item.nama}
+                      </h3>
+
+                      {/* Jadwal ringkas */}
+                      <div className="mt-2 space-y-1">
+                        {sortJadwalByHari(item.jadwal)
+                          .slice(0, 2)
+                          .map((j) => (
+                            <div
+                              key={j.id}
+                              className="flex items-center gap-1 text-xs text-muted-foreground"
+                            >
+                              <Clock className="h-3 w-3 shrink-0" />
+                              <span>
+                                {j.hari}: {j.jam_mulai} - {j.jam_selesai}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-1 py-0 h-4 ml-auto shrink-0"
+                              >
+                                {j.tipe_jadwal}
+                              </Badge>
+                            </div>
+                          ))}
+                        {(item.jadwal?.length || 0) > 2 && (
+                          <p className="text-xs text-muted-foreground">
+                            +{(item.jadwal?.length || 0) - 2} jadwal lainnya
+                          </p>
+                        )}
+                        {(item.jadwal?.length || 0) === 0 && (
+                          <p className="text-xs text-muted-foreground italic">
+                            Belum ada jadwal
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <Avatar className="h-5 w-5 shrink-0">
+                          <AvatarImage
+                            src={item.created_by_user?.avatar}
+                            alt={item.created_by_user?.nama || "User"}
+                          />
+                          <AvatarFallback className="text-xs">
+                            {item.created_by_user?.nama
+                              ?.charAt(0)
+                              .toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {item.created_by_user?.nama}
+                        </span>
+                        <span className="text-muted-foreground hidden sm:inline">
+                          •
+                        </span>
+                        <Calendar className="h-3 w-3 shrink-0 hidden sm:block" />
+                        <span className="text-xs text-muted-foreground hidden sm:inline">
+                          {new Date(item.created_at).toLocaleDateString(
+                            "id-ID",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 shrink-0">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 shadow-md"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenDialog(item);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-8 w-8 shadow-md"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenDeleteDialog(item);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Hapus</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-4 sm:mt-6">
+                {/* Desktop */}
+                <div className="hidden sm:flex items-center justify-between gap-4">
+                  <div className="text-sm text-muted-foreground shrink-0">
+                    Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredDokter.length,
+                    )}{" "}
+                    dari {filteredDokter.length} dokter
+                  </div>
+                  <div className="flex-1" />
+                  <div className="shrink-0">
+                    <Pagination>
+                      <PaginationContent className="gap-1">
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() =>
+                              currentPage > 1 &&
+                              handlePageChange(currentPage - 1)
+                            }
+                            className={`h-9 px-3 text-sm ${
+                              currentPage === 1
+                                ? "pointer-events-none opacity-50"
+                                : "cursor-pointer"
+                            }`}
+                          />
+                        </PaginationItem>
+                        {getPageNumbers().map((page, index) => (
+                          <PaginationItem key={index}>
+                            {page === "ellipsis" ? (
+                              <PaginationEllipsis />
+                            ) : (
+                              <PaginationLink
+                                onClick={() => handlePageChange(page as number)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer h-9"
+                              >
+                                {page}
+                              </PaginationLink>
+                            )}
+                          </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() =>
+                              currentPage < totalPages &&
+                              handlePageChange(currentPage + 1)
+                            }
+                            className={`h-9 px-3 text-sm ${
+                              currentPage === totalPages
+                                ? "pointer-events-none opacity-50"
+                                : "cursor-pointer"
+                            }`}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                </div>
+
+                {/* Mobile */}
+                <div className="flex sm:hidden flex-col items-center gap-3">
+                  <div className="text-xs text-muted-foreground text-center">
+                    Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredDokter.length,
+                    )}{" "}
+                    dari {filteredDokter.length} dokter
+                  </div>
+                  <Pagination>
+                    <PaginationContent className="gap-1">
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() =>
+                            currentPage > 1 && handlePageChange(currentPage - 1)
+                          }
+                          className={`h-8 px-2 text-xs ${
+                            currentPage === 1
+                              ? "pointer-events-none opacity-50"
+                              : "cursor-pointer"
+                          }`}
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <div className="h-8 px-2 flex items-center justify-center text-xs font-medium min-w-[60px]">
+                          {currentPage} / {totalPages}
+                        </div>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() =>
+                            currentPage < totalPages &&
+                            handlePageChange(currentPage + 1)
+                          }
+                          className={`h-8 px-2 text-xs ${
+                            currentPage === totalPages
+                              ? "pointer-events-none opacity-50"
+                              : "cursor-pointer"
+                          }`}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Form Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              {selectedDokter ? "Edit Dokter" : "Tambah Dokter Baru"}
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              {selectedDokter
+                ? "Perbarui informasi dokter"
+                : "Isi form di bawah untuk menambahkan dokter baru"}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            {/* Upload Foto */}
+            <div className="space-y-2">
+              <Label className="text-sm">Foto Profile</Label>
+              {(formData.profile || formData.profileFile) &&
+              !formData.profileDeleted ? (
+                <div className="relative w-full h-48 rounded-md overflow-hidden border">
+                  <Image
+                    src={
+                      formData.profileFile
+                        ? URL.createObjectURL(formData.profileFile)
+                        : formData.profile
+                    }
+                    alt="Preview"
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        profileFile: null,
+                        profileDeleted: true,
+                      });
+                    }}
+                    disabled={submitting}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors"
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file) {
+                      const validation = validateImage(file);
+                      if (!validation.valid) {
+                        toast.error(validation.error || "File tidak valid");
+                        return;
+                      }
+                      setFormData({
+                        ...formData,
+                        profileFile: file,
+                        profileDeleted: false,
+                      });
+                    }
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  <Input
+                    id="profile-upload"
+                    type="file"
+                    accept="image/webp"
+                    onChange={handleProfileChange}
+                    disabled={submitting}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="profile-upload"
+                    className="flex flex-col items-center justify-center cursor-pointer"
+                  >
+                    <div className="rounded-full bg-muted p-3 mb-2">
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium mb-1">
+                      Klik untuk upload atau drag & drop
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Format: WebP, Max: 300KB
+                    </p>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* Nama */}
+            <div className="space-y-2">
+              <Label htmlFor="nama" className="text-sm">
+                Nama Dokter <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="nama"
+                value={formData.nama}
+                onChange={(e) => {
+                  setFormData({ ...formData, nama: e.target.value });
+                  if (formErrors.nama)
+                    setFormErrors({ ...formErrors, nama: "" });
+                }}
+                disabled={submitting}
+                placeholder="Masukkan nama dokter"
+                className={formErrors.nama ? "border-red-500" : ""}
+              />
+              {formErrors.nama && (
+                <p className="text-sm text-red-500">{formErrors.nama}</p>
+              )}
+            </div>
+
+            {/* Poli & Status */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm">
+                  Poli <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.poli_id}
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, poli_id: value });
+                    if (formErrors.poli_id)
+                      setFormErrors({ ...formErrors, poli_id: "" });
+                  }}
+                  disabled={submitting}
+                >
+                  <SelectTrigger
+                    className={formErrors.poli_id ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Pilih poli" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {poliList.map((poli) => (
+                      <SelectItem key={poli.id} value={poli.id}>
+                        {poli.nama_poli}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.poli_id && (
+                  <p className="text-sm text-red-500">{formErrors.poli_id}</p>
                 )}
-
-                <p className="text-xs text-muted-foreground">
-                  Format: WebP. Maksimal 300KB
-                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Gelar Depan</Label>
-                  <Input
-                    placeholder="dr."
-                    value={formData.gelar_depan}
-                    onChange={(e) =>
-                      setFormData({ ...formData, gelar_depan: e.target.value })
-                    }
-                    disabled={submitting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>
-                    Nama Dokter <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    placeholder="Nama lengkap"
-                    value={formData.nama}
-                    onChange={(e) =>
-                      setFormData({ ...formData, nama: e.target.value })
-                    }
-                    disabled={submitting}
-                  />
-                  {formErrors.nama && (
-                    <p className="text-sm text-red-500">{formErrors.nama}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Gelar Belakang</Label>
-                  <Input
-                    placeholder="Sp.A"
-                    value={formData.gelar_belakang}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        gelar_belakang: e.target.value,
-                      })
-                    }
-                    disabled={submitting}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>
-                    Poli <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={formData.poli_id}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, poli_id: value })
-                    }
-                    disabled={submitting}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih poli" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {poliList.map((poli) => (
-                        <SelectItem key={poli.id} value={poli.id}>
-                          {poli.nama_poli}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {formErrors.poli_id && (
-                    <p className="text-sm text-red-500">{formErrors.poli_id}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) =>
-                      setFormData({
-                        ...formData,
-                        status: value as DokterStatus,
-                      })
-                    }
-                    disabled={submitting}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label className="text-sm">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, status: value as DokterStatus })
+                  }
+                  disabled={submitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            <div className="space-y-3 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">
-                  Jadwal Praktik
-                </Label>
-              </div>
+            {/* Jadwal */}
+            <div className="space-y-3 pt-3 border-t">
+              <Label className="text-sm font-semibold">Jadwal Praktik</Label>
               {formErrors.jadwal && (
                 <p className="text-sm text-red-500">{formErrors.jadwal}</p>
               )}
 
-              {/* JADWAL REGULER */}
-              <div className="space-y-3">
+              {/* Jadwal Reguler */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Jadwal Reguler</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Reguler
+                  </Label>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddJadwal("reguler")}
                     disabled={submitting}
+                    className="h-7 text-xs"
                   >
-                    <Plus className="h-4 w-4 mr-1" />
+                    <Plus className="h-3 w-3 mr-1" />
                     Tambah
                   </Button>
                 </div>
 
-                <div className="space-y-3">
-                  {formData.jadwal.filter((j) => j.tipe_jadwal === "reguler")
-                    .length === 0 ? (
-                    <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        Belum ada jadwal reguler
-                      </p>
-                    </div>
-                  ) : (
-                    formData.jadwal
-                      .filter((j) => j.tipe_jadwal === "reguler")
-                      .map((jadwal, index) => (
-                        <div
-                          key={jadwal._temp_id}
-                          className="p-4 border rounded-lg space-y-3 bg-muted/30"
-                        >
-                          <div className="flex items-center justify-between">
-                            <Label className="text-sm font-medium">
-                              Reguler #{index + 1}
-                            </Label>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() =>
-                                handleRemoveJadwal(jadwal._temp_id)
+                {formData.jadwal.filter((j) => j.tipe_jadwal === "reguler")
+                  .length === 0 ? (
+                  <div className="text-center py-4 border-2 border-dashed rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      Belum ada jadwal reguler
+                    </p>
+                  </div>
+                ) : (
+                  formData.jadwal
+                    .filter((j) => j.tipe_jadwal === "reguler")
+                    .map((jadwal, index) => (
+                      <div
+                        key={jadwal._temp_id}
+                        className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium">
+                            Reguler #{index + 1}
+                          </Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveJadwal(jadwal._temp_id)}
+                            disabled={submitting}
+                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Hari</Label>
+                            <Select
+                              value={jadwal.hari}
+                              onValueChange={(value) =>
+                                handleJadwalChange(
+                                  jadwal._temp_id,
+                                  "hari",
+                                  value,
+                                )
                               }
                               disabled={submitting}
-                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
-                              <X className="h-4 w-4" />
-                            </Button>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Pilih hari" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {HARI_OPTIONS.map((h) => (
+                                  <SelectItem key={h} value={h}>
+                                    {h}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Hari</Label>
-                              <Select
-                                value={jadwal.hari}
-                                onValueChange={(value) =>
-                                  handleJadwalChange(
-                                    jadwal._temp_id,
-                                    "hari",
-                                    value,
-                                  )
-                                }
-                                disabled={submitting}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pilih hari" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {HARI_OPTIONS.map((h) => (
-                                    <SelectItem key={h} value={h}>
-                                      {h}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-1">
-                              <Label className="text-xs">Jam Mulai</Label>
-                              <Select
-                                value={jadwal.jam_mulai}
-                                onValueChange={(value) =>
-                                  handleJadwalChange(
-                                    jadwal._temp_id,
-                                    "jam_mulai",
-                                    value,
-                                  )
-                                }
-                                disabled={submitting}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pilih jam" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {TIME_OPTIONS.map((time) => (
-                                    <SelectItem key={time} value={time}>
-                                      {time}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-1">
-                              <Label className="text-xs">Jam Selesai</Label>
-                              <Select
-                                value={jadwal.jam_selesai}
-                                onValueChange={(value) =>
-                                  handleJadwalChange(
-                                    jadwal._temp_id,
-                                    "jam_selesai",
-                                    value,
-                                  )
-                                }
-                                disabled={submitting}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pilih jam" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {TIME_OPTIONS.map((time) => (
-                                    <SelectItem key={time} value={time}>
-                                      {time}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Jam Mulai</Label>
+                            <Select
+                              value={jadwal.jam_mulai}
+                              onValueChange={(value) =>
+                                handleJadwalChange(
+                                  jadwal._temp_id,
+                                  "jam_mulai",
+                                  value,
+                                )
+                              }
+                              disabled={submitting}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Pilih jam" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {TIME_OPTIONS.map((time) => (
+                                  <SelectItem key={time} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Jam Selesai</Label>
+                            <Select
+                              value={jadwal.jam_selesai}
+                              onValueChange={(value) =>
+                                handleJadwalChange(
+                                  jadwal._temp_id,
+                                  "jam_selesai",
+                                  value,
+                                )
+                              }
+                              disabled={submitting}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Pilih jam" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {TIME_OPTIONS.map((time) => (
+                                  <SelectItem key={time} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
-                      ))
-                  )}
-                </div>
+                      </div>
+                    ))
+                )}
               </div>
 
-              {/* JADWAL EKSEKUTIF */}
-              <div className="space-y-3 pt-3">
+              {/* Jadwal Eksekutif */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">
-                    Jadwal Eksekutif
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Eksekutif
                   </Label>
                   <Button
                     type="button"
@@ -1529,133 +1529,127 @@ export default function DokterPage() {
                     size="sm"
                     onClick={() => handleAddJadwal("eksekutif")}
                     disabled={submitting}
+                    className="h-7 text-xs"
                   >
-                    <Plus className="h-4 w-4 mr-1" />
+                    <Plus className="h-3 w-3 mr-1" />
                     Tambah
                   </Button>
                 </div>
 
-                <div className="space-y-3">
-                  {formData.jadwal.filter((j) => j.tipe_jadwal === "eksekutif")
-                    .length === 0 ? (
-                    <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        Belum ada jadwal eksekutif
-                      </p>
-                    </div>
-                  ) : (
-                    formData.jadwal
-                      .filter((j) => j.tipe_jadwal === "eksekutif")
-                      .map((jadwal, index) => (
-                        <div
-                          key={jadwal._temp_id}
-                          className="p-4 border rounded-lg space-y-3 bg-muted/30"
-                        >
-                          <div className="flex items-center justify-between">
-                            <Label className="text-sm font-medium">
-                              Eksekutif #{index + 1}
-                            </Label>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() =>
-                                handleRemoveJadwal(jadwal._temp_id)
+                {formData.jadwal.filter((j) => j.tipe_jadwal === "eksekutif")
+                  .length === 0 ? (
+                  <div className="text-center py-4 border-2 border-dashed rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      Belum ada jadwal eksekutif
+                    </p>
+                  </div>
+                ) : (
+                  formData.jadwal
+                    .filter((j) => j.tipe_jadwal === "eksekutif")
+                    .map((jadwal, index) => (
+                      <div
+                        key={jadwal._temp_id}
+                        className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium">
+                            Eksekutif #{index + 1}
+                          </Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveJadwal(jadwal._temp_id)}
+                            disabled={submitting}
+                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Hari</Label>
+                            <Select
+                              value={jadwal.hari}
+                              onValueChange={(value) =>
+                                handleJadwalChange(
+                                  jadwal._temp_id,
+                                  "hari",
+                                  value,
+                                )
                               }
                               disabled={submitting}
-                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
-                              <X className="h-4 w-4" />
-                            </Button>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Pilih hari" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {HARI_OPTIONS.map((h) => (
+                                  <SelectItem key={h} value={h}>
+                                    {h}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Hari</Label>
-                              <Select
-                                value={jadwal.hari}
-                                onValueChange={(value) =>
-                                  handleJadwalChange(
-                                    jadwal._temp_id,
-                                    "hari",
-                                    value,
-                                  )
-                                }
-                                disabled={submitting}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pilih hari" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {HARI_OPTIONS.map((h) => (
-                                    <SelectItem key={h} value={h}>
-                                      {h}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-1">
-                              <Label className="text-xs">Jam Mulai</Label>
-                              <Select
-                                value={jadwal.jam_mulai}
-                                onValueChange={(value) =>
-                                  handleJadwalChange(
-                                    jadwal._temp_id,
-                                    "jam_mulai",
-                                    value,
-                                  )
-                                }
-                                disabled={submitting}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pilih jam" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {TIME_OPTIONS.map((time) => (
-                                    <SelectItem key={time} value={time}>
-                                      {time}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-1">
-                              <Label className="text-xs">Jam Selesai</Label>
-                              <Select
-                                value={jadwal.jam_selesai}
-                                onValueChange={(value) =>
-                                  handleJadwalChange(
-                                    jadwal._temp_id,
-                                    "jam_selesai",
-                                    value,
-                                  )
-                                }
-                                disabled={submitting}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pilih jam" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {TIME_OPTIONS.map((time) => (
-                                    <SelectItem key={time} value={time}>
-                                      {time}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Jam Mulai</Label>
+                            <Select
+                              value={jadwal.jam_mulai}
+                              onValueChange={(value) =>
+                                handleJadwalChange(
+                                  jadwal._temp_id,
+                                  "jam_mulai",
+                                  value,
+                                )
+                              }
+                              disabled={submitting}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Pilih jam" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {TIME_OPTIONS.map((time) => (
+                                  <SelectItem key={time} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Jam Selesai</Label>
+                            <Select
+                              value={jadwal.jam_selesai}
+                              onValueChange={(value) =>
+                                handleJadwalChange(
+                                  jadwal._temp_id,
+                                  "jam_selesai",
+                                  value,
+                                )
+                              }
+                              disabled={submitting}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Pilih jam" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {TIME_OPTIONS.map((time) => (
+                                  <SelectItem key={time} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
-                      ))
-                  )}
-                </div>
+                      </div>
+                    ))
+                )}
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -1675,50 +1669,75 @@ export default function DokterPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* Detail Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Preview Dokter</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
+              Detail Dokter
+            </DialogTitle>
           </DialogHeader>
           {selectedDokter && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage
-                    src={selectedDokter.profile || undefined}
+            <div className="space-y-3 sm:space-y-4">
+              {selectedDokter.profile && (
+                <div className="relative w-full h-48 sm:h-56 rounded-lg overflow-hidden">
+                  <Image
+                    src={selectedDokter.profile}
                     alt={selectedDokter.nama}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                    priority
                   />
-                  <AvatarFallback className="text-2xl">
-                    {selectedDokter.nama.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold">
-                    {getNamaLengkap(selectedDokter)}
-                  </h2>
-                  <div className="flex gap-2 mt-2">
-                    <Badge variant="outline">
-                      {selectedDokter.poli_detail?.nama_poli}
-                    </Badge>
-                    {getStatusBadge(selectedDokter.status)}
-                  </div>
+                </div>
+              )}
+
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold">
+                  {selectedDokter.nama}
+                </h2>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {getStatusBadge(selectedDokter.status)}
+                  <Badge variant="outline">
+                    {selectedDokter.poli_detail?.nama_poli}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 mt-3 text-xs sm:text-sm text-muted-foreground">
+                  <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
+                    <AvatarImage
+                      src={selectedDokter.created_by_user?.avatar}
+                      alt={selectedDokter.created_by_user?.nama || "User"}
+                    />
+                    <AvatarFallback className="text-xs">
+                      {selectedDokter.created_by_user?.nama
+                        ?.charAt(0)
+                        .toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span>
+                    Dibuat oleh {selectedDokter.created_by_user?.nama} •{" "}
+                    {new Date(selectedDokter.created_at).toLocaleDateString(
+                      "id-ID",
+                      { day: "numeric", month: "long", year: "numeric" },
+                    )}
+                  </span>
                 </div>
               </div>
 
+              {/* Detail Jadwal */}
               <div className="space-y-3">
-                <h3 className="font-semibold flex items-center gap-2">
-                  Jadwal Praktik
-                </h3>
+                <Label className="text-sm font-semibold">Jadwal Praktik</Label>
+
                 {selectedDokter.jadwal && selectedDokter.jadwal.length > 0 ? (
-                  <div className="space-y-4">
-                    {/* JADWAL REGULER */}
+                  <div className="space-y-3">
+                    {/* Reguler */}
                     {selectedDokter.jadwal.filter(
                       (j) => j.tipe_jadwal === "reguler",
                     ).length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-muted-foreground">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                           Reguler
-                        </h4>
+                        </p>
                         {sortJadwalByHari(
                           selectedDokter.jadwal.filter(
                             (j) => j.tipe_jadwal === "reguler",
@@ -1726,10 +1745,10 @@ export default function DokterPage() {
                         ).map((j) => (
                           <div
                             key={j.id}
-                            className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg"
+                            className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm"
                           >
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-medium min-w-20">
+                            <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <span className="font-medium min-w-16">
                               {j.hari}
                             </span>
                             <span className="text-muted-foreground">:</span>
@@ -1741,14 +1760,14 @@ export default function DokterPage() {
                       </div>
                     )}
 
-                    {/* JADWAL EKSEKUTIF */}
+                    {/* Eksekutif */}
                     {selectedDokter.jadwal.filter(
                       (j) => j.tipe_jadwal === "eksekutif",
                     ).length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-muted-foreground">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                           Eksekutif
-                        </h4>
+                        </p>
                         {sortJadwalByHari(
                           selectedDokter.jadwal.filter(
                             (j) => j.tipe_jadwal === "eksekutif",
@@ -1756,10 +1775,10 @@ export default function DokterPage() {
                         ).map((j) => (
                           <div
                             key={j.id}
-                            className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg"
+                            className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm"
                           >
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-medium min-w-20">
+                            <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <span className="font-medium min-w-16">
                               {j.hari}
                             </span>
                             <span className="text-muted-foreground">:</span>
@@ -1779,28 +1798,52 @@ export default function DokterPage() {
               </div>
             </div>
           )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDetailDialogOpen(false)}
+            >
+              Tutup
+            </Button>
+            {selectedDokter && (
+              <Button
+                onClick={() => {
+                  setDetailDialogOpen(false);
+                  handleOpenDialog(selectedDokter);
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Delete Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Dokter?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-base sm:text-lg">
+              Hapus Dokter?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm">
               Apakah Anda yakin ingin menghapus dokter{" "}
-              <strong>
-                {selectedDokter && getNamaLengkap(selectedDokter)}
-              </strong>
-              ? Semua jadwal praktik dokter ini juga akan terhapus. Tindakan ini
-              tidak dapat dibatalkan.
+              <strong>{selectedDokter?.nama}</strong>? Semua jadwal praktik juga
+              akan terhapus. Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              Batal
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white"
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto"
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitting ? "Menghapus..." : "Hapus"}
@@ -1809,30 +1852,38 @@ export default function DokterPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Bulk Delete Dialog */}
       <AlertDialog
         open={bulkDeleteDialogOpen}
         onOpenChange={setBulkDeleteDialogOpen}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Hapus {selectedIds.size} Dokter?
+            <AlertDialogTitle className="text-base sm:text-lg">
+              Hapus Beberapa Dokter?
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus {selectedIds.size} dokter yang
-              dipilih? Semua jadwal praktik dokter-dokter ini juga akan
-              terhapus. Tindakan ini tidak dapat dibatalkan.
+            <AlertDialogDescription className="text-xs sm:text-sm">
+              Apakah Anda yakin ingin menghapus{" "}
+              <strong>{selectedItems.length} dokter</strong> yang dipilih?
+              Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              Batal
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
               disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto"
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {submitting ? "Menghapus..." : "Hapus Semua"}
+              {submitting
+                ? "Menghapus..."
+                : `Hapus ${selectedItems.length} Dokter`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
