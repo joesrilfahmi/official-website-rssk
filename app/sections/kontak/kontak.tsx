@@ -1,66 +1,127 @@
-'use client';
-import React from 'react';
-import { Phone, Mail, MapPin } from 'lucide-react';
-import Title from '@/components/ui/custom/title';
-import Banner from '@/components/ui/custom/banner';
+"use client";
+import Banner from "@/components/ui/custom/banner";
+import { Profile } from "@/config/profile";
+import { Mail, MapPin, Phone } from "lucide-react";
 
-const Contact = () => {
-    return (
-        <div className="bg-gray-50 px-4 sm:px-6 lg:px-8 overflow-hidden">
-            <div className="max-w-7xl mx-auto">
-                <Banner
-                    title="Emergency Contact"
-                    subtitle="CONTACT"
-                />
+const Kontak = () => {
+  const handlePhoneClick = () => {
+    window.location.href = `tel:${Profile.phone}`;
+  };
 
-                {/* Header Section */}
-                <div className="text-center mt-8 mb-12 sm:mb-16">
-                    <Title
-                        badge="Kontak"
-                        title="Kontak Kami"
-                        badgeVariant="default"
-                        align='center'
-                    />
-                </div>
+  const handleEmailClick = () => {
+    window.location.href = `mailto:${Profile.email}`;
+  };
 
-                {/* Contact Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-                    {/* Phone Card */}
-                    <div className="bg-bittersweet-500 rounded-3xl p-8 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative pt-16">
-                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-                            <div className="bg-white rounded-2xl p-4 shadow-lg border-4 border-bittersweet-500">
-                                <Phone className="w-8 h-8 text-bittersweet-500" />
-                            </div>
-                        </div>
-                        <h3 className="text-center font-semibold text-lg mb-2">Call Us Now</h3>
-                        <p className="text-center text-white font-medium">+62 985456782</p>
-                    </div>
-
-                    {/* Email Card */}
-                    <div className="bg-greenfresh-600 rounded-3xl p-8 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative pt-16">
-                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-                            <div className="bg-white rounded-2xl p-4 shadow-lg border-4 border-greenfresh-600">
-                                <Mail className="w-8 h-8 text-greenfresh-600" />
-                            </div>
-                        </div>
-                        <h3 className="text-center font-semibold text-lg mb-2">Mail Us Now</h3>
-                        <p className="text-center text-white font-medium text-sm">info@mithessios.com</p>
-                    </div>
-
-                    {/* Address Card */}
-                    <div className="bg-mariner-600 rounded-3xl p-8 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative pt-16">
-                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-                            <div className="bg-white rounded-2xl p-4 shadow-lg border-4 border-mariner-600">
-                                <MapPin className="w-8 h-8 text-mariner-600" />
-                            </div>
-                        </div>
-                        <h3 className="text-center font-semibold text-lg mb-2">Address</h3>
-                        <p className="text-center text-white font-medium text-sm">Jl. Dantau Jonge 12, SBY</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+  const handleMapClick = () => {
+    // Encode address untuk Google Maps
+    const encodedAddress = encodeURIComponent(Profile.address);
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`,
+      "_blank",
     );
+  };
+
+  return (
+    <div className="bg-gray-50 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* Banner */}
+        <Banner
+          title="Hubungi Kami"
+          subtitle="Kami siap membantu Anda. Jangan ragu untuk menghubungi kami melalui saluran komunikasi berikut"
+        />
+
+        {/* Contact Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 mb-16">
+          {/* Phone Card */}
+          <div
+            onClick={handlePhoneClick}
+            className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative overflow-hidden"
+          >
+            {/* Gradient Background Effect */}
+            <div className="absolute inset-0 bg-linear-to-br from-bittersweet-500 to-bittersweet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+            <div className="relative z-10">
+              {/* Icon Container */}
+              <div className="flex justify-center mb-6">
+                <div className="bg-bittersweet-100 group-hover:bg-white rounded-2xl p-6 transition-colors duration-300">
+                  <Phone className="w-12 h-12 text-bittersweet-500 group-hover:text-bittersweet-600 transition-colors duration-300" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <h3 className="text-center font-bold text-2xl mb-3 text-gray-900 group-hover:text-white transition-colors duration-300">
+                Telepon
+              </h3>
+              <p className="text-center text-gray-600 group-hover:text-white text-sm mb-4 transition-colors duration-300">
+                Hubungi kami melalui telepon
+              </p>
+              <p className="text-center font-semibold text-lg text-bittersweet-600 group-hover:text-white transition-colors duration-300">
+                {Profile.phone}
+              </p>
+            </div>
+          </div>
+
+          {/* Email Card */}
+          <div
+            onClick={handleEmailClick}
+            className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative overflow-hidden"
+          >
+            {/* Gradient Background Effect */}
+            <div className="absolute inset-0 bg-linear-to-br from-greenfresh-500 to-greenfresh-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+            <div className="relative z-10">
+              {/* Icon Container */}
+              <div className="flex justify-center mb-6">
+                <div className="bg-greenfresh-100 group-hover:bg-white rounded-2xl p-6 transition-colors duration-300">
+                  <Mail className="w-12 h-12 text-greenfresh-600 group-hover:text-greenfresh-600 transition-colors duration-300" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <h3 className="text-center font-bold text-2xl mb-3 text-gray-900 group-hover:text-white transition-colors duration-300">
+                Email
+              </h3>
+              <p className="text-center text-gray-600 group-hover:text-white text-sm mb-4 transition-colors duration-300">
+                Kirim email kepada kami
+              </p>
+              <p className="text-center font-semibold text-base text-greenfresh-600 group-hover:text-white transition-colors duration-300 wrap-break-word">
+                {Profile.email}
+              </p>
+            </div>
+          </div>
+
+          {/* Address Card */}
+          <div
+            onClick={handleMapClick}
+            className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative overflow-hidden"
+          >
+            {/* Gradient Background Effect */}
+            <div className="absolute inset-0 bg-linear-to-br from-mariner-500 to-mariner-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+            <div className="relative z-10">
+              {/* Icon Container */}
+              <div className="flex justify-center mb-6">
+                <div className="bg-mariner-100 group-hover:bg-white rounded-2xl p-6 transition-colors duration-300">
+                  <MapPin className="w-12 h-12 text-mariner-600 group-hover:text-mariner-600 transition-colors duration-300" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <h3 className="text-center font-bold text-2xl mb-3 text-gray-900 group-hover:text-white transition-colors duration-300">
+                Alamat
+              </h3>
+              <p className="text-center text-gray-600 group-hover:text-white text-sm mb-4 transition-colors duration-300">
+                Lihat lokasi kami di peta
+              </p>
+              <p className="text-center font-semibold text-base text-mariner-600 group-hover:text-white transition-colors duration-300">
+                {Profile.address}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export default Contact;
+export default Kontak;
