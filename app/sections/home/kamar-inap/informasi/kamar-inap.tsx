@@ -80,9 +80,9 @@ const InformasiKamarInap = () => {
   };
 
   const renderKamarCard = (kamar: KamarInapType) => (
-    <div className="bg-white overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
       {/* Content Layout */}
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6 p-6 lg:p-8">
         {/* Left Content Section */}
         <div className="flex-1">
           {/* Room Name with Badge */}
@@ -133,7 +133,7 @@ const InformasiKamarInap = () => {
                 alt={kamar.title}
                 fill
                 sizes="(max-width: 1024px) 100vw, 380px"
-                className="object-cover"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
                 priority={kamar.is_recommended}
                 onError={(e) => {
                   const target = e.currentTarget;
@@ -165,8 +165,8 @@ const InformasiKamarInap = () => {
   );
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="bg-gray-50 min-h-screen py-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
         {/* Banner Section */}
         <Banner
           title="Kamar Inap"
@@ -189,8 +189,11 @@ const InformasiKamarInap = () => {
           {loading && (
             <div className="space-y-8 lg:space-y-12">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white overflow-hidden animate-pulse">
-                  <div className="flex flex-col lg:flex-row gap-6">
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse"
+                >
+                  <div className="flex flex-col lg:flex-row gap-6 p-6 lg:p-8">
                     <div className="flex-1">
                       <div className="h-8 w-48 bg-gray-200 rounded mb-3"></div>
                       <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>

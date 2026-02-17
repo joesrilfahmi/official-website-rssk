@@ -215,32 +215,35 @@ const KritikSaran = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="bg-gray-50 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            {/* Banner Skeleton */}
-            <div className="h-48 bg-gray-200 rounded-3xl mb-12"></div>
+  return (
+    <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* Banner */}
+        <Banner
+          title="Kritik & Saran"
+          subtitle="Suara Anda sangat berarti bagi kami untuk terus meningkatkan kualitas layanan"
+        />
 
-            {/* Form Container Skeleton */}
-            <div className="mb-4 py-4">
-              <div className="max-w-4xl mx-auto px-4 relative">
-                {/* Blue Background */}
-                <div className="absolute -bottom-4 left-0 right-0 bg-mariner-500 rounded-3xl h-1/2"></div>
+        <div className="mb-4 py-4 mt-12">
+          <div className="max-w-4xl mx-auto px-4 relative">
+            {/* Blue Background - Only half height */}
+            <div className="absolute -bottom-4 left-0 right-0 bg-mariner-500 rounded-3xl h-1/2"></div>
 
-                {/* White Form Container */}
-                <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 md:p-12 mt-12">
+            {/* White Form Container */}
+            <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 md:p-12">
+              {/* Loading State */}
+              {loading && (
+                <div className="animate-pulse">
                   {/* Title Skeleton */}
                   <div className="text-center mb-8">
-                    <div className="h-6 w-24 bg-gray-200 rounded-full mx-auto mb-3"></div>
-                    <div className="h-8 w-64 bg-gray-200 rounded-lg mx-auto"></div>
+                    <div className="h-5 w-20 bg-gray-200 rounded-full mx-auto mb-3"></div>
+                    <div className="h-8 w-56 bg-gray-200 rounded-lg mx-auto"></div>
                   </div>
 
                   <div className="space-y-6">
                     {/* Anonymous Checkbox Skeleton */}
                     <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-xl border-2 border-blue-100">
-                      <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                      <div className="w-5 h-5 bg-gray-200 rounded shrink-0"></div>
                       <div className="h-4 w-80 bg-gray-200 rounded"></div>
                     </div>
 
@@ -293,32 +296,10 @@ const KritikSaran = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+              )}
 
-  return (
-    <div className="bg-gray-50 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* Banner */}
-        <Banner
-          title="Kritik & Saran"
-          subtitle="Suara Anda sangat berarti bagi kami untuk terus meningkatkan kualitas layanan"
-        />
-
-        <div className="mb-4 py-4 mt-12">
-          <div className="max-w-4xl mx-auto px-4 relative">
-            {/* Blue Background - Only half height */}
-            <div className="absolute -bottom-4 left-0 right-0 bg-mariner-500 rounded-3xl h-1/2"></div>
-
-            {/* White Form Container */}
-            <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 md:p-12">
-              {showSuccess ? (
-                // Success State
+              {/* Success State */}
+              {!loading && showSuccess && (
                 <div className="text-center py-12">
                   <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
                     <CheckCircle className="w-12 h-12 text-green-500" />
@@ -332,7 +313,10 @@ const KritikSaran = () => {
                     layanan kami.
                   </p>
                 </div>
-              ) : (
+              )}
+
+              {/* Form */}
+              {!loading && !showSuccess && (
                 <>
                   <div className="text-center mb-8">
                     <Title

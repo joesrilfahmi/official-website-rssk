@@ -409,7 +409,7 @@ const DokterSpesialis = () => {
   };
 
   return (
-    <div className="bg-white px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <Banner
           title="Dokter Spesialis Kami"
