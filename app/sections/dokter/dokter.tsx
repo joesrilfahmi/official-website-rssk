@@ -155,11 +155,10 @@ const DokterSpesialis = () => {
 
       if (dokterError) throw dokterError;
 
-      // Sort by poli nama_poli ascending
       const sortedDokter = (dokterData || []).sort((a, b) => {
-        const nameA = a.poli?.nama_poli?.toLowerCase() || "";
-        const nameB = b.poli?.nama_poli?.toLowerCase() || "";
-        return nameA.localeCompare(nameB);
+        const nameA = a.nama?.toLowerCase() || "";
+        const nameB = b.nama?.toLowerCase() || "";
+        return nameA.localeCompare(nameB, "id");
       });
 
       setDokterList(sortedDokter);
