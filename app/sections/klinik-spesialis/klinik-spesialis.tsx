@@ -4,13 +4,23 @@ import Banner from "@/components/ui/custom/banner";
 import Button from "@/components/ui/custom/button";
 import Input from "@/components/ui/custom/input";
 import { supabase } from "@/lib/supabase/client";
-import { LayananUnggulan as LayananUnggulanType } from "@/types/index";
 import * as Icons from "lucide-react";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
+interface Poli {
+  id: string;
+  nama_poli: string;
+  icon: string;
+  description: string;
+  status: string;
+  urutan: number;
+  created_at: string;
+  updated_at: string;
+}
+
 const LayananUnggulan = () => {
-  const [layananList, setLayananList] = useState<LayananUnggulanType[]>([]);
+  const [layananList, setLayananList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,15 +30,16 @@ const LayananUnggulan = () => {
     const fetchLayanan = async () => {
       try {
         const { data, error } = await supabase
-          .from("layanan_unggulan")
+          .from("poli")
           .select("*")
+          .eq("status", "active")
           .order("urutan", { ascending: true });
 
         if (error) throw error;
 
         setLayananList(data || []);
       } catch (error) {
-        console.error("Error fetching layanan:", error);
+        console.error("Error fetching poli:", error);
       } finally {
         setLoading(false);
       }
@@ -38,10 +49,10 @@ const LayananUnggulan = () => {
 
     // Real-time subscription
     const channel = supabase
-      .channel("layanan_unggulan_public")
+      .channel("poli_public")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "layanan_unggulan" },
+        { event: "*", schema: "public", table: "poli" },
         () => {
           fetchLayanan();
         },
@@ -58,7 +69,7 @@ const LayananUnggulan = () => {
     return layananList.filter((layanan) => {
       if (!searchQuery) return true;
 
-      const title = layanan.title?.toLowerCase() || "";
+      const title = layanan.nama_poli?.toLowerCase() || "";
       const description = layanan.description?.toLowerCase() || "";
       const query = searchQuery.toLowerCase();
 
@@ -85,12 +96,11 @@ const LayananUnggulan = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
-  // Handle clear search
   const handleClearSearch = () => {
     setSearchQuery("");
   };
 
-  const renderLayananCard = (layanan: LayananUnggulanType, index: number) => {
+  const renderLayananCard = (layanan: Poli, index: number) => {
     const IconComponent = Icons[
       layanan.icon as keyof typeof Icons
     ] as React.ElementType;
@@ -108,22 +118,14 @@ const LayananUnggulan = () => {
           {IconComponent && <IconComponent className="w-7 h-7 sm:w-8 sm:h-8" />}
         </div>
 
-        {/* Content - Flex grow to push button to bottom */}
+        {/* Content */}
         <div className="relative z-10 flex flex-col grow">
           <h3 className="text-xl sm:text-2xl font-bold text-mariner-500 mb-3 sm:mb-4 line-clamp-2 min-h-14">
-            {layanan.title}
+            {layanan.nama_poli}
           </h3>
           <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4 sm:mb-6 line-clamp-3 grow">
             {layanan.description}
           </p>
-
-          {/* Explore Button - Always at bottom */}
-          {/* <div className="mt-auto">
-                        <Button variant='secondary' size="sm">
-                            Explore More
-                            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                    </div> */}
         </div>
       </div>
     );
@@ -204,7 +206,7 @@ const LayananUnggulan = () => {
           </div>
         )}
 
-        {/* Content Grid - Display filtered data */}
+        {/* Content Grid */}
         {!loading && filteredLayanan.length > 0 && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 py-12">
@@ -215,7 +217,7 @@ const LayananUnggulan = () => {
               ))}
             </div>
 
-            {/* Pagination - Show only when more than 9 items */}
+            {/* Pagination */}
             {filteredLayanan.length > itemsPerPage && (
               <div className="flex items-center justify-end gap-3 mt-2 mb-8">
                 <Button
