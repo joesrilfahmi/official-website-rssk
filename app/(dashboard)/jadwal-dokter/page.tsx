@@ -65,6 +65,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -1004,7 +1005,7 @@ export default function JadwalDokterPage() {
                     <Checkbox
                       checked={selectedItems.includes(item.id)}
                       onCheckedChange={() => handleSelectItem(item.id)}
-                      className="bg-white dark:bg-gray-800 shadow-md h-5 w-5"
+                      className=" shadow-md h-5 w-5"
                     />
                   </div>
 
@@ -1458,246 +1459,233 @@ export default function JadwalDokterPage() {
                 <p className="text-sm text-red-500">{formErrors.jadwal}</p>
               )}
 
-              {/* Jadwal Reguler */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <Tabs defaultValue="reguler">
+                <TabsList className="w-full">
+                  <TabsTrigger value="reguler" className="flex-1">
                     Reguler
-                  </Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddJadwal("reguler")}
-                    disabled={submitting}
-                    className="h-7 text-xs"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Tambah
-                  </Button>
-                </div>
-
-                {formData.jadwal.filter((j) => j.tipe_jadwal === "reguler")
-                  .length === 0 ? (
-                  <div className="text-center py-4 border-2 border-dashed rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      Belum ada jadwal reguler
-                    </p>
-                  </div>
-                ) : (
-                  formData.jadwal
-                    .filter((j) => j.tipe_jadwal === "reguler")
-                    .map((jadwal, index) => (
-                      <div
-                        key={jadwal._temp_id}
-                        className="p-3 border rounded-lg space-y-2 bg-muted/30"
-                      >
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs font-medium">
-                            Reguler #{index + 1}
-                          </Label>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveJadwal(jadwal._temp_id)}
-                            disabled={submitting}
-                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Hari</Label>
-                            <HariSelect jadwal={jadwal} disabled={submitting} />
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label className="text-xs">Jam Mulai</Label>
-                            <Input
-                              value={jadwal.jam_mulai}
-                              onChange={(e) =>
-                                handleJadwalChange(
-                                  jadwal._temp_id,
-                                  "jam_mulai",
-                                  e.target.value,
-                                )
-                              }
-                              disabled={submitting}
-                              placeholder="09.00"
-                              maxLength={5}
-                              className="h-8 text-xs"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Jam Selesai</Label>
-                            <Input
-                              value={jadwal.jam_selesai}
-                              onChange={(e) =>
-                                handleJadwalChange(
-                                  jadwal._temp_id,
-                                  "jam_selesai",
-                                  e.target.value,
-                                )
-                              }
-                              disabled={submitting}
-                              placeholder="17.00"
-                              maxLength={5}
-                              className="h-8 text-xs"
-                            />
-                          </div>
-
-                          {/* <div className="space-y-1">
-                            <Label className="text-xs">Jam Mulai</Label>
-                            <Select
-                              value={jadwal.jam_mulai}
-                              onValueChange={(value) =>
-                                handleJadwalChange(
-                                  jadwal._temp_id,
-                                  "jam_mulai",
-                                  value,
-                                )
-                              }
-                              disabled={submitting}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Pilih jam" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {TIME_OPTIONS.map((time) => (
-                                  <SelectItem key={time} value={time}>
-                                    {time}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Jam Selesai</Label>
-                            <Select
-                              value={jadwal.jam_selesai}
-                              onValueChange={(value) =>
-                                handleJadwalChange(
-                                  jadwal._temp_id,
-                                  "jam_selesai",
-                                  value,
-                                )
-                              }
-                              disabled={submitting}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Pilih jam" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {TIME_OPTIONS.map((time) => (
-                                  <SelectItem key={time} value={time}>
-                                    {time}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div> */}
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
-
-              {/* Jadwal Eksekutif */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    {formData.jadwal.filter((j) => j.tipe_jadwal === "reguler")
+                      .length > 0 && (
+                      <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                        {
+                          formData.jadwal.filter(
+                            (j) => j.tipe_jadwal === "reguler",
+                          ).length
+                        }
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="eksekutif" className="flex-1">
                     Eksekutif
-                  </Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddJadwal("eksekutif")}
-                    disabled={submitting}
-                    className="h-7 text-xs"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Tambah
-                  </Button>
-                </div>
+                    {formData.jadwal.filter(
+                      (j) => j.tipe_jadwal === "eksekutif",
+                    ).length > 0 && (
+                      <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                        {
+                          formData.jadwal.filter(
+                            (j) => j.tipe_jadwal === "eksekutif",
+                          ).length
+                        }
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
 
-                {formData.jadwal.filter((j) => j.tipe_jadwal === "eksekutif")
-                  .length === 0 ? (
-                  <div className="text-center py-4 border-2 border-dashed rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      Belum ada jadwal eksekutif
-                    </p>
+                {/* Tab Reguler */}
+                <TabsContent value="reguler" className="space-y-2 mt-3">
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddJadwal("reguler")}
+                      disabled={submitting}
+                      className="h-7 text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Tambah
+                    </Button>
                   </div>
-                ) : (
-                  formData.jadwal
-                    .filter((j) => j.tipe_jadwal === "eksekutif")
-                    .map((jadwal, index) => (
-                      <div
-                        key={jadwal._temp_id}
-                        className="p-3 border rounded-lg space-y-2 bg-muted/30"
-                      >
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs font-medium">
-                            Eksekutif #{index + 1}
-                          </Label>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveJadwal(jadwal._temp_id)}
-                            disabled={submitting}
-                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Hari</Label>
-                            <HariSelect jadwal={jadwal} disabled={submitting} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Jam Mulai</Label>
-                            <Input
-                              value={jadwal.jam_mulai}
-                              onChange={(e) =>
-                                handleJadwalChange(
-                                  jadwal._temp_id,
-                                  "jam_mulai",
-                                  e.target.value,
-                                )
-                              }
-                              disabled={submitting}
-                              placeholder="09.00"
-                              maxLength={5}
-                              className="h-8 text-xs"
-                            />
-                          </div>
 
-                          <div className="space-y-1">
-                            <Label className="text-xs">Jam Selesai</Label>
-                            <Input
-                              value={jadwal.jam_selesai}
-                              onChange={(e) =>
-                                handleJadwalChange(
-                                  jadwal._temp_id,
-                                  "jam_selesai",
-                                  e.target.value,
-                                )
-                              }
-                              disabled={submitting}
-                              placeholder="17.00"
-                              maxLength={5}
-                              className="h-8 text-xs"
-                            />
+                  {formData.jadwal.filter((j) => j.tipe_jadwal === "reguler")
+                    .length === 0 ? (
+                    <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        Belum ada jadwal reguler
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {formData.jadwal
+                        .filter((j) => j.tipe_jadwal === "reguler")
+                        .map((jadwal, index) => (
+                          <div
+                            key={jadwal._temp_id}
+                            className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                          >
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-medium">
+                                Reguler #{index + 1}
+                              </Label>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  handleRemoveJadwal(jadwal._temp_id)
+                                }
+                                disabled={submitting}
+                                className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Hari</Label>
+                                <HariSelect
+                                  jadwal={jadwal}
+                                  disabled={submitting}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Jam Mulai</Label>
+                                <Input
+                                  value={jadwal.jam_mulai}
+                                  onChange={(e) =>
+                                    handleJadwalChange(
+                                      jadwal._temp_id,
+                                      "jam_mulai",
+                                      e.target.value,
+                                    )
+                                  }
+                                  disabled={submitting}
+                                  placeholder="09.00"
+                                  maxLength={5}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Jam Selesai</Label>
+                                <Input
+                                  value={jadwal.jam_selesai}
+                                  onChange={(e) =>
+                                    handleJadwalChange(
+                                      jadwal._temp_id,
+                                      "jam_selesai",
+                                      e.target.value,
+                                    )
+                                  }
+                                  disabled={submitting}
+                                  placeholder="17.00"
+                                  maxLength={5}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
+                        ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Tab Eksekutif */}
+                <TabsContent value="eksekutif" className="space-y-2 mt-3">
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddJadwal("eksekutif")}
+                      disabled={submitting}
+                      className="h-7 text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Tambah
+                    </Button>
+                  </div>
+
+                  {formData.jadwal.filter((j) => j.tipe_jadwal === "eksekutif")
+                    .length === 0 ? (
+                    <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        Belum ada jadwal eksekutif
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {formData.jadwal
+                        .filter((j) => j.tipe_jadwal === "eksekutif")
+                        .map((jadwal, index) => (
+                          <div
+                            key={jadwal._temp_id}
+                            className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                          >
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-medium">
+                                Eksekutif #{index + 1}
+                              </Label>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  handleRemoveJadwal(jadwal._temp_id)
+                                }
+                                disabled={submitting}
+                                className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Hari</Label>
+                                <HariSelect
+                                  jadwal={jadwal}
+                                  disabled={submitting}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Jam Mulai</Label>
+                                <Input
+                                  value={jadwal.jam_mulai}
+                                  onChange={(e) =>
+                                    handleJadwalChange(
+                                      jadwal._temp_id,
+                                      "jam_mulai",
+                                      e.target.value,
+                                    )
+                                  }
+                                  disabled={submitting}
+                                  placeholder="09.00"
+                                  maxLength={5}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Jam Selesai</Label>
+                                <Input
+                                  value={jadwal.jam_selesai}
+                                  onChange={(e) =>
+                                    handleJadwalChange(
+                                      jadwal._temp_id,
+                                      "jam_selesai",
+                                      e.target.value,
+                                    )
+                                  }
+                                  disabled={submitting}
+                                  placeholder="17.00"
+                                  maxLength={5}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
 
             <DialogFooter className="gap-2">

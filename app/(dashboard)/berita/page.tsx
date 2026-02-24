@@ -976,7 +976,7 @@ xl:grid-cols-4
                     <Checkbox
                       checked={selectedItems.includes(item.id)}
                       onCheckedChange={() => handleSelectItem(item.id)}
-                      className="bg-white dark:bg-gray-800 shadow-md h-5 w-5"
+                      className=" shadow-md h-5 w-5"
                     />
                   </div>
 
