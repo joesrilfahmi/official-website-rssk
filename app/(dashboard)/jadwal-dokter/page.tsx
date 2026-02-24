@@ -26,6 +26,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -45,6 +53,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -61,6 +74,7 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase/client";
 import { deleteFile, getFilePathFromUrl, uploadFile } from "@/lib/upload";
+import { cn } from "@/lib/utils";
 import { validateImage } from "@/lib/validasi/validasiImage";
 import type {
   DokterFormData,
@@ -74,6 +88,8 @@ import type {
 } from "@/types";
 import {
   Calendar,
+  Check,
+  ChevronsUpDown,
   Clock,
   File,
   Loader2,
@@ -194,6 +210,7 @@ export default function JadwalDokterPage() {
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
+  const [poliPopoverOpen, setPoliPopoverOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
 
@@ -1329,28 +1346,62 @@ export default function JadwalDokterPage() {
                 <Label className="text-sm">
                   Poli <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={formData.poli_id}
-                  onValueChange={(value) => {
-                    setFormData({ ...formData, poli_id: value });
-                    if (formErrors.poli_id)
-                      setFormErrors({ ...formErrors, poli_id: "" });
-                  }}
-                  disabled={submitting}
+                <Popover
+                  open={poliPopoverOpen}
+                  onOpenChange={setPoliPopoverOpen}
                 >
-                  <SelectTrigger
-                    className={formErrors.poli_id ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Pilih poli" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {poliList.map((poli) => (
-                      <SelectItem key={poli.id} value={poli.id}>
-                        {poli.nama_poli}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={poliPopoverOpen}
+                      disabled={submitting}
+                      className={cn(
+                        "w-full justify-between font-normal",
+                        formErrors.poli_id && "border-red-500",
+                        !formData.poli_id && "text-muted-foreground",
+                      )}
+                    >
+                      {formData.poli_id
+                        ? poliList.find((p) => p.id === formData.poli_id)
+                            ?.nama_poli
+                        : "Pilih poli"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Cari poli..." />
+                      <CommandList>
+                        <CommandEmpty>Poli tidak ditemukan.</CommandEmpty>
+                        <CommandGroup>
+                          {poliList.map((poli) => (
+                            <CommandItem
+                              key={poli.id}
+                              value={poli.nama_poli}
+                              onSelect={() => {
+                                setFormData({ ...formData, poli_id: poli.id });
+                                if (formErrors.poli_id)
+                                  setFormErrors({ ...formErrors, poli_id: "" });
+                                setPoliPopoverOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.poli_id === poli.id
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              {poli.nama_poli}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 {formErrors.poli_id && (
                   <p className="text-sm text-red-500">{formErrors.poli_id}</p>
                 )}
