@@ -90,7 +90,6 @@ import {
   Calendar,
   Check,
   ChevronsUpDown,
-  Clock,
   File,
   Loader2,
   Pencil,
@@ -377,24 +376,6 @@ export default function JadwalDokterPage() {
     } else {
       setSelectedItems([]);
     }
-  };
-
-  const sortJadwalByHari = (jadwal: JadwalDokter[] | undefined) => {
-    if (!jadwal || jadwal.length === 0) return [];
-    const hariOrder: Record<HariType, number> = {
-      Senin: 1,
-      Selasa: 2,
-      Rabu: 3,
-      Kamis: 4,
-      Jumat: 5,
-      Sabtu: 6,
-      Minggu: 7,
-    };
-    return [...jadwal].sort((a, b) => {
-      const orderA = hariOrder[a.hari as HariType] || 999;
-      const orderB = hariOrder[b.hari as HariType] || 999;
-      return orderA - orderB;
-    });
   };
 
   const getStatusBadge = (status: DokterStatus) => {
@@ -1068,43 +1049,6 @@ export default function JadwalDokterPage() {
                       <h3 className="font-semibold text-base lg:text-lg line-clamp-1 group-hover:text-primary transition-colors">
                         {item.nama}
                       </h3>
-
-                      {/* Jadwal ringkas */}
-                      <div className="mt-2 space-y-1">
-                        {(() => {
-                          const sorted = sortJadwalByHari(item.jadwal).slice(
-                            0,
-                            2,
-                          );
-                          return sorted.map((j, idx) => {
-                            const prevHari =
-                              idx > 0 ? sorted[idx - 1].hari : null;
-                            const showHari = j.hari !== prevHari;
-                            return (
-                              <div
-                                key={j.id}
-                                className="flex items-center gap-1 text-xs text-muted-foreground"
-                              >
-                                <Clock className="h-3 w-3 shrink-0" />
-                                <span>
-                                  {showHari ? (
-                                    j.hari
-                                  ) : (
-                                    <span className="invisible">{j.hari}</span>
-                                  )}
-                                  : {j.jam_mulai} - {j.jam_selesai}
-                                </span>
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] px-1 py-0 h-4 ml-auto shrink-0"
-                                >
-                                  {j.tipe_jadwal}
-                                </Badge>
-                              </div>
-                            );
-                          });
-                        })()}
-                      </div>
                     </div>
 
                     {/* Footer */}
@@ -1846,85 +1790,101 @@ export default function JadwalDokterPage() {
               {/* Detail Jadwal */}
               <div className="space-y-3">
                 <Label className="text-sm font-semibold">Jadwal Praktik</Label>
+                {(selectedDokter.jadwal ?? []).length > 0 ? (
+                  (() => {
+                    const jadwal = selectedDokter.jadwal ?? [];
+                    const allRows: {
+                      hari: HariType;
+                      isFirst: boolean;
+                      reguler: JadwalDokter | null;
+                      eksekutif: JadwalDokter | null;
+                    }[] = [];
 
-                {selectedDokter.jadwal && selectedDokter.jadwal.length > 0 ? (
-                  <div className="space-y-3">
-                    {/* Reguler */}
-                    {selectedDokter.jadwal.filter(
-                      (j) => j.tipe_jadwal === "reguler",
-                    ).length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                          Reguler
-                        </p>
-                        {(() => {
-                          const sorted = sortJadwalByHari(
-                            selectedDokter.jadwal.filter(
-                              (j) => j.tipe_jadwal === "reguler",
-                            ),
-                          );
-                          return sorted.map((j, idx) => {
-                            const prevHari =
-                              idx > 0 ? sorted[idx - 1].hari : null;
-                            const showHari = j.hari !== prevHari;
-                            return (
-                              <div
-                                key={j.id}
-                                className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm"
-                              >
-                                <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                                <span className="font-medium min-w-16">
-                                  {showHari ? j.hari : ""}
-                                </span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>
-                                  {j.jam_mulai} - {j.jam_selesai}
-                                </span>
-                              </div>
-                            );
-                          });
-                        })()}
-                      </div>
-                    )}
+                    HARI_OPTIONS.forEach((hari) => {
+                      const regulerList = jadwal.filter(
+                        (j) => j.hari === hari && j.tipe_jadwal === "reguler",
+                      );
+                      const eksekutifList = jadwal.filter(
+                        (j) => j.hari === hari && j.tipe_jadwal === "eksekutif",
+                      );
 
-                    {/* Eksekutif */}
-                    {selectedDokter.jadwal.filter(
-                      (j) => j.tipe_jadwal === "eksekutif",
-                    ).length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                          Eksekutif
-                        </p>
-                        {(() => {
-                          const sorted = sortJadwalByHari(
-                            selectedDokter.jadwal.filter(
-                              (j) => j.tipe_jadwal === "eksekutif",
-                            ),
-                          );
-                          return sorted.map((j, idx) => {
-                            const prevHari =
-                              idx > 0 ? sorted[idx - 1].hari : null;
-                            const showHari = j.hari !== prevHari;
-                            return (
-                              <div
-                                key={j.id}
-                                className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm"
+                      if (
+                        regulerList.length === 0 &&
+                        eksekutifList.length === 0
+                      )
+                        return;
+
+                      const maxRows = Math.max(
+                        regulerList.length,
+                        eksekutifList.length,
+                      );
+                      for (let i = 0; i < maxRows; i++) {
+                        allRows.push({
+                          hari,
+                          isFirst: i === 0,
+                          reguler: regulerList[i] ?? null,
+                          eksekutif: eksekutifList[i] ?? null,
+                        });
+                      }
+                    });
+
+                    return (
+                      <div className="rounded-lg border overflow-hidden text-sm">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-muted/50 border-b">
+                              <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                                Hari
+                              </th>
+                              <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                                Jadwal BPJS
+                              </th>
+                              <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                                Jadwal Eksekutif
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {allRows.map((row, idx) => (
+                              <tr
+                                key={idx}
+                                className="border-b last:border-b-0"
                               >
-                                <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                                <span className="font-medium min-w-16">
-                                  {showHari ? j.hari : ""}
-                                </span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>
-                                  {j.jam_mulai} - {j.jam_selesai}
-                                </span>
-                              </div>
-                            );
-                          });
-                        })()}
+                                <td className="px-4 py-2.5">
+                                  {row.isFirst ? (
+                                    <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                                      <Calendar className="w-4 h-4 shrink-0" />
+                                      <span>{row.hari}</span>
+                                    </div>
+                                  ) : (
+                                    <span />
+                                  )}
+                                </td>
+                                <td className="px-4 py-2.5 text-muted-foreground">
+                                  {row.reguler ? (
+                                    `${row.reguler.jam_mulai} - ${row.reguler.jam_selesai}`
+                                  ) : (
+                                    <span className="text-muted-foreground/40">
+                                      -
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2.5 text-muted-foreground">
+                                  {row.eksekutif ? (
+                                    `${row.eksekutif.jam_mulai} - ${row.eksekutif.jam_selesai}`
+                                  ) : (
+                                    <span className="text-muted-foreground/40">
+                                      -
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()
                 ) : (
                   <p className="text-sm text-muted-foreground py-4 text-center border-2 border-dashed rounded-lg">
                     Belum ada jadwal praktik
