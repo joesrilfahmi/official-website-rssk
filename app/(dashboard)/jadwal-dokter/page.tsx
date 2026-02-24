@@ -1512,7 +1512,43 @@ export default function JadwalDokterPage() {
                               </SelectContent>
                             </Select>
                           </div>
+
                           <div className="space-y-1">
+                            <Label className="text-xs">Jam Mulai</Label>
+                            <Input
+                              value={jadwal.jam_mulai}
+                              onChange={(e) =>
+                                handleJadwalChange(
+                                  jadwal._temp_id,
+                                  "jam_mulai",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={submitting}
+                              placeholder="09.00"
+                              maxLength={5}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Jam Selesai</Label>
+                            <Input
+                              value={jadwal.jam_selesai}
+                              onChange={(e) =>
+                                handleJadwalChange(
+                                  jadwal._temp_id,
+                                  "jam_selesai",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={submitting}
+                              placeholder="17.00"
+                              maxLength={5}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+
+                          {/* <div className="space-y-1">
                             <Label className="text-xs">Jam Mulai</Label>
                             <Select
                               value={jadwal.jam_mulai}
@@ -1561,7 +1597,7 @@ export default function JadwalDokterPage() {
                                 ))}
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     ))
