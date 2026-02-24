@@ -8,7 +8,7 @@ import Select from "@/components/ui/custom/select";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import useEmblaCarousel from "embla-carousel-react";
-import { Calendar, Search, X } from "lucide-react";
+import { Calendar, Search, UserRound, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
@@ -369,8 +369,6 @@ const DokterSpesialis = () => {
   };
 
   const renderDokterCard = (dokter: Dokter) => {
-    const initial = dokter.nama.charAt(0).toUpperCase();
-
     return (
       <div
         onClick={() => setSelectedDokter(dokter)}
@@ -390,8 +388,8 @@ const DokterSpesialis = () => {
                 />
               </div>
             ) : (
-              <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center text-white text-6xl font-bold">
-                {initial}
+              <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center text-white">
+                <UserRound className="w-24 h-24" />
               </div>
             )}
           </div>
@@ -601,8 +599,8 @@ const DokterSpesialis = () => {
                       sizes="224px"
                     />
                   ) : (
-                    <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center text-white text-6xl font-bold">
-                      {selectedDokter.nama.charAt(0).toUpperCase()}
+                    <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center text-white">
+                      <UserRound className="w-24 h-24" />
                     </div>
                   )}
                 </div>

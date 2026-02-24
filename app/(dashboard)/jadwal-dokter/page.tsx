@@ -165,19 +165,19 @@ const HARI_OPTIONS: HariType[] = [
   "Minggu",
 ];
 
-const generateTimeOptions = () => {
-  const options = [];
-  for (let hour = 0; hour < 24; hour++) {
-    for (let minute = 0; minute < 60; minute += 30) {
-      const hourStr = hour.toString().padStart(2, "0");
-      const minuteStr = minute.toString().padStart(2, "0");
-      options.push(`${hourStr}.${minuteStr}`);
-    }
-  }
-  return options;
-};
+// const generateTimeOptions = () => {
+//   const options = [];
+//   for (let hour = 0; hour < 24; hour++) {
+//     for (let minute = 0; minute < 60; minute += 30) {
+//       const hourStr = hour.toString().padStart(2, "0");
+//       const minuteStr = minute.toString().padStart(2, "0");
+//       options.push(`${hourStr}.${minuteStr}`);
+//     }
+//   }
+//   return options;
+// };
 
-const TIME_OPTIONS = generateTimeOptions();
+// const TIME_OPTIONS = generateTimeOptions();
 
 export default function JadwalDokterPage() {
   const [dokterList, setDokterList] = useState<DokterWithRelations[]>([]);
@@ -1039,12 +1039,19 @@ export default function JadwalDokterPage() {
                         unoptimized
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <Avatar className="h-24 w-24">
-                          <AvatarFallback className="text-4xl bg-muted-foreground/10">
-                            {item.nama.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                      <div className="flex h-full items-center justify-center bg-muted">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="h-24 w-24 text-muted-foreground/30"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
                       </div>
                     )}
                   </div>
@@ -1064,35 +1071,39 @@ export default function JadwalDokterPage() {
 
                       {/* Jadwal ringkas */}
                       <div className="mt-2 space-y-1">
-                        {sortJadwalByHari(item.jadwal)
-                          .slice(0, 2)
-                          .map((j) => (
-                            <div
-                              key={j.id}
-                              className="flex items-center gap-1 text-xs text-muted-foreground"
-                            >
-                              <Clock className="h-3 w-3 shrink-0" />
-                              <span>
-                                {j.hari}: {j.jam_mulai} - {j.jam_selesai}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] px-1 py-0 h-4 ml-auto shrink-0"
+                        {(() => {
+                          const sorted = sortJadwalByHari(item.jadwal).slice(
+                            0,
+                            2,
+                          );
+                          return sorted.map((j, idx) => {
+                            const prevHari =
+                              idx > 0 ? sorted[idx - 1].hari : null;
+                            const showHari = j.hari !== prevHari;
+                            return (
+                              <div
+                                key={j.id}
+                                className="flex items-center gap-1 text-xs text-muted-foreground"
                               >
-                                {j.tipe_jadwal}
-                              </Badge>
-                            </div>
-                          ))}
-                        {(item.jadwal?.length || 0) > 2 && (
-                          <p className="text-xs text-muted-foreground">
-                            +{(item.jadwal?.length || 0) - 2} jadwal lainnya
-                          </p>
-                        )}
-                        {(item.jadwal?.length || 0) === 0 && (
-                          <p className="text-xs text-muted-foreground italic">
-                            Belum ada jadwal
-                          </p>
-                        )}
+                                <Clock className="h-3 w-3 shrink-0" />
+                                <span>
+                                  {showHari ? (
+                                    j.hari
+                                  ) : (
+                                    <span className="invisible">{j.hari}</span>
+                                  )}
+                                  : {j.jam_mulai} - {j.jam_selesai}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] px-1 py-0 h-4 ml-auto shrink-0"
+                                >
+                                  {j.tipe_jadwal}
+                                </Badge>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
 
@@ -1705,53 +1716,38 @@ export default function JadwalDokterPage() {
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">Jam Mulai</Label>
-                            <Select
+                            <Input
                               value={jadwal.jam_mulai}
-                              onValueChange={(value) =>
+                              onChange={(e) =>
                                 handleJadwalChange(
                                   jadwal._temp_id,
                                   "jam_mulai",
-                                  value,
+                                  e.target.value,
                                 )
                               }
                               disabled={submitting}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Pilih jam" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {TIME_OPTIONS.map((time) => (
-                                  <SelectItem key={time} value={time}>
-                                    {time}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder="09.00"
+                              maxLength={5}
+                              className="h-8 text-xs"
+                            />
                           </div>
+
                           <div className="space-y-1">
                             <Label className="text-xs">Jam Selesai</Label>
-                            <Select
+                            <Input
                               value={jadwal.jam_selesai}
-                              onValueChange={(value) =>
+                              onChange={(e) =>
                                 handleJadwalChange(
                                   jadwal._temp_id,
                                   "jam_selesai",
-                                  value,
+                                  e.target.value,
                                 )
                               }
                               disabled={submitting}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Pilih jam" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {TIME_OPTIONS.map((time) => (
-                                  <SelectItem key={time} value={time}>
-                                    {time}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder="17.00"
+                              maxLength={5}
+                              className="h-8 text-xs"
+                            />
                           </div>
                         </div>
                       </div>
@@ -1790,8 +1786,8 @@ export default function JadwalDokterPage() {
           </DialogHeader>
           {selectedDokter && (
             <div className="space-y-3 sm:space-y-4">
-              {selectedDokter.profile && (
-                <div className="relative w-full h-48 sm:h-56 rounded-lg overflow-hidden">
+              <div className="relative w-full h-48 sm:h-56 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                {selectedDokter.profile ? (
                   <Image
                     src={selectedDokter.profile}
                     alt={selectedDokter.nama}
@@ -1800,9 +1796,21 @@ export default function JadwalDokterPage() {
                     unoptimized
                     priority
                   />
-                </div>
-              )}
-
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="h-28 w-28 text-muted-foreground/30"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold">
                   {selectedDokter.nama}
@@ -1849,25 +1857,33 @@ export default function JadwalDokterPage() {
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                           Reguler
                         </p>
-                        {sortJadwalByHari(
-                          selectedDokter.jadwal.filter(
-                            (j) => j.tipe_jadwal === "reguler",
-                          ),
-                        ).map((j) => (
-                          <div
-                            key={j.id}
-                            className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm"
-                          >
-                            <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                            <span className="font-medium min-w-16">
-                              {j.hari}
-                            </span>
-                            <span className="text-muted-foreground">:</span>
-                            <span>
-                              {j.jam_mulai} - {j.jam_selesai}
-                            </span>
-                          </div>
-                        ))}
+                        {(() => {
+                          const sorted = sortJadwalByHari(
+                            selectedDokter.jadwal.filter(
+                              (j) => j.tipe_jadwal === "reguler",
+                            ),
+                          );
+                          return sorted.map((j, idx) => {
+                            const prevHari =
+                              idx > 0 ? sorted[idx - 1].hari : null;
+                            const showHari = j.hari !== prevHari;
+                            return (
+                              <div
+                                key={j.id}
+                                className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm"
+                              >
+                                <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                                <span className="font-medium min-w-16">
+                                  {showHari ? j.hari : ""}
+                                </span>
+                                <span className="text-muted-foreground">:</span>
+                                <span>
+                                  {j.jam_mulai} - {j.jam_selesai}
+                                </span>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     )}
 
@@ -1879,25 +1895,33 @@ export default function JadwalDokterPage() {
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                           Eksekutif
                         </p>
-                        {sortJadwalByHari(
-                          selectedDokter.jadwal.filter(
-                            (j) => j.tipe_jadwal === "eksekutif",
-                          ),
-                        ).map((j) => (
-                          <div
-                            key={j.id}
-                            className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm"
-                          >
-                            <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                            <span className="font-medium min-w-16">
-                              {j.hari}
-                            </span>
-                            <span className="text-muted-foreground">:</span>
-                            <span>
-                              {j.jam_mulai} - {j.jam_selesai}
-                            </span>
-                          </div>
-                        ))}
+                        {(() => {
+                          const sorted = sortJadwalByHari(
+                            selectedDokter.jadwal.filter(
+                              (j) => j.tipe_jadwal === "eksekutif",
+                            ),
+                          );
+                          return sorted.map((j, idx) => {
+                            const prevHari =
+                              idx > 0 ? sorted[idx - 1].hari : null;
+                            const showHari = j.hari !== prevHari;
+                            return (
+                              <div
+                                key={j.id}
+                                className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm"
+                              >
+                                <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                                <span className="font-medium min-w-16">
+                                  {showHari ? j.hari : ""}
+                                </span>
+                                <span className="text-muted-foreground">:</span>
+                                <span>
+                                  {j.jam_mulai} - {j.jam_selesai}
+                                </span>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     )}
                   </div>
