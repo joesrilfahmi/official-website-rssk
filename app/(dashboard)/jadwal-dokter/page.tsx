@@ -211,9 +211,15 @@ export default function JadwalDokterPage() {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   const [poliPopoverOpen, setPoliPopoverOpen] = useState(false);
+  const [hariPopoverOpen, setHariPopoverOpen] = useState<
+    Record<string, boolean>
+  >({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
 
+  const toggleHariPopover = (tempId: string, open: boolean) => {
+    setHariPopoverOpen((prev) => ({ ...prev, [tempId]: open }));
+  };
   useEffect(() => {
     const initUser = async () => {
       const user = await getCurrentUser();
@@ -695,6 +701,66 @@ export default function JadwalDokterPage() {
       setSubmitting(false);
     }
   };
+
+  const HariSelect = ({
+    jadwal,
+    disabled,
+  }: {
+    jadwal: (typeof formData.jadwal)[0];
+    disabled: boolean;
+  }) => (
+    <Popover
+      open={!!hariPopoverOpen[jadwal._temp_id]}
+      onOpenChange={(open) => toggleHariPopover(jadwal._temp_id, open)}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          disabled={disabled}
+          className={cn(
+            "w-full h-8 justify-between font-normal text-xs px-2",
+            !jadwal.hari && "text-muted-foreground",
+          )}
+        >
+          <span className="truncate">{jadwal.hari || "Pilih hari"}</span>
+          <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-40 p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Cari hari..." className="h-8 text-xs" />
+          <CommandList>
+            <CommandEmpty className="text-xs py-2 text-center">
+              Hari tidak ditemukan.
+            </CommandEmpty>
+            <CommandGroup>
+              {HARI_OPTIONS.map((h) => (
+                <CommandItem
+                  key={h}
+                  value={h}
+                  onSelect={() => {
+                    handleJadwalChange(jadwal._temp_id, "hari", h);
+                    toggleHariPopover(jadwal._temp_id, false);
+                  }}
+                  className="text-xs"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-3 w-3",
+                      jadwal.hari === h ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  {h}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -1489,28 +1555,7 @@ export default function JadwalDokterPage() {
                         <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">
                             <Label className="text-xs">Hari</Label>
-                            <Select
-                              value={jadwal.hari}
-                              onValueChange={(value) =>
-                                handleJadwalChange(
-                                  jadwal._temp_id,
-                                  "hari",
-                                  value,
-                                )
-                              }
-                              disabled={submitting}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Pilih hari" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {HARI_OPTIONS.map((h) => (
-                                  <SelectItem key={h} value={h}>
-                                    {h}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <HariSelect jadwal={jadwal} disabled={submitting} />
                           </div>
 
                           <div className="space-y-1">
@@ -1656,28 +1701,7 @@ export default function JadwalDokterPage() {
                         <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">
                             <Label className="text-xs">Hari</Label>
-                            <Select
-                              value={jadwal.hari}
-                              onValueChange={(value) =>
-                                handleJadwalChange(
-                                  jadwal._temp_id,
-                                  "hari",
-                                  value,
-                                )
-                              }
-                              disabled={submitting}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Pilih hari" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {HARI_OPTIONS.map((h) => (
-                                  <SelectItem key={h} value={h}>
-                                    {h}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <HariSelect jadwal={jadwal} disabled={submitting} />
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">Jam Mulai</Label>

@@ -425,7 +425,7 @@ const DokterSpesialis = () => {
         </div>
 
         {/* Main Content Container */}
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto">
           {/* Filters Section */}
           <div className="mb-8 space-y-6">
             {/* Search and Day Filter - Centered */}
