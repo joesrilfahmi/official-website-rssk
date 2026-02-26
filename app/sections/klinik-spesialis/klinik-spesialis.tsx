@@ -6,6 +6,7 @@ import Input from "@/components/ui/custom/input";
 import { supabase } from "@/lib/supabase/client";
 import * as Icons from "lucide-react";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 
 interface Poli {
@@ -20,6 +21,7 @@ interface Poli {
 }
 
 const LayananUnggulan = () => {
+  const router = useRouter();
   const [layananList, setLayananList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -139,11 +141,23 @@ const LayananUnggulan = () => {
           subtitle="RS Siti Khodijah Muhammadiyah Cabang Sepanjang selalu berkomitmen menghadirkan inovasi layanan untuk pasien. Didukung oleh Dokter, Perawat, Paramedis dan Staf yang profesional dan ramah melayani pasien. Serta didukung dengan peralatan medis modern dan terbaru."
         />
 
-        {/* Search Bar */}
+        {/* Search Bar + Tombol Kembali */}
         <div className="mb-2 mt-12">
           <div className="flex justify-center">
-            <div className="w-full max-w-3xl">
-              <div className="relative">
+            <div className="w-full max-w-3xl flex items-center gap-3">
+              {/* Tombol Kembali */}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => router.back()}
+                className="shrink-0"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Kembali
+              </Button>
+
+              {/* Search Input */}
+              <div className="relative flex-1">
                 <Input
                   type="text"
                   placeholder="Cari klinik spesialis..."

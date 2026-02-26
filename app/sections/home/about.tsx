@@ -29,7 +29,7 @@ const About = () => {
               )}
 
               <Image
-                src="/mario.jpg"
+                src="/gedung-rssk2.webp"
                 alt="RS Siti Khodijah"
                 fill
                 className={`object-cover transition-opacity duration-500 ${
@@ -52,7 +52,7 @@ const About = () => {
               )}
 
               <Image
-                src="/mario.jpg"
+                src="/gedung-rssk.webp"
                 alt="RS Siti Khodijah Interior"
                 fill
                 className={`object-cover transition-opacity duration-500 ${

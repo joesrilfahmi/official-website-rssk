@@ -9,11 +9,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type QuickAction =
   | "menu_klinik"
-  | "menu_dokter"
   | "menu_kamar"
   | "menu_promo"
   | "menu_berita"
-  | "list_poli"
   | "list_dokter_by_poli"
   | "detail_dokter"
   | "detail_kamar"
@@ -77,7 +75,6 @@ type BeritaRow = {
 };
 
 const CHAT_DELAY_MS = 500;
-const QUICK_REPLY_STAGGER_MS = 500;
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 function nowTime() {
@@ -159,10 +156,10 @@ export default function ChatWidget() {
     return `Assalamualaikum warahmatullahi wabarakatuh dan selamat ${sapaan}.\nAda yang bisa saya bantu?`;
   }, []);
 
+  // Only 4 menu items — no Dokter
   const mainMenuReplies: QuickReply[] = useMemo(
     () => [
       { label: "Klinik", action: "menu_klinik" },
-      { label: "Dokter", action: "menu_dokter" },
       { label: "Kamar Inap", action: "menu_kamar" },
       { label: "Promo", action: "menu_promo" },
       { label: "Berita", action: "menu_berita" },
@@ -225,17 +222,14 @@ export default function ChatWidget() {
       stopTyping();
     });
 
+  // Show all quick replies at once — no stagger
   const showQuickReplies = (replies: QuickReply[]) =>
     enqueue(async () => {
       startTyping();
       setVisibleQuickReplies([]);
       await sleep(CHAT_DELAY_MS);
       stopTyping();
-
-      for (const r of replies) {
-        setVisibleQuickReplies((prev) => [...prev, r]);
-        await sleep(QUICK_REPLY_STAGGER_MS);
-      }
+      setVisibleQuickReplies(replies);
     });
 
   const resetToMainMenu = () => {
@@ -293,15 +287,16 @@ export default function ChatWidget() {
 
       stopTyping();
       await botSay("Berikut daftar klinik/poli yang tersedia. Silakan pilih:");
-      await showQuickReplies(
-        poliList.map(
+      await showQuickReplies([
+        ...poliList.map(
           (p): QuickReply => ({
             label: p.nama_poli,
             action: "list_dokter_by_poli",
             value: p.id,
           }),
         ),
-      );
+        { label: "Menu Utama", action: "back_main" },
+      ]);
     } catch {
       stopTyping();
       await botSay("Maaf, terjadi kesalahan saat mengambil data poli.");
@@ -356,6 +351,7 @@ export default function ChatWidget() {
             value: d.id,
           }),
         ),
+        { label: "Menu Utama", action: "back_main" },
       ]);
     } catch {
       stopTyping();
@@ -391,63 +387,19 @@ export default function ChatWidget() {
 
       stopTyping();
       await botSay("Silakan pilih klinik/poli:");
-      await showQuickReplies(
-        poliList.map(
+      await showQuickReplies([
+        ...poliList.map(
           (p): QuickReply => ({
             label: p.nama_poli,
             action: "list_dokter_by_poli",
             value: p.id,
           }),
         ),
-      );
+        { label: "Menu Utama", action: "back_main" },
+      ]);
     } catch {
       stopTyping();
       await botSay("Maaf, terjadi kesalahan saat kembali ke daftar poli.");
-      resetToMainMenu();
-    }
-  };
-
-  // =================== DOKTER ===================
-
-  const handleMenuDokter = async () => {
-    addMessage("Dokter", "user");
-    setVisibleQuickReplies([]);
-
-    try {
-      startTyping();
-
-      const { data, error } = await supabase
-        .from("dokter")
-        .select("id, nama, poli_id, profile, status")
-        .eq("status", "active")
-        .order("nama", { ascending: true });
-
-      if (error) throw error;
-
-      const dokterList = (data ?? []) as DokterRow[];
-      if (!dokterList.length) {
-        stopTyping();
-        await botSay("Maaf, data dokter belum tersedia.");
-        resetToMainMenu();
-        return;
-      }
-
-      stopTyping();
-      await botSay(
-        "Berikut daftar dokter aktif. Silakan pilih dokter untuk melihat jadwal:",
-      );
-      await showQuickReplies(
-        dokterList.map(
-          (d): QuickReply => ({
-            label: formatNamaDokter(d),
-            action: "detail_dokter",
-            value: d.id,
-          }),
-        ),
-      );
-    } catch {
-      stopTyping();
-      await botSay("Maaf, terjadi kesalahan saat mengambil data dokter.");
       resetToMainMenu();
     }
   };
@@ -491,7 +443,6 @@ export default function ChatWidget() {
         "Minggu",
       ];
 
-      // Group by tipe_jadwal
       const reguler = jadwalList.filter((j) => j.tipe_jadwal === "reguler");
       const eksekutif = jadwalList.filter((j) => j.tipe_jadwal === "eksekutif");
 
@@ -583,15 +534,16 @@ export default function ChatWidget() {
 
       stopTyping();
       await botSay("Silakan pilih kamar inap:");
-      await showQuickReplies(
-        list.map(
+      await showQuickReplies([
+        ...list.map(
           (k): QuickReply => ({
             label: k.title,
             action: "detail_kamar",
             value: k.id,
           }),
         ),
-      );
+        { label: "Menu Utama", action: "back_main" },
+      ]);
     } catch {
       stopTyping();
       await botSay("Maaf, terjadi kesalahan saat mengambil data kamar.");
@@ -670,15 +622,16 @@ export default function ChatWidget() {
 
       stopTyping();
       await botSay("Silakan pilih promo:");
-      await showQuickReplies(
-        list.map(
+      await showQuickReplies([
+        ...list.map(
           (p): QuickReply => ({
             label: p.title,
             action: "detail_promo",
             value: p.id,
           }),
         ),
-      );
+        { label: "Menu Utama", action: "back_main" },
+      ]);
     } catch {
       stopTyping();
       await botSay("Maaf, terjadi kesalahan saat mengambil data promo.");
@@ -754,15 +707,16 @@ export default function ChatWidget() {
 
       stopTyping();
       await botSay("Berikut berita terbaru kami:");
-      await showQuickReplies(
-        list.map(
+      await showQuickReplies([
+        ...list.map(
           (b): QuickReply => ({
             label: b.title,
             action: "detail_berita",
             value: b.id,
           }),
         ),
-      );
+        { label: "Menu Utama", action: "back_main" },
+      ]);
     } catch {
       stopTyping();
       await botSay("Maaf, terjadi kesalahan saat mengambil data berita.");
@@ -820,9 +774,6 @@ export default function ChatWidget() {
     switch (reply.action) {
       case "menu_klinik":
         void handleMenuKlinik();
-        break;
-      case "menu_dokter":
-        void handleMenuDokter();
         break;
       case "menu_kamar":
         void handleMenuKamar();
@@ -1124,7 +1075,7 @@ export default function ChatWidget() {
               ))}
             </AnimatePresence>
 
-            {/* Quick replies */}
+            {/* Quick replies — all appear at once */}
             {visibleQuickReplies.length > 0 && (
               <div className="pt-1">
                 <div className="flex items-start gap-2">
@@ -1139,7 +1090,12 @@ export default function ChatWidget() {
                           exit={badgeMotion.exit}
                           transition={badgeMotion.transition}
                           onClick={() => handleQuickReply(reply)}
-                          className="block w-fit max-w-full text-left px-4 py-2.5 bg-easternblue-50 hover:bg-easternblue-100 text-easternblue-800 text-sm rounded-full transition-colors border border-easternblue-200 font-medium shadow-sm"
+                          className={`block w-fit max-w-full text-left px-4 py-2.5 text-sm rounded-full transition-colors font-medium shadow-sm ${
+                            reply.action === "back_main" ||
+                            reply.action === "back_poli"
+                              ? "bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-300"
+                              : "bg-easternblue-50 hover:bg-easternblue-100 text-easternblue-800 border border-easternblue-200"
+                          }`}
                         >
                           <span className="block truncate">{reply.label}</span>
                         </motion.button>
