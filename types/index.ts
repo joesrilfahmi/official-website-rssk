@@ -301,7 +301,6 @@ export interface KritikSaran {
   nama: string;
   no_hp: string;
   unit_pelayanan_id: string;
-  kategori_id: string;
   pesan: string;
   status: KritikSaranStatus;
   rating: number | null;
@@ -313,14 +312,12 @@ export interface KritikSaran {
 
 export interface KritikSaranWithRelations extends KritikSaran {
   unit_pelayanan?: UnitPelayanan;
-  kategori?: Kategori;
 }
 
 export interface KritikSaranFormData {
   nama: string;
   no_hp: string;
   unit_pelayanan_id: string;
-  kategori_id: string;
   pesan: string;
   rating: number | null;
   is_anonymus: boolean;
@@ -330,14 +327,12 @@ export interface KritikSaranFormErrors {
   nama: string;
   no_hp: string;
   unit_pelayanan_id: string;
-  kategori_id: string;
   pesan: string;
   rating: string;
 }
 
 export type KritikSaranSortField =
   | "nama"
-  | "kategori"
   | "unit_pelayanan"
   | "status"
   | "rating"

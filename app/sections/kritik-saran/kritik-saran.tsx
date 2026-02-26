@@ -9,18 +9,12 @@ import { supabase } from "@/lib/supabase/client";
 import { ArrowRight, CheckCircle, Star } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
-interface Kategori {
-  id: string;
-  title: string;
-}
-
 interface UnitPelayanan {
   id: string;
   title: string;
 }
 
 const KritikSaran = () => {
-  const [kategoriList, setKategoriList] = useState<Kategori[]>([]);
   const [unitPelayananList, setUnitPelayananList] = useState<UnitPelayanan[]>(
     [],
   );
@@ -30,52 +24,14 @@ const KritikSaran = () => {
     nama: "",
     no_hp: "",
     unit_pelayanan_id: "",
-    kategori_id: "",
     pesan: "",
     rating: 0,
     is_anonymus: false,
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Fetch Kategori
-  useEffect(() => {
-    const fetchKategori = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("kategori")
-          .select("*")
-          .order("title", { ascending: true });
-
-        if (error) throw error;
-        setKategoriList(data || []);
-      } catch (error) {
-        console.error("Error fetching kategori:", error);
-      }
-    };
-
-    fetchKategori();
-
-    // Real-time subscription for kategori
-    const kategoriChannel = supabase
-      .channel("kategori_public")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "kategori" },
-        () => {
-          fetchKategori();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(kategoriChannel);
-    };
-  }, []);
-
-  // Fetch Unit Pelayanan
   useEffect(() => {
     const fetchUnitPelayanan = async () => {
       try {
@@ -83,32 +39,25 @@ const KritikSaran = () => {
           .from("unit_pelayanan")
           .select("*")
           .order("title", { ascending: true });
-
         if (error) throw error;
         setUnitPelayananList(data || []);
-      } catch (error) {
-        console.error("Error fetching unit pelayanan:", error);
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
     };
-
     fetchUnitPelayanan();
-
-    // Real-time subscription for unit_pelayanan
-    const unitChannel = supabase
+    const channel = supabase
       .channel("unit_pelayanan_public")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "unit_pelayanan" },
-        () => {
-          fetchUnitPelayanan();
-        },
+        () => fetchUnitPelayanan(),
       )
       .subscribe();
-
     return () => {
-      supabase.removeChannel(unitChannel);
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -117,98 +66,64 @@ const KritikSaran = () => {
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const handleRatingChange = (rating: number) => {
-    setFormData((prev) => ({ ...prev, rating }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.is_anonymus) {
-      if (!formData.nama.trim()) {
-        newErrors.nama = "Nama wajib diisi";
-      }
-      if (!formData.no_hp.trim()) {
-        newErrors.no_hp = "No HP wajib diisi";
-      } else if (!/^[0-9]{10,15}$/.test(formData.no_hp)) {
+      if (!formData.nama.trim()) newErrors.nama = "Nama wajib diisi";
+      if (!formData.no_hp.trim()) newErrors.no_hp = "No HP wajib diisi";
+      else if (!/^[0-9]{10,15}$/.test(formData.no_hp))
         newErrors.no_hp = "No HP tidak valid (10-15 digit)";
-      }
     }
-
-    if (!formData.unit_pelayanan_id) {
+    if (!formData.unit_pelayanan_id)
       newErrors.unit_pelayanan_id = "Unit pelayanan wajib dipilih";
-    }
-    if (!formData.kategori_id) {
-      newErrors.kategori_id = "Kategori wajib dipilih";
-    }
-    if (!formData.pesan.trim()) {
-      newErrors.pesan = "Pesan wajib diisi";
-    }
-
+    if (!formData.pesan.trim()) newErrors.pesan = "Pesan wajib diisi";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-
     setIsSubmitting(true);
-
     try {
-      const dataToSubmit = {
-        nama: formData.is_anonymus ? "Anonim" : formData.nama.trim(),
-        no_hp: formData.is_anonymus ? "000000000000" : formData.no_hp.trim(),
-        unit_pelayanan_id: formData.unit_pelayanan_id,
-        kategori_id: formData.kategori_id,
-        pesan: formData.pesan.trim(),
-        rating: formData.rating > 0 ? formData.rating : null,
-        is_anonymus: formData.is_anonymus,
-        status: "unread",
-        is_readed: false,
-      };
-
-      const { error } = await supabase
-        .from("kritik_saran")
-        .insert([dataToSubmit]);
-
+      const { error } = await supabase.from("kritik_saran").insert([
+        {
+          nama: formData.is_anonymus ? "Anonim" : formData.nama.trim(),
+          no_hp: formData.is_anonymus ? "000000000000" : formData.no_hp.trim(),
+          unit_pelayanan_id: formData.unit_pelayanan_id,
+          pesan: formData.pesan.trim(),
+          rating: formData.rating > 0 ? formData.rating : null,
+          is_anonymus: formData.is_anonymus,
+          status: "unread",
+          is_readed: false,
+        },
+      ]);
       if (error) throw error;
-
-      // Show success state
       setShowSuccess(true);
-
-      // Reset form after 3 seconds
       setTimeout(() => {
         setFormData({
           nama: "",
           no_hp: "",
           unit_pelayanan_id: "",
-          kategori_id: "",
           pesan: "",
           rating: 0,
           is_anonymus: false,
         });
         setShowSuccess(false);
       }, 3000);
-    } catch (error) {
-      console.error("Error submitting kritik saran:", error);
+    } catch (e) {
+      console.error(e);
       alert("Gagal mengirim kritik & saran. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);
@@ -218,99 +133,39 @@ const KritikSaran = () => {
   return (
     <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-screen">
       <div className="max-w-7xl mx-auto">
-        {/* Banner */}
         <Banner
           title="Kritik & Saran"
           subtitle="Suara Anda sangat berarti bagi kami untuk terus meningkatkan kualitas layanan"
         />
 
-        <div className="mb-4 py-4 mt-12">
-          <div className="max-w-4xl mx-auto px-4 relative">
-            {/* Blue Background - Only half height */}
-            <div className="absolute -bottom-4 left-0 right-0 bg-mariner-500 rounded-3xl h-1/2"></div>
-
-            {/* White Form Container */}
-            <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 md:p-12">
-              {/* Loading State */}
+        <div className="mt-12 max-w-2xl mx-auto">
+          <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
+            <div className="p-7 sm:p-10">
+              {/* Loading */}
               {loading && (
-                <div className="animate-pulse">
-                  {/* Title Skeleton */}
-                  <div className="text-center mb-8">
-                    <div className="h-5 w-20 bg-gray-200 rounded-full mx-auto mb-3"></div>
-                    <div className="h-8 w-56 bg-gray-200 rounded-lg mx-auto"></div>
-                  </div>
-
-                  <div className="space-y-6">
-                    {/* Anonymous Checkbox Skeleton */}
-                    <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-xl border-2 border-blue-100">
-                      <div className="w-5 h-5 bg-gray-200 rounded shrink-0"></div>
-                      <div className="h-4 w-80 bg-gray-200 rounded"></div>
-                    </div>
-
-                    {/* Name and Phone Row Skeleton */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
-                        <div className="h-12 bg-gray-200 rounded-xl"></div>
-                      </div>
-                      <div>
-                        <div className="h-4 w-20 bg-gray-200 rounded mb-2"></div>
-                        <div className="h-12 bg-gray-200 rounded-xl"></div>
-                      </div>
-                    </div>
-
-                    {/* Unit and Category Row Skeleton */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
-                        <div className="h-12 bg-gray-200 rounded-xl"></div>
-                      </div>
-                      <div>
-                        <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
-                        <div className="h-12 bg-gray-200 rounded-xl"></div>
-                      </div>
-                    </div>
-
-                    {/* Rating Skeleton */}
-                    <div>
-                      <div className="h-4 w-48 bg-gray-200 rounded mb-3"></div>
-                      <div className="flex gap-2">
-                        {[...Array(5)].map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-10 w-10 bg-gray-200 rounded"
-                          ></div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Message Skeleton */}
-                    <div>
-                      <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-32 bg-gray-200 rounded-xl"></div>
-                    </div>
-
-                    {/* Submit Button Skeleton */}
-                    <div className="pt-4">
-                      <div className="h-14 bg-gray-200 rounded-xl"></div>
-                    </div>
-                  </div>
+                <div className="animate-pulse space-y-6">
+                  <div className="h-5 w-20 bg-gray-100 rounded-full mx-auto" />
+                  <div className="h-8 w-56 bg-gray-100 rounded mx-auto" />
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-12 bg-gray-100 rounded-xl" />
+                  ))}
+                  <div className="h-28 bg-gray-100 rounded-xl" />
+                  <div className="h-12 bg-gray-100 rounded-xl" />
                 </div>
               )}
 
-              {/* Success State */}
+              {/* Success */}
               {!loading && showSuccess && (
                 <div className="text-center py-12">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
-                    <CheckCircle className="w-12 h-12 text-green-500" />
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-greenfresh-50 rounded-full mb-6 ring-4 ring-greenfresh-100">
+                    <CheckCircle className="w-10 h-10 text-greenfresh-500" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  <h3 className="text-2xl font-extrabold text-gray-800 mb-2">
                     Terima Kasih!
                   </h3>
-                  <p className="text-gray-600 max-w-md mx-auto">
+                  <p className="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed">
                     Kritik dan saran Anda telah berhasil terkirim. Kami akan
-                    menindaklanjuti masukan Anda untuk meningkatkan kualitas
-                    layanan kami.
+                    menindaklanjuti masukan Anda.
                   </p>
                 </div>
               )}
@@ -327,9 +182,12 @@ const KritikSaran = () => {
                     />
                   </div>
 
-                  <div className="space-y-6">
-                    {/* Anonymous Checkbox */}
-                    <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-xl border-2 border-blue-100">
+                  <div className="space-y-5">
+                    {/* Anonymous toggle */}
+                    <label
+                      htmlFor="is_anonymus"
+                      className="flex items-center gap-3 p-4 bg-mariner-50 rounded-xl cursor-pointer ring-1 ring-mariner-100 hover:ring-mariner-300 transition-all"
+                    >
                       <input
                         type="checkbox"
                         id="is_anonymus"
@@ -337,19 +195,19 @@ const KritikSaran = () => {
                         checked={formData.is_anonymus}
                         onChange={handleInputChange}
                         disabled={isSubmitting}
-                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        className="w-4 h-4 rounded text-mariner-600 focus:ring-mariner-400 shrink-0"
                       />
-                      <label
-                        htmlFor="is_anonymus"
-                        className="text-gray-700 font-medium cursor-pointer"
-                      >
-                        Kirim sebagai anonim (Nama dan No HP tidak diperlukan)
-                      </label>
-                    </div>
+                      <span className="text-sm font-medium text-gray-700">
+                        Kirim sebagai anonim{" "}
+                        <span className="text-gray-400 font-normal">
+                          (nama & nomor HP tidak diperlukan)
+                        </span>
+                      </span>
+                    </label>
 
-                    {/* Name and Phone Row */}
+                    {/* Name + phone */}
                     {!formData.is_anonymus && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
                           label="Nama Lengkap"
                           name="nama"
@@ -374,65 +232,65 @@ const KritikSaran = () => {
                       </div>
                     )}
 
-                    {/* Unit and Category Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <Select
-                        label="Unit Pelayanan"
-                        placeholder="Pilih Unit Pelayanan"
-                        value={formData.unit_pelayanan_id}
-                        onChange={(value) =>
-                          handleSelectChange("unit_pelayanan_id", value)
-                        }
-                        options={unitPelayananList.map((u) => ({
-                          value: u.id,
-                          label: u.title,
-                        }))}
-                        error={errors.unit_pelayanan_id}
-                        required
-                        disabled={isSubmitting}
-                        searchable
-                      />
-                      <Select
-                        label="Kategori"
-                        placeholder="Pilih Kategori"
-                        value={formData.kategori_id}
-                        onChange={(value) =>
-                          handleSelectChange("kategori_id", value)
-                        }
-                        options={kategoriList.map((k) => ({
-                          value: k.id,
-                          label: k.title,
-                        }))}
-                        error={errors.kategori_id}
-                        required
-                        disabled={isSubmitting}
-                        searchable
-                      />
-                    </div>
+                    {/* Unit pelayanan */}
+                    <Select
+                      label="Unit Pelayanan"
+                      placeholder="Pilih Unit Pelayanan"
+                      value={formData.unit_pelayanan_id}
+                      onChange={(value) =>
+                        handleSelectChange("unit_pelayanan_id", value)
+                      }
+                      options={unitPelayananList.map((u) => ({
+                        value: u.id,
+                        label: u.title,
+                      }))}
+                      error={errors.unit_pelayanan_id}
+                      required
+                      disabled={isSubmitting}
+                      searchable
+                    />
 
                     {/* Rating */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
-                        Rating Kepuasan (Opsional)
+                        Rating Kepuasan{" "}
+                        <span className="text-gray-400 font-normal">
+                          (opsional)
+                        </span>
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
                             key={star}
                             type="button"
-                            onClick={() => handleRatingChange(star)}
+                            onClick={() =>
+                              setFormData((p) => ({
+                                ...p,
+                                rating: p.rating === star ? 0 : star,
+                              }))
+                            }
                             disabled={isSubmitting}
-                            className="focus:outline-none transition-transform hover:scale-110"
+                            className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
                           >
                             <Star
-                              className={`h-10 w-10 cursor-pointer transition-colors ${
-                                star <= formData.rating
-                                  ? "fill-yellow-400 text-yellow-400"
-                                  : "text-gray-300 hover:text-yellow-200"
-                              }`}
+                              className={`w-9 h-9 transition-colors ${star <= formData.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200 hover:text-yellow-200"}`}
                             />
                           </button>
                         ))}
+                        {formData.rating > 0 && (
+                          <span className="ml-2 self-center text-sm text-gray-400">
+                            {
+                              [
+                                "",
+                                "Sangat Buruk",
+                                "Buruk",
+                                "Cukup",
+                                "Baik",
+                                "Sangat Baik",
+                              ][formData.rating]
+                            }
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -449,25 +307,23 @@ const KritikSaran = () => {
                       disabled={isSubmitting}
                     />
 
-                    {/* Submit Button */}
-                    <div className="pt-4">
-                      <Button
-                        variant="primary"
-                        size="lg"
-                        className="w-full justify-center"
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          "Mengirim..."
-                        ) : (
-                          <>
-                            Kirim Kritik & Saran
-                            <ArrowRight className="w-5 h-5" />
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    {/* Submit */}
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className="w-full justify-center bg-mariner-500 hover:bg-mariner-600"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        "Mengirim..."
+                      ) : (
+                        <>
+                          Kirim Kritik & Saran{" "}
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </>
               )}
