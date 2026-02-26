@@ -1,14 +1,13 @@
 "use client";
+import Animate, {
+  ease,
+  type BezierEase,
+} from "@/components/animations/animate";
 import Button from "@/components/ui/custom/button";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import useEmblaCarousel from "embla-carousel-react";
-import {
-  AnimatePresence,
-  motion,
-  type Transition,
-  type Variants,
-} from "framer-motion";
+import { AnimatePresence, motion, type Transition } from "framer-motion";
 import * as Icons from "lucide-react";
 import {
   AlertCircle,
@@ -24,48 +23,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 
-/* ─────────────────────────────────────────
-   ANIMATION VARIANTS
-───────────────────────────────────────── */
-const ease = [0.16, 1, 0.3, 1] as const;
-const easeOut = [0.0, 0.0, 0.2, 1] as const;
-
-const containerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.11, delayChildren: 0.08 },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 22, filter: "blur(4px)" },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.85, ease },
-  },
-};
-
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 16, scale: 0.94 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.6, ease },
-  },
-};
-
-const emptyVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.94, y: 16 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { duration: 0.6, ease },
-  },
-};
+const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
 
 /* ─────────────────────────────────────────
    INTERFACES
@@ -85,7 +43,7 @@ interface Dokter {
   id: string;
   nama: string;
   poli_id: string;
-  profile: string | null; // URL foto dokter
+  profile: string | null;
   status: string;
 }
 
@@ -98,9 +56,6 @@ interface JadwalDokter {
   tipe_jadwal: string;
 }
 
-/* ─────────────────────────────────────────
-   CONSTANTS
-───────────────────────────────────────── */
 const HARI_ORDER = [
   "Senin",
   "Selasa",
@@ -127,7 +82,7 @@ const SkeletonCard = () => (
 );
 
 /* ─────────────────────────────────────────
-   HELPERS — group jadwal by hari
+   HELPERS
 ───────────────────────────────────────── */
 interface GroupedJadwal {
   hari: string;
@@ -140,9 +95,7 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): GroupedJadwal[] {
     (a, b) => HARI_ORDER.indexOf(a.hari) - HARI_ORDER.indexOf(b.hari),
   );
   for (const j of sorted) {
-    if (!map.has(j.hari)) {
-      map.set(j.hari, { hari: j.hari, slots: [] });
-    }
+    if (!map.has(j.hari)) map.set(j.hari, { hari: j.hari, slots: [] });
     map.get(j.hari)!.slots.push({
       id: j.id,
       jam_mulai: j.jam_mulai,
@@ -153,7 +106,7 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): GroupedJadwal[] {
 }
 
 /* ─────────────────────────────────────────
-   JADWAL DIALOG — foto bulat + nama + jadwal
+   JADWAL DIALOG
 ───────────────────────────────────────── */
 interface JadwalDialogProps {
   dokter: Dokter;
@@ -199,7 +152,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         key={group.hari}
         initial={{ opacity: 0, x: -12 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.35, ease }}
+        transition={{ duration: 0.35, ease } satisfies Transition}
         className={`rounded-2xl px-4 py-3.5 ring-1 ${
           type === "eksekutif"
             ? "bg-bittersweet-50/60 ring-bittersweet-100"
@@ -207,14 +160,12 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         }`}
       >
         <div className="flex gap-3">
-          {/* Hari label */}
           <div className="flex items-start gap-2 w-18 shrink-0 pt-0.5">
             <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-bittersweet-400" />
             <span className="text-gray-700 font-semibold text-sm">
               {group.hari}
             </span>
           </div>
-          {/* Slots — multi-baris terindent */}
           <div className="flex flex-col gap-1 flex-1">
             {group.slots.map((slot) => (
               <div
@@ -237,7 +188,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.25, ease: easeOut }}
+      transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
       className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
       onClick={onClose}
     >
@@ -245,13 +196,11 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         initial={{ opacity: 0, y: 60, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 40, scale: 0.97 }}
-        transition={{ duration: 0.45, ease }}
+        transition={{ duration: 0.45, ease } satisfies Transition}
         className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Header: foto besar + nama ── */}
         <div className="relative shrink-0 overflow-hidden">
-          {/* Close button — di atas foto */}
           <button
             onClick={onClose}
             aria-label="Tutup"
@@ -259,12 +208,10 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
           >
             <X className="w-5 h-5 text-white" />
           </button>
-
-          {/* Foto besar — full bleed */}
           <motion.div
             initial={{ scale: 1.06, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, ease }}
+            transition={{ duration: 0.6, ease } satisfies Transition}
             className="relative w-full"
             style={{ paddingBottom: "min(56%, 280px)" }}
           >
@@ -283,16 +230,15 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
                   <User className="w-24 h-24 text-bittersweet-200" />
                 </div>
               )}
-              {/* gradient overlay bawah supaya nama terbaca */}
               <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
             </div>
           </motion.div>
-
-          {/* Nama overlay di bawah foto */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.45, ease }}
+            transition={
+              { delay: 0.2, duration: 0.45, ease } satisfies Transition
+            }
             className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
           >
             <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
@@ -304,9 +250,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
           </motion.div>
         </div>
 
-        {/* ── Body: jadwal dengan fade mask scroll ── */}
         <div className="relative">
-          {/* top fade mask */}
           <div
             className="pointer-events-none absolute top-0 inset-x-0 h-5 z-10"
             style={{
@@ -314,7 +258,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
                 "linear-gradient(to bottom, white 0%, transparent 100%)",
             }}
           />
-          {/* bottom fade mask */}
           <div
             className="pointer-events-none absolute bottom-0 inset-x-0 h-8 z-10"
             style={{
@@ -331,7 +274,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
             onScroll={(e) => e.stopPropagation()}
             onWheel={(e) => e.stopPropagation()}
           >
-            <style>{`.jadwal-body::-webkit-scrollbar { display: none; }`}</style>
             {loading ? (
               <div className="space-y-3">
                 {[...Array(4)].map((_, i) => (
@@ -386,66 +328,55 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
 };
 
 /* ─────────────────────────────────────────
-   DOKTER ROW — list vertikal satu baris per dokter
+   DOKTER ROW
 ───────────────────────────────────────── */
-interface DokterRowProps {
+const DokterRow: React.FC<{
   dokter: Dokter;
-  onLihatJadwal: (dokter: Dokter) => void;
-}
-
-const DokterRow: React.FC<DokterRowProps> = ({ dokter, onLihatJadwal }) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease }}
-      className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3.5 ring-1 ring-gray-100"
+  onLihatJadwal: (d: Dokter) => void;
+}> = ({ dokter, onLihatJadwal }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.35, ease } satisfies Transition}
+    className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3.5 ring-1 ring-gray-100"
+  >
+    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-bittersweet-100 shrink-0 bg-bittersweet-50 flex items-center justify-center">
+      {dokter.profile ? (
+        <Image
+          src={dokter.profile}
+          alt={dokter.nama}
+          width={40}
+          height={40}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <User className="w-5 h-5 text-bittersweet-400" />
+      )}
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-gray-800 font-semibold text-sm truncate">
+        {dokter.nama}
+      </p>
+    </div>
+    <Button
+      variant="primary"
+      size="sm"
+      onClick={() => onLihatJadwal(dokter)}
+      className="shrink-0"
     >
-      {/* Avatar — foto atau icon */}
-      <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-bittersweet-100 shrink-0 bg-bittersweet-50 flex items-center justify-center">
-        {dokter.profile ? (
-          <Image
-            src={dokter.profile}
-            alt={dokter.nama}
-            width={40}
-            height={40}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <User className="w-5 h-5 text-bittersweet-400" />
-        )}
-      </div>
-
-      {/* Nama */}
-      <div className="flex-1 min-w-0">
-        <p className="text-gray-800 font-semibold text-sm truncate">
-          {dokter.nama}
-        </p>
-      </div>
-
-      {/* Lihat Jadwal button */}
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => onLihatJadwal(dokter)}
-        className="shrink-0"
-      >
-        <Calendar className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Jadwal</span>
-      </Button>
-    </motion.div>
-  );
-};
+      <Calendar className="w-3.5 h-3.5" />
+      <span className="hidden sm:inline">Jadwal</span>
+    </Button>
+  </motion.div>
+);
 
 /* ─────────────────────────────────────────
-   POLI DIALOG — detail poli + list dokter
+   POLI DIALOG
 ───────────────────────────────────────── */
-interface PoliDialogProps {
-  poli: Poli;
-  onClose: () => void;
-}
-
-const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
+const PoliDialog: React.FC<{ poli: Poli; onClose: () => void }> = ({
+  poli,
+  onClose,
+}) => {
   const [dokterList, setDokterList] = useState<Dokter[]>([]);
   const [loadingDokter, setLoadingDokter] = useState(true);
   const [selectedDokter, setSelectedDokter] = useState<Dokter | null>(null);
@@ -511,7 +442,6 @@ const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
 
   return (
     <>
-      {/* Jadwal sub-dialog */}
       <AnimatePresence>
         {selectedDokter && (
           <JadwalDialog
@@ -526,27 +456,23 @@ const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
         )}
       </AnimatePresence>
 
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.3, ease: easeOut }}
+        transition={{ duration: 0.3, ease: easeOut } satisfies Transition}
         className="fixed inset-0 z-100 flex items-end sm:items-center justify-center sm:p-4 bg-black/65 backdrop-blur-md"
         onClick={onClose}
       >
-        {/* Modal */}
         <motion.div
           initial={{ opacity: 0, y: 72, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 48, scale: 0.97 }}
-          transition={{ duration: 0.5, ease }}
+          transition={{ duration: 0.5, ease } satisfies Transition}
           className="relative w-full sm:max-w-xl bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* ── Header ── */}
           <div className="relative bg-white px-6 pt-6 pb-5 shrink-0 border-b border-gray-100">
-            {/* Close button */}
             <button
               onClick={onClose}
               aria-label="Tutup"
@@ -554,13 +480,13 @@ const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
             >
               <X className="w-5 h-5 text-gray-500" />
             </button>
-
-            {/* Icon + title — mirip style card */}
             <div className="flex items-start gap-4 pr-12">
               <motion.div
                 initial={{ scale: 0.7, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, ease, delay: 0.1 }}
+                transition={
+                  { duration: 0.5, ease, delay: 0.1 } satisfies Transition
+                }
                 className="inline-flex p-3.5 rounded-2xl bg-bittersweet-100 text-bittersweet-500 shrink-0"
               >
                 {IconComponent && <IconComponent className="w-7 h-7" />}
@@ -569,7 +495,9 @@ const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
                 <motion.p
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, duration: 0.45, ease }}
+                  transition={
+                    { delay: 0.15, duration: 0.45, ease } satisfies Transition
+                  }
                   className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.15em] mb-1"
                 >
                   Klinik Spesialis
@@ -577,27 +505,28 @@ const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
                 <motion.h2
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5, ease }}
+                  transition={
+                    { delay: 0.2, duration: 0.5, ease } satisfies Transition
+                  }
                   className="text-bittersweet-500 text-xl font-bold leading-snug"
                 >
                   {poli.nama_poli}
                 </motion.h2>
               </div>
             </div>
-
             <motion.p
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.28, duration: 0.5, ease }}
+              transition={
+                { delay: 0.28, duration: 0.5, ease } satisfies Transition
+              }
               className="text-gray-500 text-sm leading-relaxed mt-3"
             >
               {poli.description}
             </motion.p>
           </div>
 
-          {/* ── Dokter Section dengan fade mask scroll ── */}
           <div className="relative">
-            {/* top fade mask */}
             <div
               className="pointer-events-none absolute top-0 inset-x-0 h-5 z-10"
               style={{
@@ -605,7 +534,6 @@ const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
                   "linear-gradient(to bottom, white 0%, transparent 100%)",
               }}
             />
-            {/* bottom fade mask */}
             <div
               className="pointer-events-none absolute bottom-0 inset-x-0 h-8 z-10"
               style={{
@@ -623,7 +551,6 @@ const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
               onScroll={(e) => e.stopPropagation()}
               onWheel={(e) => e.stopPropagation()}
             >
-              <style>{`.dokter-body::-webkit-scrollbar { display: none; }`}</style>
               <div className="flex items-center gap-2 mb-4">
                 <Stethoscope className="w-4 h-4 text-bittersweet-500" />
                 <h3 className="text-gray-700 font-bold text-sm">
@@ -635,7 +562,6 @@ const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
                   )}
                 </h3>
               </div>
-
               {loadingDokter ? (
                 <div className="space-y-2.5">
                   {[...Array(3)].map((_, i) => (
@@ -674,7 +600,7 @@ const PoliDialog: React.FC<PoliDialogProps> = ({ poli, onClose }) => {
 };
 
 /* ─────────────────────────────────────────
-   LAYANAN CARD — clickable
+   LAYANAN CARD
 ───────────────────────────────────────── */
 interface LayananCardProps {
   layanan: Poli;
@@ -694,8 +620,11 @@ const LayananCard: React.FC<LayananCardProps> = ({
 
   return (
     <motion.div
-      variants={cardVariants}
-      whileHover={{ y: -3, scale: 1.02, transition: { duration: 0.28, ease } }}
+      whileHover={{
+        y: -3,
+        scale: 1.02,
+        transition: { duration: 0.28, ease } satisfies Transition,
+      }}
       onClick={() => onClick(layanan)}
       className="group relative bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-100 hover:shadow-lg transition-shadow duration-300 h-full flex flex-col overflow-hidden cursor-pointer"
     >
@@ -708,7 +637,11 @@ const LayananCard: React.FC<LayananCardProps> = ({
         whileInView={{ scale: 1, opacity: 1 }}
         viewport={{ once: true }}
         transition={
-          { duration: 0.5, ease, delay: 0.1 + index * 0.05 } as Transition
+          {
+            duration: 0.5,
+            ease,
+            delay: 0.1 + index * 0.05,
+          } satisfies Transition
         }
         className="relative z-10 inline-flex p-4 sm:p-5 rounded-2xl bg-bittersweet-100 text-bittersweet-500 mb-4 sm:mb-6 self-start group-hover:scale-110 transition-transform duration-300"
       >
@@ -733,7 +666,7 @@ const LayananCard: React.FC<LayananCardProps> = ({
 /* ─────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────── */
-const LayananUnggulan = () => {
+const KlinikSpesiali = () => {
   const [layananList, setLayananList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
@@ -766,9 +699,7 @@ const LayananUnggulan = () => {
         setTimeout(() => setDataReady(true), 120);
       }
     };
-
     fetchLayanan();
-
     const channel = supabase
       .channel("poli_public")
       .on(
@@ -777,7 +708,6 @@ const LayananUnggulan = () => {
         () => fetchLayanan(),
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
@@ -796,12 +726,12 @@ const LayananUnggulan = () => {
 
       <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <motion.div
+          {/* Section title — waits for data */}
+          <Animate
+            type="fadein"
+            ready={dataReady}
+            margin="-60px"
             className="text-center mb-12 sm:mb-16"
-            variants={itemVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
           >
             <Title
               badge="Layanan"
@@ -809,15 +739,18 @@ const LayananUnggulan = () => {
               badgeVariant="default"
               containerClassName="items-center"
             />
-          </motion.div>
+          </Animate>
 
+          {/* Skeleton */}
           <AnimatePresence>
             {loading && (
               <motion.div
                 key="skeleton"
                 initial={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.45, ease: easeOut }}
+                transition={
+                  { duration: 0.45, ease: easeOut } satisfies Transition
+                }
               >
                 <div className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12">
                   {[...Array(6)].map((_, i) => (
@@ -837,91 +770,86 @@ const LayananUnggulan = () => {
             )}
           </AnimatePresence>
 
-          <AnimatePresence>
-            {!loading && layananList.length === 0 && (
-              <motion.div
-                key="empty"
-                variants={emptyVariants}
-                initial="hidden"
-                animate={dataReady ? "visible" : "hidden"}
-                className="text-center py-12"
-              >
-                <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
-                  <AlertCircle className="w-12 h-12 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                  Belum Ada Layanan
-                </h3>
-                <p className="text-gray-500">
-                  Layanan unggulan belum tersedia saat ini.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Empty state */}
+          {!loading && layananList.length === 0 && (
+            <Animate
+              type="slideup"
+              ready={dataReady}
+              className="text-center py-12"
+            >
+              <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
+                <AlertCircle className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                Belum Ada Layanan
+              </h3>
+              <p className="text-gray-500">
+                Layanan unggulan belum tersedia saat ini.
+              </p>
+            </Animate>
+          )}
 
           {!loading && layananList.length > 0 && (
             <>
-              <motion.div
+              {/* Desktop grid — each card slides up one by one */}
+              <Animate
+                type="stagger"
+                staggerChildren={0.13}
+                delayChildren={0.05}
+                ready={dataReady}
+                margin="-60px"
                 className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12"
-                variants={containerVariants}
-                initial="hidden"
-                whileInView={dataReady ? "visible" : "hidden"}
-                viewport={{ once: true, margin: "-60px" }}
               >
                 {layananList.map((layanan, index) => (
-                  <LayananCard
-                    key={layanan.id}
-                    layanan={layanan}
-                    index={index}
-                    onClick={setSelectedPoli}
-                  />
+                  <Animate key={layanan.id} type="slideup">
+                    <LayananCard
+                      layanan={layanan}
+                      index={index}
+                      onClick={setSelectedPoli}
+                    />
+                  </Animate>
                 ))}
-              </motion.div>
+              </Animate>
 
-              <AnimatePresence>
-                {dataReady && (
-                  <motion.div
-                    key="carousel"
-                    variants={itemVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: "-40px" }}
-                    className="lg:hidden mb-12"
-                  >
-                    <div className="-mx-4">
-                      <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
-                        <div className="flex gap-4 md:gap-6">
-                          {layananList.map((layanan, index) => (
-                            <div
-                              key={layanan.id}
-                              className="flex-[0_0_85%] md:flex-[0_0_45%] min-w-0"
-                            >
-                              <LayananCard
-                                layanan={layanan}
-                                index={index}
-                                onClick={setSelectedPoli}
-                              />
-                            </div>
-                          ))}
+              {/* Mobile carousel */}
+              <Animate
+                type="fadein"
+                ready={dataReady}
+                margin="-40px"
+                className="lg:hidden mb-12"
+              >
+                <div className="-mx-4">
+                  <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
+                    <div className="flex gap-4 md:gap-6">
+                      {layananList.map((layanan, index) => (
+                        <div
+                          key={layanan.id}
+                          className="flex-[0_0_85%] md:flex-[0_0_45%] min-w-0"
+                        >
+                          <LayananCard
+                            layanan={layanan}
+                            index={index}
+                            onClick={setSelectedPoli}
+                          />
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </div>
+                </div>
+              </Animate>
 
+              {/* See more CTA */}
               {layananList.length >= 6 && (
-                <motion.div
+                <Animate
+                  type="fadein"
+                  ready={dataReady}
+                  margin="-40px"
                   className="text-center mt-12"
-                  variants={itemVariants}
-                  initial="hidden"
-                  whileInView={dataReady ? "visible" : "hidden"}
-                  viewport={{ once: true, margin: "-40px" }}
                 >
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.97 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.2 } satisfies Transition}
                     className="inline-block"
                   >
                     <Link href="/sections/klinik-spesialis">
@@ -935,7 +863,7 @@ const LayananUnggulan = () => {
                       </Button>
                     </Link>
                   </motion.div>
-                </motion.div>
+                </Animate>
               )}
             </>
           )}
@@ -945,4 +873,4 @@ const LayananUnggulan = () => {
   );
 };
 
-export default LayananUnggulan;
+export default KlinikSpesiali;
