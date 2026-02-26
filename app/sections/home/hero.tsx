@@ -400,19 +400,6 @@ const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
             <p className="text-gray-600 text-sm leading-relaxed">
               {promo.description}
             </p>
-
-            {/* View image hint */}
-            {promo.picture && (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setLightboxOpen(true)}
-                className="w-full flex items-center justify-center gap-2 text-easternblue-600 text-xs font-medium py-2 rounded-xl border border-easternblue-100 bg-easternblue-50/60 hover:bg-easternblue-100/70 transition-colors"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-                Lihat Gambar Penuh
-              </motion.button>
-            )}
           </motion.div>
         </motion.div>
       </motion.div>

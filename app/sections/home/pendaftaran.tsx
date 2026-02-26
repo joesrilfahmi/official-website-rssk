@@ -13,6 +13,7 @@ import {
   AtSign,
   Building2,
   CheckCircle2,
+  Clock,
   Mail,
   MessageSquare,
   Phone,
@@ -129,9 +130,31 @@ interface JadwalDokter {
   tipe_jadwal: string;
 }
 
+/** Helper: apakah selectedDate adalah hari ini (format YYYY-MM-DD) */
+function isDateToday(selectedDate: string): boolean {
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return selectedDate === todayStr;
+}
+
+/** Helper: parse jam_mulai "HH:MM[:SS]" → total menit sejak tengah malam */
+function parseMinutes(timeStr: string): number {
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + (m || 0);
+}
+
+/** Format "HH:MM[:SS]" → "HH:MM" */
+function fmtTime(t: string): string {
+  const p = t.split(":");
+  return p.length >= 2
+    ? `${p[0].padStart(2, "0")}:${p[1].padStart(2, "0")}`
+    : t;
+}
+
 export default function PendaftaranSection() {
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showTimeExpiredAlert, setShowTimeExpiredAlert] = useState(false);
   const [poliList, setPoliList] = useState<Poli[]>([]);
   const [filteredDokter, setFilteredDokter] = useState<Dokter[]>([]);
   const [jadwalDokter, setJadwalDokter] = useState<JadwalDokter[]>([]);
@@ -190,16 +213,21 @@ export default function PendaftaranSection() {
         setAvailableTimes([]);
         return;
       }
+
+      const isToday = isDateToday(selectedDate);
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
       const times: string[] = [];
       jadwalHariIni.forEach((j) => {
         if (!j.jam_mulai || !j.jam_selesai) return;
-        const fmt = (t: string) => {
-          const p = t.split(":");
-          return p.length >= 2
-            ? `${p[0].padStart(2, "0")}:${p[1].padStart(2, "0")}`
-            : t;
-        };
-        times.push(`${fmt(j.jam_mulai)} - ${fmt(j.jam_selesai)}`);
+        const formattedStart = fmtTime(j.jam_mulai);
+        const formattedEnd = fmtTime(j.jam_selesai);
+
+        // Jika hari ini, lewati slot yang jam mulainya sudah lewat
+        if (isToday && parseMinutes(formattedStart) <= currentMinutes) return;
+
+        times.push(`${formattedStart} - ${formattedEnd}`);
       });
       setAvailableTimes(times);
     },
@@ -393,6 +421,28 @@ export default function PendaftaranSection() {
     setFormData({ ...formData, date, time: "" });
     setErrors({ ...errors, date: "", time: "" });
   };
+
+  /**
+   * Saat user memilih waktu: validasi real-time apakah slot sudah lewat
+   * (edge case: user membiarkan form terbuka hingga waktu berubah)
+   */
+  const handleTimeChange = (time: string) => {
+    if (time && formData.date && isDateToday(formData.date)) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const startStr = time.split(" - ")[0];
+      if (parseMinutes(startStr) <= currentMinutes) {
+        setShowTimeExpiredAlert(true);
+        setFormData({ ...formData, time: "", date: "" });
+        setAvailableTimes([]);
+        setErrors({ ...errors, time: "", date: "" });
+        return;
+      }
+    }
+    setFormData({ ...formData, time });
+    if (errors.time) setErrors({ ...errors, time: "" });
+  };
+
   const formatDoctorName = (doctor: Dokter) => doctor.nama;
 
   const validateForm = () => {
@@ -440,6 +490,17 @@ export default function PendaftaranSection() {
     if (!formData.time) {
       newErrors.time = "Waktu wajib diisi";
       isValid = false;
+    } else if (formData.date && isDateToday(formData.date)) {
+      // Guard akhir: pastikan waktu belum lewat saat submit
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const startStr = formData.time.split(" - ")[0];
+      if (parseMinutes(startStr) <= currentMinutes) {
+        setShowTimeExpiredAlert(true);
+        setFormData((prev) => ({ ...prev, time: "", date: "" }));
+        setAvailableTimes([]);
+        isValid = false;
+      }
     }
     if (!formData.description.trim()) {
       newErrors.description = "Deskripsi keluhan wajib diisi";
@@ -555,6 +616,98 @@ export default function PendaftaranSection() {
 
   return (
     <>
+      {/* ── Time Expired Alert Dialog ── */}
+      <AnimatePresence>
+        {showTimeExpiredAlert && (
+          <motion.div
+            key="time-expired-backdrop"
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed inset-0 z-9999 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowTimeExpiredAlert(false)}
+          >
+            <motion.div
+              key="time-expired-dialog"
+              variants={dialogVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="relative w-full sm:max-w-sm bg-white sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Top accent bar */}
+              <div className="h-1 w-full bg-linear-to-r from-amber-400 via-orange-400 to-bittersweet-500" />
+
+              <div className="px-6 pt-5 pb-6">
+                {/* Icon + close */}
+                <div className="flex items-start justify-between mb-4">
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.15, duration: 0.45, ease }}
+                    className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0"
+                  >
+                    <Clock className="w-6 h-6 text-amber-500" />
+                  </motion.div>
+                  <motion.button
+                    whileHover={{
+                      scale: 1.08,
+                      backgroundColor: "rgba(0,0,0,0.05)",
+                    }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => setShowTimeExpiredAlert(false)}
+                    aria-label="Tutup"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </motion.button>
+                </div>
+
+                {/* Content */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.4, ease }}
+                >
+                  <h2 className="text-lg font-extrabold text-gray-900 leading-tight mb-1">
+                    Waktu Sudah Lewat
+                  </h2>
+                  <p className="text-sm text-gray-500 leading-relaxed mb-5">
+                    Slot waktu yang Anda pilih sudah tidak tersedia karena telah
+                    melewati jam sekarang. Silakan pilih{" "}
+                    <span className="font-semibold text-gray-700">
+                      tanggal atau waktu lain
+                    </span>{" "}
+                    yang masih tersedia.
+                  </p>
+
+                  {/* Info hint */}
+                  <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200/70 rounded-xl px-3.5 py-3 mb-5">
+                    <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-amber-700 leading-relaxed">
+                      Hanya slot waktu yang belum lewat hari ini yang
+                      ditampilkan. Anda juga dapat memilih tanggal lain.
+                    </p>
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ duration: 0.18 }}
+                    onClick={() => setShowTimeExpiredAlert(false)}
+                    className="w-full py-3.5 rounded-full bg-bittersweet-500 hover:bg-bittersweet-600 text-white text-sm font-bold shadow-md shadow-bittersweet-500/20 transition-all duration-200"
+                  >
+                    Pilih Jadwal Lain
+                  </motion.button>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Confirmation Dialog ── */}
       <AnimatePresence>
         {showConfirmDialog && (
@@ -965,10 +1118,7 @@ export default function PendaftaranSection() {
                         label="Waktu"
                         placeholder="Pilih waktu"
                         value={formData.time}
-                        onChange={(value) => {
-                          setFormData({ ...formData, time: value });
-                          if (errors.time) setErrors({ ...errors, time: "" });
-                        }}
+                        onChange={handleTimeChange}
                         options={timeOptions}
                         searchable={false}
                         disabled={!formData.date}
