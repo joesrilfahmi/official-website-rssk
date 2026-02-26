@@ -1,3 +1,4 @@
+// app/sections/home/klinik-spesialis.tsx
 "use client";
 import Animate, {
   ease,
@@ -13,6 +14,7 @@ import {
   AlertCircle,
   ArrowRight,
   Calendar,
+  ChevronDown,
   ChevronRight,
   Clock,
   Stethoscope,
@@ -24,6 +26,120 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 
 const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
+
+/* ─────────────────────────────────────────
+   useScrollIndicator
+───────────────────────────────────────── */
+function useScrollIndicator() {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [canScrollUp, setCanScrollUp] = React.useState(false);
+  const [canScrollDown, setCanScrollDown] = React.useState(false);
+
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    setCanScrollUp(scrollTop > 4);
+    setCanScrollDown(scrollTop + clientHeight < scrollHeight - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [update]);
+
+  return { ref, canScrollUp, canScrollDown };
+}
+
+/* ─────────────────────────────────────────
+   ScrollFadeWrapper — reusable scroll area dengan dynamic fade + bounce
+───────────────────────────────────────── */
+interface ScrollFadeWrapperProps {
+  children: React.ReactNode;
+  maxHeight: number;
+  className?: string;
+}
+
+const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
+  children,
+  maxHeight,
+  className = "",
+}) => {
+  const { ref, canScrollUp, canScrollDown } = useScrollIndicator();
+
+  // Inject webkit scrollbar style once
+  useEffect(() => {
+    const id = "klinik-scrollbar-style";
+    if (document.getElementById(id)) return;
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `
+      .klinik-scroll::-webkit-scrollbar { width: 4px; }
+      .klinik-scroll::-webkit-scrollbar-track { background: transparent; }
+      .klinik-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
+      .klinik-scroll::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
+  return (
+    <div className="relative">
+      {/* Top fade */}
+      <div
+        className="pointer-events-none absolute top-0 inset-x-0 z-10 transition-opacity duration-300"
+        style={{
+          height: "36px",
+          opacity: canScrollUp ? 1 : 0,
+          background: "linear-gradient(to bottom, white 0%, transparent 100%)",
+        }}
+      />
+
+      {/* Bottom fade + bounce chevron */}
+      <div
+        className="pointer-events-none absolute bottom-0 inset-x-0 z-10 transition-opacity duration-300"
+        style={{
+          height: "52px",
+          opacity: canScrollDown ? 1 : 0,
+          background: "linear-gradient(to top, white 0%, transparent 100%)",
+        }}
+      >
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+          <motion.div
+            animate={{ y: [0, 5, 0] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+            className="flex flex-col items-center"
+          >
+            <ChevronDown className="w-4 h-4 text-bittersweet-400 opacity-80" />
+            <ChevronDown className="w-3 h-3 text-bittersweet-300 opacity-50 -mt-2" />
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Scroll container */}
+      <div
+        ref={ref}
+        className={`klinik-scroll overflow-y-auto scroll-smooth ${className}`}
+        style={{
+          maxHeight,
+          scrollbarWidth: "thin",
+          scrollbarColor: "#CBD5E1 transparent",
+        }}
+        onScroll={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────
    INTERFACES
@@ -200,6 +316,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Hero foto */}
         <div className="relative shrink-0 overflow-hidden">
           <button
             onClick={onClose}
@@ -250,78 +367,55 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
           </motion.div>
         </div>
 
-        <div className="relative">
-          <div
-            className="pointer-events-none absolute top-0 inset-x-0 h-5 z-10"
-            style={{
-              background:
-                "linear-gradient(to bottom, white 0%, transparent 100%)",
-            }}
-          />
-          <div
-            className="pointer-events-none absolute bottom-0 inset-x-0 h-8 z-10"
-            style={{
-              background: "linear-gradient(to top, white 0%, transparent 100%)",
-            }}
-          />
-          <div
-            className="overflow-y-auto px-6 py-5 space-y-5"
-            style={{
-              maxHeight: "320px",
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-            }}
-            onScroll={(e) => e.stopPropagation()}
-            onWheel={(e) => e.stopPropagation()}
-          >
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-14 bg-gray-100 rounded-2xl animate-pulse"
-                  />
-                ))}
+        {/* Jadwal content dengan ScrollFadeWrapper */}
+        <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-14 bg-gray-100 rounded-2xl animate-pulse"
+                />
+              ))}
+            </div>
+          ) : jadwalList.length === 0 ? (
+            <div className="text-center py-10">
+              <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
+                <Calendar className="w-8 h-8 text-gray-400" />
               </div>
-            ) : jadwalList.length === 0 ? (
-              <div className="text-center py-10">
-                <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
-                  <Calendar className="w-8 h-8 text-gray-400" />
+              <p className="text-gray-500 font-medium">
+                Belum ada jadwal tersedia
+              </p>
+            </div>
+          ) : (
+            <>
+              {groupedReguler.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
+                      Reguler
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {renderGrouped(groupedReguler, "reguler")}
+                  </div>
                 </div>
-                <p className="text-gray-500 font-medium">
-                  Belum ada jadwal tersedia
-                </p>
-              </div>
-            ) : (
-              <>
-                {groupedReguler.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
-                        Reguler
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {renderGrouped(groupedReguler, "reguler")}
-                    </div>
+              )}
+              {groupedEksekutif.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
+                      Eksekutif
+                    </span>
                   </div>
-                )}
-                {groupedEksekutif.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
-                        Eksekutif
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {renderGrouped(groupedEksekutif, "eksekutif")}
-                    </div>
+                  <div className="space-y-2">
+                    {renderGrouped(groupedEksekutif, "eksekutif")}
                   </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+                </div>
+              )}
+            </>
+          )}
+        </ScrollFadeWrapper>
       </motion.div>
     </motion.div>
   );
@@ -472,6 +566,7 @@ const PoliDialog: React.FC<{ poli: Poli; onClose: () => void }> = ({
           className="relative w-full sm:max-w-xl bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Header poli */}
           <div className="relative bg-white px-6 pt-6 pb-5 shrink-0 border-b border-gray-100">
             <button
               onClick={onClose}
@@ -526,73 +621,49 @@ const PoliDialog: React.FC<{ poli: Poli; onClose: () => void }> = ({
             </motion.p>
           </div>
 
-          <div className="relative">
-            <div
-              className="pointer-events-none absolute top-0 inset-x-0 h-5 z-10"
-              style={{
-                background:
-                  "linear-gradient(to bottom, white 0%, transparent 100%)",
-              }}
-            />
-            <div
-              className="pointer-events-none absolute bottom-0 inset-x-0 h-8 z-10"
-              style={{
-                background:
-                  "linear-gradient(to top, white 0%, transparent 100%)",
-              }}
-            />
-            <div
-              className="overflow-y-auto px-6 py-5"
-              style={{
-                maxHeight: "360px",
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              }}
-              onScroll={(e) => e.stopPropagation()}
-              onWheel={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <Stethoscope className="w-4 h-4 text-bittersweet-500" />
-                <h3 className="text-gray-700 font-bold text-sm">
-                  Dokter{" "}
-                  {!loadingDokter && dokterList.length > 0 && (
-                    <span className="text-bittersweet-500">
-                      ({dokterList.length})
-                    </span>
-                  )}
-                </h3>
-              </div>
-              {loadingDokter ? (
-                <div className="space-y-2.5">
-                  {[...Array(3)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-16 bg-gray-100 rounded-2xl animate-pulse"
-                    />
-                  ))}
-                </div>
-              ) : dokterList.length === 0 ? (
-                <div className="text-center py-10">
-                  <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
-                    <User className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 font-medium text-sm">
-                    Belum ada dokter terdaftar
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2.5 pb-4">
-                  {dokterList.map((dokter) => (
-                    <DokterRow
-                      key={dokter.id}
-                      dokter={dokter}
-                      onLihatJadwal={handleLihatJadwal}
-                    />
-                  ))}
-                </div>
-              )}
+          {/* Daftar dokter dengan ScrollFadeWrapper */}
+          <ScrollFadeWrapper maxHeight={360} className="px-6 py-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Stethoscope className="w-4 h-4 text-bittersweet-500" />
+              <h3 className="text-gray-700 font-bold text-sm">
+                Dokter{" "}
+                {!loadingDokter && dokterList.length > 0 && (
+                  <span className="text-bittersweet-500">
+                    ({dokterList.length})
+                  </span>
+                )}
+              </h3>
             </div>
-          </div>
+            {loadingDokter ? (
+              <div className="space-y-2.5">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-16 bg-gray-100 rounded-2xl animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : dokterList.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
+                  <User className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium text-sm">
+                  Belum ada dokter terdaftar
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5 pb-4">
+                {dokterList.map((dokter) => (
+                  <DokterRow
+                    key={dokter.id}
+                    dokter={dokter}
+                    onLihatJadwal={handleLihatJadwal}
+                  />
+                ))}
+              </div>
+            )}
+          </ScrollFadeWrapper>
         </motion.div>
       </motion.div>
     </>
@@ -602,6 +673,16 @@ const PoliDialog: React.FC<{ poli: Poli; onClose: () => void }> = ({
 /* ─────────────────────────────────────────
    LAYANAN CARD
 ───────────────────────────────────────── */
+const cardWrapVariants = {
+  hidden: { opacity: 0, y: 28, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.65, ease } satisfies Transition,
+  },
+};
+
 interface LayananCardProps {
   layanan: Poli;
   index: number;
@@ -617,9 +698,12 @@ const LayananCard: React.FC<LayananCardProps> = ({
     layanan.icon as keyof typeof Icons
   ] as React.ElementType;
   const numberString = (index + 1).toString().padStart(2, "0");
+  const cardAppearDuration = 0.65;
+  const innerBaseDelay = cardAppearDuration * 0.6;
 
   return (
     <motion.div
+      variants={cardWrapVariants}
       whileHover={{
         y: -3,
         scale: 1.02,
@@ -633,31 +717,75 @@ const LayananCard: React.FC<LayananCardProps> = ({
         {numberString}
       </div>
       <motion.div
-        initial={{ scale: 0.7, opacity: 0 }}
-        whileInView={{ scale: 1, opacity: 1 }}
-        viewport={{ once: true }}
-        transition={
-          {
-            duration: 0.5,
-            ease,
-            delay: 0.1 + index * 0.05,
-          } satisfies Transition
-        }
+        variants={{
+          hidden: { opacity: 0, scale: 0.6, y: 8 },
+          visible: {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            transition: {
+              duration: 0.45,
+              ease,
+              delay: innerBaseDelay,
+            } satisfies Transition,
+          },
+        }}
         className="relative z-10 inline-flex p-4 sm:p-5 rounded-2xl bg-bittersweet-100 text-bittersweet-500 mb-4 sm:mb-6 self-start group-hover:scale-110 transition-transform duration-300"
       >
         {IconComponent && <IconComponent className="w-7 h-7 sm:w-8 sm:h-8" />}
       </motion.div>
       <div className="relative z-10 flex flex-col grow">
-        <h3 className="text-xl sm:text-2xl font-bold text-bittersweet-500 mb-3 sm:mb-4 line-clamp-2 min-h-14">
+        <motion.h3
+          variants={{
+            hidden: { opacity: 0, y: 10 },
+            visible: {
+              opacity: 1,
+              y: 0,
+              transition: {
+                duration: 0.4,
+                ease,
+                delay: innerBaseDelay + 0.08,
+              } satisfies Transition,
+            },
+          }}
+          className="text-xl sm:text-2xl font-bold text-bittersweet-500 mb-3 sm:mb-4 line-clamp-2 min-h-14"
+        >
           {layanan.nama_poli}
-        </h3>
-        <p className="text-gray-600 text-sm sm:text-base leading-relaxed line-clamp-3 grow">
+        </motion.h3>
+        <motion.p
+          variants={{
+            hidden: { opacity: 0, y: 8 },
+            visible: {
+              opacity: 1,
+              y: 0,
+              transition: {
+                duration: 0.4,
+                ease,
+                delay: innerBaseDelay + 0.16,
+              } satisfies Transition,
+            },
+          }}
+          className="text-gray-600 text-sm sm:text-base leading-relaxed line-clamp-3 grow"
+        >
           {layanan.description}
-        </p>
-        <div className="mt-4 flex items-center gap-1.5 text-bittersweet-500 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        </motion.p>
+        <motion.div
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 0,
+              transition: {
+                duration: 0.3,
+                ease,
+                delay: innerBaseDelay + 0.22,
+              } satisfies Transition,
+            },
+          }}
+          className="mt-4 flex items-center gap-1.5 text-bittersweet-500 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        >
           <span>Lihat Detail</span>
           <ChevronRight className="w-3.5 h-3.5" />
-        </div>
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -666,7 +794,7 @@ const LayananCard: React.FC<LayananCardProps> = ({
 /* ─────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────── */
-const KlinikSpesiali = () => {
+const KlinikSpesialis = () => {
   const [layananList, setLayananList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
@@ -726,7 +854,6 @@ const KlinikSpesiali = () => {
 
       <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          {/* Section title — waits for data */}
           <Animate
             type="fadein"
             ready={dataReady}
@@ -741,7 +868,6 @@ const KlinikSpesiali = () => {
             />
           </Animate>
 
-          {/* Skeleton */}
           <AnimatePresence>
             {loading && (
               <motion.div
@@ -770,7 +896,6 @@ const KlinikSpesiali = () => {
             )}
           </AnimatePresence>
 
-          {/* Empty state */}
           {!loading && layananList.length === 0 && (
             <Animate
               type="slideup"
@@ -791,27 +916,24 @@ const KlinikSpesiali = () => {
 
           {!loading && layananList.length > 0 && (
             <>
-              {/* Desktop grid — each card slides up one by one */}
               <Animate
                 type="stagger"
-                staggerChildren={0.13}
+                staggerChildren={0.15}
                 delayChildren={0.05}
                 ready={dataReady}
                 margin="-60px"
                 className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12"
               >
                 {layananList.map((layanan, index) => (
-                  <Animate key={layanan.id} type="slideup">
-                    <LayananCard
-                      layanan={layanan}
-                      index={index}
-                      onClick={setSelectedPoli}
-                    />
-                  </Animate>
+                  <LayananCard
+                    key={layanan.id}
+                    layanan={layanan}
+                    index={index}
+                    onClick={setSelectedPoli}
+                  />
                 ))}
               </Animate>
 
-              {/* Mobile carousel */}
               <Animate
                 type="fadein"
                 ready={dataReady}
@@ -838,7 +960,6 @@ const KlinikSpesiali = () => {
                 </div>
               </Animate>
 
-              {/* See more CTA */}
               {layananList.length >= 6 && (
                 <Animate
                   type="fadein"
@@ -873,4 +994,4 @@ const KlinikSpesiali = () => {
   );
 };
 
-export default KlinikSpesiali;
+export default KlinikSpesialis;

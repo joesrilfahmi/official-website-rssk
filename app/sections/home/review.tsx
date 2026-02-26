@@ -1,58 +1,17 @@
 "use client";
 
+import Animate, { ease, easeOut } from "@/components/animations/animate";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import useEmblaCarousel from "embla-carousel-react";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  type Transition,
+  type Variants,
+} from "framer-motion";
 import { ChevronLeft, ChevronRight, Quote, Star } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-
-/* ─────────────────────────────────────────
-   ANIMATION VARIANTS — identical to About
-───────────────────────────────────────── */
-const ease = [0.16, 1, 0.3, 1] as const;
-const easeOut = [0.0, 0.0, 0.2, 1] as const;
-
-// Stagger container
-const containerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.11, delayChildren: 0.08 },
-  },
-};
-
-// Text/content items — lift + fade + unblur
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 22, filter: "blur(4px)" },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.85, ease },
-  },
-};
-
-// Card items — staggered pop-in
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 16, scale: 0.94 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.6, ease },
-  },
-};
-
-// Empty state
-const emptyVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.94, y: 16 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { duration: 0.6, ease },
-  },
-};
 
 /* ─────────────────────────────────────────
    INTERFACES
@@ -91,7 +50,24 @@ const SkeletonCard = () => (
 );
 
 /* ─────────────────────────────────────────
-   REVIEW CARD — motion wrapper
+   ANIMASI BARU:
+   cardWrapVariants — card fade satu per satu via stagger parent
+   Konten di dalam card muncul berurutan setelah card visible
+───────────────────────────────────────── */
+const cardWrapVariants: Variants = {
+  hidden: { opacity: 0, y: 24, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.6, ease } satisfies Transition,
+  },
+};
+
+const INNER_DELAY = 0.32;
+
+/* ─────────────────────────────────────────
+   REVIEW CARD
 ───────────────────────────────────────── */
 interface ReviewCardProps {
   review: Review;
@@ -111,34 +87,73 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review }) => {
 
   return (
     <motion.div
-      variants={cardVariants}
-      whileHover={{ y: -3, scale: 1.02, transition: { duration: 0.28, ease } }}
+      variants={cardWrapVariants}
+      whileHover={{
+        y: -3,
+        scale: 1.02,
+        transition: { duration: 0.28, ease } satisfies Transition,
+      }}
       className="bg-white rounded-2xl p-6 sm:p-8 ring-1 ring-gray-100 shadow-sm hover:shadow-lg transition-shadow duration-300 h-full flex flex-col cursor-default"
     >
-      {/* Quote + Stars row */}
-      <div className="flex items-start justify-between mb-5">
-        <motion.div
-          initial={{ scale: 0.7, opacity: 0 }}
-          whileInView={{ scale: 1, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, ease, delay: 0.1 }}
-          className="w-10 h-10 rounded-xl bg-mariner-50 flex items-center justify-center"
-        >
+      {/* Header: icon + stars — muncul setelah card */}
+      <motion.div
+        variants={{
+          hidden: { opacity: 0, y: 8 },
+          visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+              duration: 0.38,
+              ease,
+              delay: INNER_DELAY,
+            } satisfies Transition,
+          },
+        }}
+        className="flex items-start justify-between mb-5"
+      >
+        <div className="w-10 h-10 rounded-xl bg-mariner-50 flex items-center justify-center">
           <Quote className="w-5 h-5 text-mariner-500" />
-        </motion.div>
+        </div>
         {renderStars(review.rating)}
-      </div>
+      </motion.div>
 
       {/* Review text */}
-      <p className="text-gray-600 text-sm sm:text-base leading-relaxed grow mb-6">
+      <motion.p
+        variants={{
+          hidden: { opacity: 0, y: 8 },
+          visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+              duration: 0.4,
+              ease,
+              delay: INNER_DELAY + 0.1,
+            } satisfies Transition,
+          },
+        }}
+        className="text-gray-600 text-sm sm:text-base leading-relaxed grow mb-6"
+      >
         &quot;{review.pesan}&quot;
-      </p>
+      </motion.p>
 
-      {/* Divider */}
       <div className="h-px bg-gray-100 mb-5" />
 
-      {/* Reviewer */}
-      <div className="flex items-center gap-3">
+      {/* Reviewer identity */}
+      <motion.div
+        variants={{
+          hidden: { opacity: 0, x: -10 },
+          visible: {
+            opacity: 1,
+            x: 0,
+            transition: {
+              duration: 0.38,
+              ease,
+              delay: INNER_DELAY + 0.18,
+            } satisfies Transition,
+          },
+        }}
+        className="flex items-center gap-3"
+      >
         <div className="w-10 h-10 rounded-full bg-mariner-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
           {review.nama.charAt(0).toUpperCase()}
         </div>
@@ -148,13 +163,13 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review }) => {
           </h4>
           <p className="text-xs text-gray-400 mt-0.5">Pasien RS</p>
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 };
 
 /* ─────────────────────────────────────────
-   NAV BUTTON — reusable
+   NAV BUTTON
 ───────────────────────────────────────── */
 interface NavButtonProps {
   onClick: () => void;
@@ -175,7 +190,7 @@ const NavButton: React.FC<NavButtonProps> = ({
     aria-label={label}
     whileHover={!disabled ? { scale: 1.08 } : {}}
     whileTap={!disabled ? { scale: 0.92 } : {}}
-    transition={{ duration: 0.2 }}
+    transition={{ duration: 0.2 } satisfies Transition}
     className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-200
       ${
         disabled
@@ -243,7 +258,6 @@ export default function ReviewSection() {
         console.error("Error fetching reviews:", error);
       } finally {
         setLoading(false);
-        // Small delay so skeleton exit finishes before content animates in
         setTimeout(() => setDataReady(true), 120);
       }
     };
@@ -272,32 +286,28 @@ export default function ReviewSection() {
   return (
     <section className="bg-gray-50 py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        {/* ── Header — stagger: title left, nav right ── */}
-        <motion.div
+        {/* ── Header row ── */}
+        <Animate
+          type="stagger"
+          staggerChildren={0.11}
+          delayChildren={0.08}
+          ready={dataReady}
+          margin="-60px"
           className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-60px" }}
         >
-          {/* Title */}
-          <motion.div variants={itemVariants}>
+          <Animate type="fadein">
             <Title
               badge="ULASAN"
               title="Review Kami"
               badgeVariant="default"
               containerClassName="items-start"
             />
-          </motion.div>
+          </Animate>
 
-          {/* Nav controls — desktop, visible after dataReady */}
           <AnimatePresence>
             {!loading && reviews.length > 0 && dataReady && (
-              <motion.div
-                key="header-nav"
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
+              <Animate
+                type="fadein"
                 className="hidden sm:flex items-center gap-2 shrink-0"
               >
                 <NavButton
@@ -312,10 +322,10 @@ export default function ReviewSection() {
                   label="Berikutnya"
                   direction="next"
                 />
-              </motion.div>
+              </Animate>
             )}
           </AnimatePresence>
-        </motion.div>
+        </Animate>
 
         {/* ── Loading skeletons ── */}
         <AnimatePresence>
@@ -324,7 +334,9 @@ export default function ReviewSection() {
               key="skeleton"
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.45, ease: easeOut }}
+              transition={
+                { duration: 0.45, ease: easeOut } satisfies Transition
+              }
               className="-mx-4 px-4"
             >
               <div className="flex gap-5 overflow-x-auto scrollbar-hide pb-4">
@@ -342,37 +354,37 @@ export default function ReviewSection() {
         </AnimatePresence>
 
         {/* ── Empty state ── */}
-        <AnimatePresence>
-          {!loading && reviews.length === 0 && (
-            <motion.div
-              key="empty"
-              variants={emptyVariants}
-              initial="hidden"
-              animate={dataReady ? "visible" : "hidden"}
-              className="text-center py-12"
-            >
-              <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
-                <Quote className="w-12 h-12 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                Belum Ada Review
-              </h3>
-              <p className="text-gray-500">
-                Review dari pasien belum tersedia saat ini.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {!loading && reviews.length === 0 && (
+          <Animate
+            type="slideup"
+            ready={dataReady}
+            className="text-center py-12"
+          >
+            <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
+              <Quote className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              Belum Ada Review
+            </h3>
+            <p className="text-gray-500">
+              Review dari pasien belum tersedia saat ini.
+            </p>
+          </Animate>
+        )}
 
         {/* ── Carousel ── */}
         {!loading && reviews.length > 0 && (
           <>
-            {/* Cards — stagger container, waits for dataReady */}
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              whileInView={dataReady ? "visible" : "hidden"}
-              viewport={{ once: true, margin: "-40px" }}
+            {/*
+             * Stagger container — ReviewCard menggunakan cardWrapVariants
+             * Card muncul satu per satu, konten di dalam muncul setelah card (INNER_DELAY)
+             */}
+            <Animate
+              type="stagger"
+              staggerChildren={0.15}
+              delayChildren={0.06}
+              ready={dataReady}
+              margin="-40px"
               className="-mx-4"
             >
               <div className="overflow-hidden px-4 py-2" ref={emblaRef}>
@@ -387,16 +399,13 @@ export default function ReviewSection() {
                   ))}
                 </div>
               </div>
-            </motion.div>
+            </Animate>
 
             {/* Mobile nav */}
             <AnimatePresence>
               {dataReady && (
-                <motion.div
-                  key="mobile-nav"
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
+                <Animate
+                  type="fadein"
                   className="flex sm:hidden items-center gap-2 mt-6"
                 >
                   <NavButton
@@ -411,7 +420,7 @@ export default function ReviewSection() {
                     label="Berikutnya"
                     direction="next"
                   />
-                </motion.div>
+                </Animate>
               )}
             </AnimatePresence>
           </>

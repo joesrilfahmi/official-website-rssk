@@ -1,5 +1,6 @@
 "use client";
 
+import Animate, { ease } from "@/components/animations/animate";
 import Badge from "@/components/ui/custom/badge";
 import Button from "@/components/ui/custom/button";
 import Input from "@/components/ui/custom/input";
@@ -7,7 +8,12 @@ import Select from "@/components/ui/custom/select";
 import Textarea from "@/components/ui/custom/textarea";
 import { Profile } from "@/config/profile";
 import { supabase } from "@/lib/supabase/client";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  type Transition,
+  type Variants,
+} from "framer-motion";
 import {
   ArrowRight,
   AtSign,
@@ -25,55 +31,12 @@ import {
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 
-const ease = [0.16, 1, 0.3, 1] as const;
-
-const containerVariants: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.11, delayChildren: 0.08 } },
-};
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 22, filter: "blur(4px)" },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.85, ease },
-  },
-};
-const formCardVariants: Variants = {
-  hidden: { opacity: 0, x: -44, scale: 0.97 },
-  visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 1.05, ease } },
-};
-const infoPanelVariants: Variants = {
-  hidden: { opacity: 0, x: 44, scale: 0.97 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    scale: 1,
-    transition: { duration: 1.05, ease, delay: 0.15 },
-  },
-};
-const contactContainerVariants: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
-};
-const contactCardVariants: Variants = {
-  hidden: { opacity: 0, y: 16, scale: 0.94 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease } },
-};
-const fieldContainerVariants: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.2 } },
-};
-const fieldVariants: Variants = {
-  hidden: { opacity: 0, y: 12, filter: "blur(3px)" },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.55, ease },
-  },
-};
+/* ─────────────────────────────────────────
+   LOCAL VARIANTS
+   Only kept here because they are used by AnimatePresence dialogs
+   (modal entrance/exit) which need `exit` state — Animate component
+   does not support exit. Everything else uses <Animate>.
+───────────────────────────────────────── */
 const backdropVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -87,7 +50,12 @@ const backdropVariants: Variants = {
 };
 const dialogVariants: Variants = {
   hidden: { opacity: 0, y: 72, scale: 0.97 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.52, ease } },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.52, ease } satisfies Transition,
+  },
   exit: {
     opacity: 0,
     y: 48,
@@ -105,10 +73,13 @@ const dialogItemVariants: Variants = {
     opacity: 1,
     x: 0,
     filter: "blur(0px)",
-    transition: { duration: 0.45, ease },
+    transition: { duration: 0.45, ease } satisfies Transition,
   },
 };
 
+/* ─────────────────────────────────────────
+   INTERFACES
+───────────────────────────────────────── */
 interface Poli {
   id: string;
   nama_poli: string;
@@ -130,20 +101,18 @@ interface JadwalDokter {
   tipe_jadwal: string;
 }
 
-/** Helper: apakah selectedDate adalah hari ini (format YYYY-MM-DD) */
+/* ─────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────── */
 function isDateToday(selectedDate: string): boolean {
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   return selectedDate === todayStr;
 }
-
-/** Helper: parse jam_mulai "HH:MM[:SS]" → total menit sejak tengah malam */
 function parseMinutes(timeStr: string): number {
   const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + (m || 0);
 }
-
-/** Format "HH:MM[:SS]" → "HH:MM" */
 function fmtTime(t: string): string {
   const p = t.split(":");
   return p.length >= 2
@@ -151,6 +120,9 @@ function fmtTime(t: string): string {
     : t;
 }
 
+/* ─────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────── */
 export default function PendaftaranSection() {
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -213,20 +185,15 @@ export default function PendaftaranSection() {
         setAvailableTimes([]);
         return;
       }
-
       const isToday = isDateToday(selectedDate);
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
       const times: string[] = [];
       jadwalHariIni.forEach((j) => {
         if (!j.jam_mulai || !j.jam_selesai) return;
         const formattedStart = fmtTime(j.jam_mulai);
         const formattedEnd = fmtTime(j.jam_selesai);
-
-        // Jika hari ini, lewati slot yang jam mulainya sudah lewat
         if (isToday && parseMinutes(formattedStart) <= currentMinutes) return;
-
         times.push(`${formattedStart} - ${formattedEnd}`);
       });
       setAvailableTimes(times);
@@ -304,20 +271,14 @@ export default function PendaftaranSection() {
     else setAvailableTimes([]);
   }, [formData.date, jadwalDokter, generateAvailableTimes]);
 
-  /**
-   * Fetch hanya poli yang memiliki minimal 1 dokter aktif dengan jadwal eksekutif.
-   * Alur: jadwal_eksekutif → dokter_id → poli_id → poli
-   */
   const fetchPoliWithEksekutif = async () => {
     setLoadingPoli(true);
     try {
-      // 1. Semua dokter_id yang punya jadwal eksekutif
       const { data: jadwalData, error: jadwalError } = await supabase
         .from("jadwal_dokter")
         .select("dokter_id")
         .eq("tipe_jadwal", "eksekutif");
       if (jadwalError) throw jadwalError;
-
       const dokterIdsWithEksekutif = [
         ...new Set(
           (jadwalData || []).map((j: { dokter_id: string }) => j.dokter_id),
@@ -327,15 +288,12 @@ export default function PendaftaranSection() {
         setPoliList([]);
         return;
       }
-
-      // 2. Dokter aktif dari daftar → ambil poli_id unik
       const { data: dokterData, error: dokterError } = await supabase
         .from("dokter")
         .select("poli_id")
         .eq("status", "active")
         .in("id", dokterIdsWithEksekutif);
       if (dokterError) throw dokterError;
-
       const poliIdsWithEksekutif = [
         ...new Set(
           (dokterData || []).map((d: { poli_id: string }) => d.poli_id),
@@ -345,8 +303,6 @@ export default function PendaftaranSection() {
         setPoliList([]);
         return;
       }
-
-      // 3. Fetch poli aktif yang masuk daftar
       const { data: poliData, error: poliError } = await supabase
         .from("poli")
         .select("id, nama_poli, status")
@@ -363,19 +319,14 @@ export default function PendaftaranSection() {
     }
   };
 
-  /**
-   * Fetch dokter aktif di poli yang juga punya jadwal eksekutif
-   */
   const fetchDokterByPoli = async (poliId: string) => {
     setLoadingDokter(true);
     try {
-      // 1. Dokter_id yang punya jadwal eksekutif
       const { data: jadwalData, error: jadwalError } = await supabase
         .from("jadwal_dokter")
         .select("dokter_id")
         .eq("tipe_jadwal", "eksekutif");
       if (jadwalError) throw jadwalError;
-
       const dokterIdsWithEksekutif = [
         ...new Set(
           (jadwalData || []).map((j: { dokter_id: string }) => j.dokter_id),
@@ -385,8 +336,6 @@ export default function PendaftaranSection() {
         setFilteredDokter([]);
         return;
       }
-
-      // 2. Dokter aktif di poli ini yang ada di daftar eksekutif
       const { data, error } = await supabase
         .from("dokter")
         .select("id, nama, poli_id, profile, status")
@@ -421,11 +370,6 @@ export default function PendaftaranSection() {
     setFormData({ ...formData, date, time: "" });
     setErrors({ ...errors, date: "", time: "" });
   };
-
-  /**
-   * Saat user memilih waktu: validasi real-time apakah slot sudah lewat
-   * (edge case: user membiarkan form terbuka hingga waktu berubah)
-   */
   const handleTimeChange = (time: string) => {
     if (time && formData.date && isDateToday(formData.date)) {
       const now = new Date();
@@ -491,7 +435,6 @@ export default function PendaftaranSection() {
       newErrors.time = "Waktu wajib diisi";
       isValid = false;
     } else if (formData.date && isDateToday(formData.date)) {
-      // Guard akhir: pastikan waktu belum lewat saat submit
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       const startStr = formData.time.split(" - ")[0];
@@ -597,7 +540,6 @@ export default function PendaftaranSection() {
     value: time,
     label: time,
   }));
-
   const selectedPoliLabel =
     poliList.find((p) => p.id === formData.poli)?.nama_poli ?? "-";
   const selectedDokterLabel = filteredDokter.find(
@@ -616,7 +558,7 @@ export default function PendaftaranSection() {
 
   return (
     <>
-      {/* ── Time Expired Alert Dialog ── */}
+      {/* ── Time Expired Alert Dialog — uses local variants (needs exit state) ── */}
       <AnimatePresence>
         {showTimeExpiredAlert && (
           <motion.div
@@ -637,16 +579,15 @@ export default function PendaftaranSection() {
               className="relative w-full sm:max-w-sm bg-white sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Top accent bar */}
               <div className="h-1 w-full bg-linear-to-r from-amber-400 via-orange-400 to-bittersweet-500" />
-
               <div className="px-6 pt-5 pb-6">
-                {/* Icon + close */}
                 <div className="flex items-start justify-between mb-4">
                   <motion.div
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.15, duration: 0.45, ease }}
+                    transition={
+                      { delay: 0.15, duration: 0.45, ease } satisfies Transition
+                    }
                     className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0"
                   >
                     <Clock className="w-6 h-6 text-amber-500" />
@@ -664,12 +605,12 @@ export default function PendaftaranSection() {
                     <X className="w-4 h-4" />
                   </motion.button>
                 </div>
-
-                {/* Content */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.4, ease }}
+                  transition={
+                    { delay: 0.2, duration: 0.4, ease } satisfies Transition
+                  }
                 >
                   <h2 className="text-lg font-extrabold text-gray-900 leading-tight mb-1">
                     Waktu Sudah Lewat
@@ -682,8 +623,6 @@ export default function PendaftaranSection() {
                     </span>{" "}
                     yang masih tersedia.
                   </p>
-
-                  {/* Info hint */}
                   <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200/70 rounded-xl px-3.5 py-3 mb-5">
                     <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                     <p className="text-[11px] text-amber-700 leading-relaxed">
@@ -691,11 +630,10 @@ export default function PendaftaranSection() {
                       ditampilkan. Anda juga dapat memilih tanggal lain.
                     </p>
                   </div>
-
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.97 }}
-                    transition={{ duration: 0.18 }}
+                    transition={{ duration: 0.18 } satisfies Transition}
                     onClick={() => setShowTimeExpiredAlert(false)}
                     className="w-full py-3.5 rounded-full bg-bittersweet-500 hover:bg-bittersweet-600 text-white text-sm font-bold shadow-md shadow-bittersweet-500/20 transition-all duration-200"
                   >
@@ -708,7 +646,7 @@ export default function PendaftaranSection() {
         )}
       </AnimatePresence>
 
-      {/* ── Confirmation Dialog ── */}
+      {/* ── Confirmation Dialog — uses local variants (needs exit state) ── */}
       <AnimatePresence>
         {showConfirmDialog && (
           <motion.div
@@ -729,12 +667,13 @@ export default function PendaftaranSection() {
               className="relative w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
               <div className="px-6 pt-5 pb-4 flex items-center justify-between">
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, duration: 0.4, ease }}
+                  transition={
+                    { delay: 0.15, duration: 0.4, ease } satisfies Transition
+                  }
                   className="flex items-center gap-3"
                 >
                   <div className="w-9 h-9 rounded-xl bg-mariner-50 flex items-center justify-center shrink-0">
@@ -763,91 +702,64 @@ export default function PendaftaranSection() {
                 </motion.button>
               </div>
 
-              {/* Data Groups */}
               <motion.div
                 variants={dialogRowVariants}
                 initial="hidden"
                 animate="visible"
                 className="px-6 pb-4 space-y-3"
               >
-                {/* Group 1: Identitas */}
                 <motion.div variants={dialogItemVariants}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-2 flex items-center gap-1.5">
                     <User2 className="w-3 h-3" />
                     Identitas Pasien
                   </p>
                   <div className="bg-gray-50 rounded-xl p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-gray-500 shrink-0">
-                        Nama
-                      </span>
-                      <span className="text-xs font-semibold text-gray-900 text-right truncate">
-                        {formData.name}
-                      </span>
-                    </div>
-                    <div className="h-px bg-gray-100" />
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-gray-500 shrink-0">
-                        Email
-                      </span>
-                      <span className="text-xs font-semibold text-gray-900 text-right truncate">
-                        {formData.email}
-                      </span>
-                    </div>
-                    <div className="h-px bg-gray-100" />
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-gray-500 shrink-0">
-                        Telepon
-                      </span>
-                      <span className="text-xs font-semibold text-gray-900 text-right">
-                        {formData.phone}
-                      </span>
-                    </div>
+                    {[
+                      ["Nama", formData.name],
+                      ["Email", formData.email],
+                      ["Telepon", formData.phone],
+                    ].map(([label, val], i) => (
+                      <React.Fragment key={label}>
+                        {i > 0 && <div className="h-px bg-gray-100" />}
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-xs text-gray-500 shrink-0">
+                            {label}
+                          </span>
+                          <span className="text-xs font-semibold text-gray-900 text-right truncate">
+                            {val}
+                          </span>
+                        </div>
+                      </React.Fragment>
+                    ))}
                   </div>
                 </motion.div>
 
-                {/* Group 2: Detail Janji */}
                 <motion.div variants={dialogItemVariants}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-2 flex items-center gap-1.5">
                     <Stethoscope className="w-3 h-3" />
                     Detail Janji Temu
                   </p>
                   <div className="bg-gray-50 rounded-xl p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-gray-500 shrink-0">
-                        Poli
-                      </span>
-                      <span className="text-xs font-semibold text-gray-900 text-right">
-                        {selectedPoliLabel}
-                      </span>
-                    </div>
-                    <div className="h-px bg-gray-100" />
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-gray-500 shrink-0">
-                        Dokter
-                      </span>
-                      <span className="text-xs font-semibold text-gray-900 text-right truncate">
-                        {selectedDokterLabel}
-                      </span>
-                    </div>
-                    <div className="h-px bg-gray-100" />
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-gray-500 shrink-0">
-                        Tanggal
-                      </span>
-                      <span className="text-xs font-semibold text-gray-900 text-right">
-                        {selectedDateLabel}
-                      </span>
-                    </div>
-                    <div className="h-px bg-gray-100" />
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-gray-500 shrink-0">
-                        Waktu
-                      </span>
-                      <span className="text-xs font-semibold text-mariner-600 text-right font-mono">
-                        {formData.time}
-                      </span>
-                    </div>
+                    {[
+                      ["Poli", selectedPoliLabel],
+                      ["Dokter", selectedDokterLabel],
+                      ["Tanggal", selectedDateLabel],
+                      ["Waktu", formData.time],
+                    ].map(([label, val], i) => (
+                      <React.Fragment key={label}>
+                        {i > 0 && <div className="h-px bg-gray-100" />}
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-xs text-gray-500 shrink-0">
+                            {label}
+                          </span>
+                          <span
+                            className={`text-xs font-semibold text-right truncate ${label === "Waktu" ? "text-mariner-600 font-mono" : "text-gray-900"}`}
+                          >
+                            {val}
+                          </span>
+                        </div>
+                      </React.Fragment>
+                    ))}
                     <div className="h-px bg-gray-100" />
                     <div className="flex items-center justify-between gap-4">
                       <span className="text-xs text-gray-500 shrink-0">
@@ -861,7 +773,6 @@ export default function PendaftaranSection() {
                   </div>
                 </motion.div>
 
-                {/* Group 3: Keluhan */}
                 <motion.div variants={dialogItemVariants}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-2 flex items-center gap-1.5">
                     <MessageSquare className="w-3 h-3" />
@@ -883,18 +794,19 @@ export default function PendaftaranSection() {
                 </motion.p>
               </motion.div>
 
-              {/* Action Buttons */}
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45, duration: 0.4, ease }}
+                transition={
+                  { delay: 0.45, duration: 0.4, ease } satisfies Transition
+                }
                 className="px-6 pb-5 flex gap-2.5"
               >
                 <motion.button
                   type="button"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
-                  transition={{ duration: 0.18 }}
+                  transition={{ duration: 0.18 } satisfies Transition}
                   onClick={() => setShowConfirmDialog(false)}
                   className="flex-1 py-4 rounded-full border border-gray-200 text-gray-600 text-xs font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
                 >
@@ -904,7 +816,7 @@ export default function PendaftaranSection() {
                   type="button"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
-                  transition={{ duration: 0.18 }}
+                  transition={{ duration: 0.18 } satisfies Transition}
                   onClick={handleConfirm}
                   className="flex-2 px-5 py-4 rounded-full bg-bittersweet-500 hover:bg-bittersweet-600 text-white text-xs font-bold shadow-md shadow-bittersweet-500/20 flex items-center justify-center gap-1.5 transition-all duration-200"
                 >
@@ -937,70 +849,66 @@ export default function PendaftaranSection() {
 
         <div className="relative max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_460px] gap-10 xl:gap-16 items-start">
-            {/* ── LEFT: Form Card ── */}
-            <motion.div
-              variants={formCardVariants}
-              initial="hidden"
-              whileInView={dataReady ? "visible" : "hidden"}
-              viewport={{ once: true, margin: "-60px" }}
+            {/* ── LEFT: Form Card — slideleft entrance ── */}
+            <Animate
+              type="slideleft"
+              ready={dataReady}
+              margin="-60px"
               className="w-full bg-white rounded-3xl shadow-2xl overflow-hidden"
             >
               <div className="p-6 sm:p-8 lg:p-10">
-                <motion.div
-                  variants={fieldContainerVariants}
-                  initial="hidden"
-                  whileInView={dataReady ? "visible" : "hidden"}
-                  viewport={{ once: true }}
+                {/* Form header — stagger: badge, title, description, notice */}
+                <Animate
+                  type="stagger"
+                  staggerChildren={0.08}
+                  delayChildren={0.2}
+                  className="space-y-0"
                 >
-                  {/* Badges */}
-                  <motion.div
-                    variants={fieldVariants}
+                  <Animate
+                    type="fielditem"
                     className="flex items-center gap-2 flex-wrap"
                   >
                     <Badge>Buat Janji</Badge>
-                  </motion.div>
+                  </Animate>
 
-                  <motion.h2
-                    variants={fieldVariants}
-                    className="mt-3 text-2xl sm:text-3xl font-extrabold text-mariner-600 mb-2 leading-tight"
-                  >
-                    Konsultasi Dokter Lebih Mudah
-                  </motion.h2>
-                  <motion.p
-                    variants={fieldVariants}
-                    className="text-gray-500 text-sm mb-5"
-                  >
-                    Buat janji temu Anda dengan beberapa langkah mudah di bawah
-                    ini.
-                  </motion.p>
+                  <Animate type="fielditem" className="mt-3">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-mariner-600 mb-2 leading-tight">
+                      Konsultasi Dokter Lebih Mudah
+                    </h2>
+                  </Animate>
 
-                  {/* ── Eksekutif notice banner ── */}
-                  <motion.div
-                    variants={fieldVariants}
-                    className="mb-6 flex items-start gap-3 bg-bittersweet-50 border border-bittersweet-200/70 rounded-2xl px-4 py-3"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-bittersweet-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-bittersweet-700 leading-relaxed">
-                      <span className="font-bold">
-                        Pendaftaran ini khusus untuk Layanan Eksekutif.
-                      </span>{" "}
-                      Hanya poli dan dokter dengan jadwal eksekutif yang
-                      tersedia. Untuk layanan reguler, silakan mendaftar
-                      langsung ke loket rumah sakit.
+                  <Animate type="fielditem">
+                    <p className="text-gray-500 text-sm mb-5">
+                      Buat janji temu Anda dengan beberapa langkah mudah di
+                      bawah ini.
                     </p>
-                  </motion.div>
-                </motion.div>
+                  </Animate>
+
+                  <Animate type="fielditem" className="mb-6">
+                    <div className="flex items-start gap-3 bg-bittersweet-50 border border-bittersweet-200/70 rounded-2xl px-4 py-3">
+                      <ShieldCheck className="w-4 h-4 text-bittersweet-500 shrink-0 mt-0.5" />
+                      <p className="text-xs text-bittersweet-700 leading-relaxed">
+                        <span className="font-bold">
+                          Pendaftaran ini khusus untuk Layanan Eksekutif.
+                        </span>{" "}
+                        Hanya poli dan dokter dengan jadwal eksekutif yang
+                        tersedia. Untuk layanan reguler, silakan mendaftar
+                        langsung ke loket rumah sakit.
+                      </p>
+                    </div>
+                  </Animate>
+                </Animate>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                  <motion.div
-                    variants={fieldContainerVariants}
-                    initial="hidden"
-                    whileInView={dataReady ? "visible" : "hidden"}
-                    viewport={{ once: true }}
+                  {/* Form fields — stagger fielditem */}
+                  <Animate
+                    type="stagger"
+                    staggerChildren={0.08}
+                    delayChildren={0.2}
                     className="space-y-5"
                   >
-                    <motion.div
-                      variants={fieldVariants}
+                    <Animate
+                      type="fielditem"
                       className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                     >
                       <Input
@@ -1029,9 +937,9 @@ export default function PendaftaranSection() {
                         error={errors.email}
                         required
                       />
-                    </motion.div>
+                    </Animate>
 
-                    <motion.div variants={fieldVariants}>
+                    <Animate type="fielditem">
                       <Input
                         label="Nomor Telepon"
                         type="tel"
@@ -1045,15 +953,12 @@ export default function PendaftaranSection() {
                         error={errors.phone}
                         required
                       />
-                    </motion.div>
+                    </Animate>
 
-                    <motion.div
-                      variants={fieldVariants}
-                      className="h-px bg-gray-100"
-                    />
+                    <Animate type="fielditem" className="h-px bg-gray-100" />
 
-                    <motion.div
-                      variants={fieldVariants}
+                    <Animate
+                      type="fielditem"
                       className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                     >
                       <Select
@@ -1082,15 +987,12 @@ export default function PendaftaranSection() {
                         }
                         required
                       />
-                    </motion.div>
+                    </Animate>
 
-                    <motion.div
-                      variants={fieldVariants}
-                      className="h-px bg-gray-100"
-                    />
+                    <Animate type="fielditem" className="h-px bg-gray-100" />
 
-                    <motion.div
-                      variants={fieldVariants}
+                    <Animate
+                      type="fielditem"
                       className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                     >
                       <Select
@@ -1132,9 +1034,9 @@ export default function PendaftaranSection() {
                         }
                         required
                       />
-                    </motion.div>
+                    </Animate>
 
-                    <motion.div variants={fieldVariants}>
+                    <Animate type="fielditem">
                       <Textarea
                         label="Deskripsi Keluhan Anda"
                         rows={4}
@@ -1153,193 +1055,189 @@ export default function PendaftaranSection() {
                         maxLength={500}
                         required
                       />
-                    </motion.div>
+                    </Animate>
 
-                    <motion.div variants={fieldVariants}>
+                    <Animate type="fielditem">
                       <div className="flex justify-center">
-                        <div className="inline-block">
-                          <motion.div
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.98 }}
-                            transition={{ duration: 0.2 }}
+                        <motion.div
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.98 }}
+                          transition={{ duration: 0.2 } satisfies Transition}
+                          className="inline-block"
+                        >
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="lg"
+                            className="shadow-lg bg-bittersweet-500 hover:bg-bittersweet-600 mt-2"
+                            disabled={loading}
                           >
-                            <Button
-                              type="submit"
-                              variant="primary"
-                              size="lg"
-                              className="shadow-lg bg-bittersweet-500 hover:bg-bittersweet-600 mt-2"
-                              disabled={loading}
-                            >
-                              {loading ? "Mengirim..." : "Kirim ke WhatsApp"}
-                              <ArrowRight className="w-5 h-5 ml-2" />
-                            </Button>
-                          </motion.div>
-                        </div>
+                            {loading ? "Mengirim..." : "Kirim ke WhatsApp"}
+                            <ArrowRight className="w-5 h-5 ml-2" />
+                          </Button>
+                        </motion.div>
                       </div>
-                    </motion.div>
-                  </motion.div>
+                    </Animate>
+                  </Animate>
                 </form>
               </div>
-            </motion.div>
+            </Animate>
 
-            {/* ── RIGHT: Info Panel ── */}
-            <motion.div
-              variants={infoPanelVariants}
-              initial="hidden"
-              whileInView={dataReady ? "visible" : "hidden"}
-              viewport={{ once: true, margin: "-60px" }}
+            {/* ── RIGHT: Info Panel — slideright entrance with slight delay ── */}
+            <Animate
+              type="slideright"
+              delay={0.15}
+              ready={dataReady}
+              margin="-60px"
               className="flex flex-col gap-6 lg:sticky lg:top-8"
             >
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                whileInView={dataReady ? "visible" : "hidden"}
-                viewport={{ once: true }}
+              {/* Title block — stagger */}
+              <Animate
+                type="stagger"
+                staggerChildren={0.11}
+                delayChildren={0.08}
               >
-                <motion.div
-                  variants={itemVariants}
-                  className="flex items-center gap-2 flex-wrap"
-                >
-                  <Badge
-                    variant="primary"
-                    className="border-white/30 text-white bg-white/10"
-                  >
-                    Kontak
-                  </Badge>
-                </motion.div>
-                <motion.h2
-                  variants={itemVariants}
-                  className="mt-3 text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-4"
-                >
-                  Informasi Pendaftaran
-                </motion.h2>
-                <motion.p
-                  variants={itemVariants}
-                  className="text-white/75 text-sm sm:text-base leading-relaxed"
-                >
-                  Kini pendaftaran layanan kesehatan di {Profile.shortName}{" "}
-                  semakin mudah melalui website kami. Cukup dengan beberapa
-                  langkah sederhana, Anda dapat memilih jadwal dokter dan jenis
-                  layanan kapan saja dari perangkat Anda.
-                </motion.p>
-              </motion.div>
+                <Animate type="fadein">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge
+                      variant="primary"
+                      className="border-white/30 text-white bg-white/10"
+                    >
+                      Kontak
+                    </Badge>
+                  </div>
+                </Animate>
+                <Animate type="fadein" className="mt-3">
+                  <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-4">
+                    Informasi Pendaftaran
+                  </h2>
+                </Animate>
+                <Animate type="fadein">
+                  <p className="text-white/75 text-sm sm:text-base leading-relaxed">
+                    Kini pendaftaran layanan kesehatan di {Profile.shortName}{" "}
+                    semakin mudah melalui website kami. Cukup dengan beberapa
+                    langkah sederhana, Anda dapat memilih jadwal dokter dan
+                    jenis layanan kapan saja dari perangkat Anda.
+                  </p>
+                </Animate>
+              </Animate>
 
-              <motion.div
-                variants={{
-                  hidden: { opacity: 0, scaleX: 0 },
-                  visible: {
-                    opacity: 1,
-                    scaleX: 1,
-                    transition: { duration: 0.7, ease },
-                  },
-                }}
-                initial="hidden"
-                whileInView={dataReady ? "visible" : "hidden"}
-                viewport={{ once: true }}
-                style={{ originX: 0 }}
+              {/* Divider */}
+              <Animate
+                type="growx"
+                originX={0}
                 className="flex items-center gap-3"
               >
                 <div className="h-0.5 w-8 bg-white/50 rounded-full" />
                 <div className="h-0.5 w-4 bg-white/25 rounded-full" />
-              </motion.div>
+              </Animate>
 
-              <motion.div
-                variants={contactContainerVariants}
-                initial="hidden"
-                whileInView={dataReady ? "visible" : "hidden"}
-                viewport={{ once: true }}
+              {/* Contact cards — stagger slideup */}
+              <Animate
+                type="stagger"
+                staggerChildren={0.1}
+                delayChildren={0.1}
                 className="space-y-3"
               >
-                <motion.a
-                  variants={contactCardVariants}
-                  whileHover={{
-                    scale: 1.02,
-                    x: 4,
-                    transition: { duration: 0.25, ease },
-                  }}
-                  href={`https://wa.me/${Profile.whatsapp.replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-colors duration-300"
-                >
-                  <motion.div
-                    initial={{ scale: 0.7, opacity: 0 }}
-                    whileInView={{ scale: 1, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, ease, delay: 0.1 }}
-                    className="w-11 h-11 bg-bittersweet-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                <Animate type="slideup">
+                  <motion.a
+                    whileHover={{
+                      scale: 1.02,
+                      x: 4,
+                      transition: { duration: 0.25, ease } satisfies Transition,
+                    }}
+                    href={`https://wa.me/${Profile.whatsapp.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-colors duration-300"
                   >
-                    <Phone className="w-5 h-5 text-white" />
-                  </motion.div>
-                  <div className="min-w-0">
-                    <p className="text-white/55 text-[11px] font-semibold uppercase tracking-widest">
-                      WhatsApp
-                    </p>
-                    <p className="text-white font-bold text-base group-hover:text-teal-200 transition-colors truncate">
-                      {Profile.whatsapp}
-                    </p>
-                  </div>
-                </motion.a>
+                    <motion.div
+                      initial={{ scale: 0.7, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={
+                        { duration: 0.5, ease, delay: 0.1 } satisfies Transition
+                      }
+                      className="w-11 h-11 bg-bittersweet-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                    >
+                      <Phone className="w-5 h-5 text-white" />
+                    </motion.div>
+                    <div className="min-w-0">
+                      <p className="text-white/55 text-[11px] font-semibold uppercase tracking-widest">
+                        WhatsApp
+                      </p>
+                      <p className="text-white font-bold text-base group-hover:text-teal-200 transition-colors truncate">
+                        {Profile.whatsapp}
+                      </p>
+                    </div>
+                  </motion.a>
+                </Animate>
 
-                <motion.a
-                  variants={contactCardVariants}
-                  whileHover={{
-                    scale: 1.02,
-                    x: 4,
-                    transition: { duration: 0.25, ease },
-                  }}
-                  href={`mailto:${Profile.email}`}
-                  className="group bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-colors duration-300"
-                >
-                  <motion.div
-                    initial={{ scale: 0.7, opacity: 0 }}
-                    whileInView={{ scale: 1, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, ease, delay: 0.2 }}
-                    className="w-11 h-11 bg-teal-400 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                <Animate type="slideup">
+                  <motion.a
+                    whileHover={{
+                      scale: 1.02,
+                      x: 4,
+                      transition: { duration: 0.25, ease } satisfies Transition,
+                    }}
+                    href={`mailto:${Profile.email}`}
+                    className="group bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-colors duration-300"
                   >
-                    <Mail className="w-5 h-5 text-white" />
-                  </motion.div>
-                  <div className="min-w-0">
-                    <p className="text-white/55 text-[11px] font-semibold uppercase tracking-widest">
-                      Email
-                    </p>
-                    <p className="text-white font-bold text-sm group-hover:text-teal-200 transition-colors truncate">
-                      {Profile.email}
-                    </p>
-                  </div>
-                </motion.a>
+                    <motion.div
+                      initial={{ scale: 0.7, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={
+                        { duration: 0.5, ease, delay: 0.2 } satisfies Transition
+                      }
+                      className="w-11 h-11 bg-teal-400 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                    >
+                      <Mail className="w-5 h-5 text-white" />
+                    </motion.div>
+                    <div className="min-w-0">
+                      <p className="text-white/55 text-[11px] font-semibold uppercase tracking-widest">
+                        Email
+                      </p>
+                      <p className="text-white font-bold text-sm group-hover:text-teal-200 transition-colors truncate">
+                        {Profile.email}
+                      </p>
+                    </div>
+                  </motion.a>
+                </Animate>
 
-                <motion.a
-                  variants={contactCardVariants}
-                  whileHover={{
-                    scale: 1.02,
-                    x: 4,
-                    transition: { duration: 0.25, ease },
-                  }}
-                  href={`tel:${Profile.pusatPanggilan}`}
-                  className="group bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-colors duration-300"
-                >
-                  <motion.div
-                    initial={{ scale: 0.7, opacity: 0 }}
-                    whileInView={{ scale: 1, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, ease, delay: 0.3 }}
-                    className="w-11 h-11 bg-mariner-400 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                <Animate type="slideup">
+                  <motion.a
+                    whileHover={{
+                      scale: 1.02,
+                      x: 4,
+                      transition: { duration: 0.25, ease } satisfies Transition,
+                    }}
+                    href={`tel:${Profile.pusatPanggilan}`}
+                    className="group bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-colors duration-300"
                   >
-                    <Phone className="w-5 h-5 text-white" />
-                  </motion.div>
-                  <div className="min-w-0">
-                    <p className="text-white/55 text-[11px] font-semibold uppercase tracking-widest">
-                      Pusat Panggilan
-                    </p>
-                    <p className="text-white font-bold text-base group-hover:text-teal-200 transition-colors truncate">
-                      {Profile.pusatPanggilan}
-                    </p>
-                  </div>
-                </motion.a>
-              </motion.div>
-            </motion.div>
+                    <motion.div
+                      initial={{ scale: 0.7, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={
+                        { duration: 0.5, ease, delay: 0.3 } satisfies Transition
+                      }
+                      className="w-11 h-11 bg-mariner-400 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                    >
+                      <Phone className="w-5 h-5 text-white" />
+                    </motion.div>
+                    <div className="min-w-0">
+                      <p className="text-white/55 text-[11px] font-semibold uppercase tracking-widest">
+                        Pusat Panggilan
+                      </p>
+                      <p className="text-white font-bold text-base group-hover:text-teal-200 transition-colors truncate">
+                        {Profile.pusatPanggilan}
+                      </p>
+                    </div>
+                  </motion.a>
+                </Animate>
+              </Animate>
+            </Animate>
           </div>
         </div>
       </section>

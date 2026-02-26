@@ -11,6 +11,7 @@ import { AnimatePresence, motion, type Transition } from "framer-motion";
 import {
   ArrowRight,
   Calendar,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -23,6 +24,38 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
+
+/* ─────────────────────────────────────────
+   useScrollIndicator — vertical scroll tracking
+───────────────────────────────────────── */
+function useScrollIndicator() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    setCanScrollUp(scrollTop > 4);
+    setCanScrollDown(scrollTop + clientHeight < scrollHeight - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [update]);
+
+  return { ref, canScrollUp, canScrollDown };
+}
 
 /* ─────────────────────────────────────────
    useCountUp
@@ -183,6 +216,85 @@ const ImageLightbox: React.FC<{
 };
 
 /* ─────────────────────────────────────────
+   PROMO SCROLL BODY — extracted for hook
+───────────────────────────────────────── */
+const PromoScrollBody: React.FC<{
+  promo: Promo;
+  formattedDate: string;
+}> = ({ promo, formattedDate }) => {
+  const { ref, canScrollUp, canScrollDown } = useScrollIndicator();
+
+  // Inject webkit scrollbar style once
+  useEffect(() => {
+    const id = "promo-scrollbar-style";
+    if (document.getElementById(id)) return;
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `
+      .promo-scroll::-webkit-scrollbar { width: 3px; }
+      .promo-scroll::-webkit-scrollbar-track { background: transparent; }
+      .promo-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 99px; }
+      .promo-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
+  return (
+    <div className="relative">
+      {/* Top fade */}
+      <div
+        className="pointer-events-none absolute top-0 inset-x-0 z-10 transition-opacity duration-300"
+        style={{
+          height: "32px",
+          opacity: canScrollUp ? 1 : 0,
+          background: "linear-gradient(to bottom, white 0%, transparent 100%)",
+        }}
+      />
+
+      {/* Bottom fade + bounce chevron */}
+      <div
+        className="pointer-events-none absolute bottom-0 inset-x-0 z-10 transition-opacity duration-300"
+        style={{
+          height: "48px",
+          opacity: canScrollDown ? 1 : 0,
+          background: "linear-gradient(to top, white 0%, transparent 100%)",
+        }}
+      >
+        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2">
+          <motion.div
+            animate={{ y: [0, 5, 0] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+            className="flex flex-col items-center gap-0.5"
+          >
+            <ChevronDown className="w-4 h-4 text-gray-400 opacity-80" />
+            <ChevronDown className="w-3 h-3 text-gray-300 opacity-60 -mt-2" />
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Scrollable body */}
+      <div
+        ref={ref}
+        className="promo-scroll overflow-y-auto px-6 pt-5 pb-6 space-y-4"
+        style={{
+          maxHeight: "200px",
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(0,0,0,0.15) transparent",
+        }}
+      >
+        <div className="flex items-center gap-2 text-gray-400 text-xs">
+          <Calendar className="w-3.5 h-3.5 shrink-0" />
+          <span>{formattedDate}</span>
+        </div>
+        <p className="text-gray-600 text-sm leading-relaxed">
+          {promo.description}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────
    PROMO DETAIL DIALOG
 ───────────────────────────────────────── */
 const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
@@ -241,10 +353,11 @@ const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 48, scale: 0.97 }}
           transition={{ duration: 0.52, ease } satisfies Transition}
-          className="relative w-full sm:max-w-xl bg-white sm:rounded-3xl rounded-t-4xl overflow-hidden shadow-2xl"
+          className="relative w-full sm:max-w-xl bg-white sm:rounded-3xl rounded-t-4xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="relative w-full h-56 sm:h-64 bg-linear-to-br from-easternblue-500 to-easternblue-700 overflow-hidden">
+          {/* Hero image */}
+          <div className="relative w-full h-56 sm:h-64 bg-linear-to-br from-easternblue-500 to-easternblue-700 overflow-hidden shrink-0">
             {promo.picture ? (
               <>
                 <Image
@@ -304,21 +417,16 @@ const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
             </motion.button>
           </div>
 
+          {/* Scrollable body dengan dynamic indicator */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={
               { delay: 0.25, duration: 0.5, ease } satisfies Transition
             }
-            className="px-6 pt-5 pb-6 space-y-4"
+            className="flex-1 overflow-hidden"
           >
-            <div className="flex items-center gap-2 text-gray-400 text-xs">
-              <Calendar className="w-3.5 h-3.5 shrink-0" />
-              <span>{formattedDate}</span>
-            </div>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              {promo.description}
-            </p>
+            <PromoScrollBody promo={promo} formattedDate={formattedDate} />
           </motion.div>
         </motion.div>
       </motion.div>
@@ -432,7 +540,7 @@ const Hero: React.FC = () => {
 
         <div className="relative z-10 max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row gap-10 xl:gap-20 items-center min-h-[calc(100vh-9rem)]">
-            {/* ── LEFT: stagger content — waits for data ── */}
+            {/* LEFT */}
             <Animate
               type="stagger"
               staggerChildren={0.12}
@@ -443,7 +551,6 @@ const Hero: React.FC = () => {
               <Animate type="fadein">
                 <Badge variant="default">YOUR HEALTH IS OUR PRIORITY</Badge>
               </Animate>
-
               <Animate type="fadein">
                 <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold text-white leading-tight tracking-tight">
                   RS {Profile.name}
@@ -452,14 +559,12 @@ const Hero: React.FC = () => {
                   {Profile.subtitle}
                 </h2>
               </Animate>
-
               <Animate type="fadein">
                 <div className="flex items-center gap-3 justify-center lg:justify-start">
                   <div className="h-px w-12 bg-white/60 rounded-full" />
                   <div className="h-px w-5 bg-white/25 rounded-full" />
                 </div>
               </Animate>
-
               <Animate type="fadein">
                 <p className="text-lg text-white/75 leading-relaxed max-w-md mx-auto lg:mx-0">
                   Selamat Datang di Rumah Sakit {Profile.name}{" "}
@@ -467,7 +572,6 @@ const Hero: React.FC = () => {
                   bermanfaat bagi masyarakat.
                 </p>
               </Animate>
-
               <Animate type="fadein">
                 <div className="flex flex-wrap gap-3 pt-1 justify-center lg:justify-start">
                   <Link href="#pendaftaran">
@@ -483,13 +587,12 @@ const Hero: React.FC = () => {
                   </Link>
                 </div>
               </Animate>
-
               <Animate type="fadein">
                 <TrustIndicators />
               </Animate>
             </Animate>
 
-            {/* ── RIGHT: Carousel — waits for data ── */}
+            {/* RIGHT carousel */}
             <Animate
               type="slideright"
               ready={dataReady}
@@ -505,7 +608,6 @@ const Hero: React.FC = () => {
                 className="relative w-full max-w-[340px] sm:max-w-[375px]"
               >
                 <div className="absolute -inset-6 bg-white/8 rounded-[3rem] blur-2xl" />
-
                 <div className="relative rounded-4xl overflow-hidden border border-white/12 shadow-2xl bg-black/10 backdrop-blur-sm">
                   <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
                     <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-easternblue-700 text-[10px] font-bold uppercase tracking-[0.14em] px-3.5 py-1.5 rounded-full shadow-lg shadow-black/10">
@@ -514,7 +616,6 @@ const Hero: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Slide viewport */}
                   <div
                     ref={containerRef}
                     className="relative aspect-3/4 cursor-pointer select-none bg-easternblue-600/30"

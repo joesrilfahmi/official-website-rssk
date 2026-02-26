@@ -134,6 +134,21 @@ const slideleftitemVariants = (duration: number, delay: number): Variants => ({
 });
 
 /**
+ * fielditem — subtle upward lift + blur (form fields, small content items)
+ * Used in: Pendaftaran (form fields staggered entrance)
+ * Smaller movement than fadein (y:12 vs y:22) for dense form layouts.
+ */
+const fielditemVariants = (duration: number, delay: number): Variants => ({
+  hidden: { opacity: 0, y: 12, filter: "blur(3px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration, ease, delay } satisfies Transition,
+  },
+});
+
+/**
  * stagger — orchestrates children in sequence.
  * Apply to the parent; use any animation type on each child.
  */
@@ -158,6 +173,7 @@ export type AnimateType =
   | "slideup"
   | "growx"
   | "slideleftitem"
+  | "fielditem"
   | "stagger";
 
 export interface AnimateProps {
@@ -203,6 +219,7 @@ const defaultDurations: Record<AnimateType, number> = {
   slideup: 0.6,
   growx: 0.7,
   slideleftitem: 0.65,
+  fielditem: 0.55,
   stagger: 0,
 };
 
@@ -250,6 +267,9 @@ const Animate: React.FC<AnimateProps> = ({
       break;
     case "slideleftitem":
       variants = slideleftitemVariants(dur, delay);
+      break;
+    case "fielditem":
+      variants = fielditemVariants(dur, delay);
       break;
     case "stagger":
       variants = staggerVariants(staggerChildren, delayChildren);

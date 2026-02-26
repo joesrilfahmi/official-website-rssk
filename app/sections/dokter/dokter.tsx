@@ -1,17 +1,153 @@
 // app/sections/dokter/dokter.tsx
 "use client";
+import Animate, {
+  ease,
+  type BezierEase,
+} from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
-import Button from "@/components/ui/custom/button";
 import Input from "@/components/ui/custom/input";
 import Pills from "@/components/ui/custom/pills";
 import Select from "@/components/ui/custom/select";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import useEmblaCarousel from "embla-carousel-react";
-import { Calendar, Search, UserRound, X } from "lucide-react";
+import { AnimatePresence, motion, type Transition } from "framer-motion";
+import {
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Search,
+  UserRound,
+  X,
+} from "lucide-react";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
+const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
+
+/* ─────────────────────────────────────────
+   useScrollIndicator — vertical scroll tracking
+───────────────────────────────────────── */
+function useScrollIndicator() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    setCanScrollUp(scrollTop > 4);
+    setCanScrollDown(scrollTop + clientHeight < scrollHeight - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [update]);
+
+  return { ref, canScrollUp, canScrollDown };
+}
+
+/* ─────────────────────────────────────────
+   ScrollFadeWrapper — reusable scroll area
+───────────────────────────────────────── */
+interface ScrollFadeWrapperProps {
+  children: React.ReactNode;
+  maxHeight: number;
+  className?: string;
+}
+
+const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
+  children,
+  maxHeight,
+  className = "",
+}) => {
+  const { ref, canScrollUp, canScrollDown } = useScrollIndicator();
+
+  useEffect(() => {
+    const id = "dokter-scrollbar-style";
+    if (document.getElementById(id)) return;
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `
+      .dokter-scroll::-webkit-scrollbar { width: 4px; }
+      .dokter-scroll::-webkit-scrollbar-track { background: transparent; }
+      .dokter-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
+      .dokter-scroll::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
+  return (
+    <div className="relative">
+      {/* Top fade */}
+      <div
+        className="pointer-events-none absolute top-0 inset-x-0 z-10 transition-opacity duration-300"
+        style={{
+          height: "36px",
+          opacity: canScrollUp ? 1 : 0,
+          background: "linear-gradient(to bottom, white 0%, transparent 100%)",
+        }}
+      />
+
+      {/* Bottom fade + bouncing chevrons */}
+      <div
+        className="pointer-events-none absolute bottom-0 inset-x-0 z-10 transition-opacity duration-300"
+        style={{
+          height: "52px",
+          opacity: canScrollDown ? 1 : 0,
+          background: "linear-gradient(to top, white 0%, transparent 100%)",
+        }}
+      >
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+          <motion.div
+            animate={{ y: [0, 5, 0] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+            className="flex flex-col items-center"
+          >
+            <ChevronDown className="w-4 h-4 text-mariner-400 opacity-80" />
+            <ChevronDown className="w-3 h-3 text-mariner-300 opacity-50 -mt-2" />
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Scroll container */}
+      <div
+        ref={ref}
+        className={`dokter-scroll overflow-y-auto scroll-smooth ${className}`}
+        style={{
+          maxHeight,
+          scrollbarWidth: "thin",
+          scrollbarColor: "#CBD5E1 transparent",
+        }}
+        onScroll={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────
+   INTERFACES
+───────────────────────────────────────── */
 interface Poli {
   id: string;
   nama_poli: string;
@@ -33,8 +169,8 @@ interface Dokter {
   jadwal_dokter: JadwalDokter[];
 }
 interface JadwalGroup {
-  reguler: JadwalDokter[];
-  eksekutif: JadwalDokter[];
+  hari: string;
+  slots: { id: string; jam_mulai: string; jam_selesai: string }[];
 }
 
 const HARI_OPTIONS = [
@@ -58,16 +194,363 @@ const HARI_ORDER: Record<string, number> = {
   Minggu: 7,
 };
 
+/* ─────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────── */
+const formatTime = (t: string) => (t.includes(".") ? t.replace(".", ":") : t);
+
+function groupJadwalByHari(jadwalList: JadwalDokter[]): JadwalGroup[] {
+  const map = new Map<string, JadwalGroup>();
+  const sorted = [...jadwalList].sort(
+    (a, b) => (HARI_ORDER[a.hari] ?? 99) - (HARI_ORDER[b.hari] ?? 99),
+  );
+  for (const j of sorted) {
+    if (!map.has(j.hari)) map.set(j.hari, { hari: j.hari, slots: [] });
+    map.get(j.hari)!.slots.push({
+      id: j.id,
+      jam_mulai: j.jam_mulai,
+      jam_selesai: j.jam_selesai,
+    });
+  }
+  return Array.from(map.values());
+}
+
+/* ─────────────────────────────────────────
+   JADWAL DIALOG
+───────────────────────────────────────── */
+interface JadwalDialogProps {
+  dokter: Dokter;
+  onClose: () => void;
+}
+
+const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  const jadwalReguler = dokter.jadwal_dokter.filter(
+    (j) => j.tipe_jadwal === "reguler",
+  );
+  const jadwalEksekutif = dokter.jadwal_dokter.filter(
+    (j) => j.tipe_jadwal === "eksekutif",
+  );
+  const groupedReguler = groupJadwalByHari(jadwalReguler as JadwalDokter[]);
+  const groupedEksekutif = groupJadwalByHari(jadwalEksekutif as JadwalDokter[]);
+
+  const renderGrouped = (
+    groups: JadwalGroup[],
+    type: "reguler" | "eksekutif",
+  ) =>
+    groups.map((group) => (
+      <motion.div
+        key={group.hari}
+        initial={{ opacity: 0, x: -12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.35, ease } satisfies Transition}
+        className={`rounded-2xl px-4 py-3.5 ring-1 ${
+          type === "eksekutif"
+            ? "bg-mariner-50/60 ring-mariner-100"
+            : "bg-gray-50 ring-gray-100"
+        }`}
+      >
+        <div className="flex gap-3">
+          <div className="flex items-start gap-2 w-18 shrink-0 pt-0.5">
+            <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-mariner-400" />
+            <span className="text-gray-700 font-semibold text-sm">
+              {group.hari}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1 flex-1">
+            {group.slots.map((slot) => (
+              <div
+                key={slot.id}
+                className="flex items-center gap-1.5 text-gray-500 text-sm"
+              >
+                <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span>
+                  {formatTime(slot.jam_mulai)} – {formatTime(slot.jam_selesai)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    ));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
+      className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 60, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.97 }}
+        transition={{ duration: 0.45, ease } satisfies Transition}
+        className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Hero image */}
+        <div className="relative shrink-0 overflow-hidden">
+          <button
+            onClick={onClose}
+            aria-label="Tutup"
+            className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          <motion.div
+            initial={{ scale: 1.06, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, ease } satisfies Transition}
+            className="relative w-full"
+            style={{ paddingBottom: "min(56%, 280px)" }}
+          >
+            <div className="absolute inset-0 bg-gray-100">
+              {dokter.profile ? (
+                <Image
+                  src={dokter.profile}
+                  alt={dokter.nama}
+                  fill
+                  className="object-cover"
+                  style={{ objectPosition: "center 30%" }}
+                  sizes="(max-width: 640px) 100vw, 512px"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-mariner-50">
+                  <UserRound className="w-24 h-24 text-mariner-200" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={
+              { delay: 0.2, duration: 0.45, ease } satisfies Transition
+            }
+            className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
+          >
+            <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+              Jadwal Praktek
+            </p>
+            <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
+              {dokter.nama}
+            </h3>
+            <span className="inline-block mt-1 text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
+              {dokter.poli?.nama_poli || "–"}
+            </span>
+          </motion.div>
+        </div>
+
+        {/* Jadwal content dengan ScrollFadeWrapper */}
+        <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
+          {dokter.jadwal_dokter.length === 0 ? (
+            <div className="text-center py-10">
+              <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
+                <Calendar className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 font-medium">
+                Belum ada jadwal tersedia
+              </p>
+            </div>
+          ) : (
+            <>
+              {groupedReguler.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
+                      BPJS / Reguler
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {renderGrouped(groupedReguler, "reguler")}
+                  </div>
+                </div>
+              )}
+              {groupedEksekutif.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
+                      Eksekutif
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {renderGrouped(groupedEksekutif, "eksekutif")}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </ScrollFadeWrapper>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/* ─────────────────────────────────────────
+   DOKTER CARD (stagger variants)
+───────────────────────────────────────── */
+const cardWrapVariants = {
+  hidden: { opacity: 0, y: 28, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.6, ease } satisfies Transition,
+  },
+};
+
+const DokterCard: React.FC<{
+  dokter: Dokter;
+  onClick: (d: Dokter) => void;
+}> = ({ dokter, onClick }) => {
+  const cardAppearDuration = 0.6;
+  const innerBaseDelay = cardAppearDuration * 0.55;
+
+  return (
+    <motion.div
+      variants={cardWrapVariants}
+      whileHover={{
+        y: -3,
+        scale: 1.02,
+        transition: { duration: 0.25, ease } satisfies Transition,
+      }}
+      onClick={() => onClick(dokter)}
+      className="group bg-white rounded-2xl p-6 shadow-sm ring-1 ring-gray-100 hover:shadow-lg transition-shadow duration-300 cursor-pointer flex flex-col items-center text-center h-full overflow-hidden relative"
+    >
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-mariner-400 to-mariner-300 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-t-2xl" />
+
+      <motion.div
+        variants={{
+          hidden: { opacity: 0, scale: 0.7, y: 8 },
+          visible: {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            transition: {
+              duration: 0.45,
+              ease,
+              delay: innerBaseDelay,
+            } satisfies Transition,
+          },
+        }}
+        className="relative w-36 h-36 mb-4 shrink-0"
+      >
+        {dokter.profile ? (
+          <Image
+            src={dokter.profile}
+            alt={dokter.nama}
+            fill
+            className="object-cover rounded-full ring-4 ring-mariner-50"
+            sizes="144px"
+          />
+        ) : (
+          <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center ring-4 ring-mariner-50">
+            <UserRound className="w-16 h-16 text-white" />
+          </div>
+        )}
+      </motion.div>
+
+      <motion.h3
+        variants={{
+          hidden: { opacity: 0, y: 10 },
+          visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+              duration: 0.38,
+              ease,
+              delay: innerBaseDelay + 0.08,
+            } satisfies Transition,
+          },
+        }}
+        className="text-base font-bold text-mariner-500 mb-1 group-hover:text-mariner-600 transition-colors line-clamp-2 leading-snug"
+      >
+        {dokter.nama}
+      </motion.h3>
+
+      <motion.span
+        variants={{
+          hidden: { opacity: 0, y: 6 },
+          visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+              duration: 0.35,
+              ease,
+              delay: innerBaseDelay + 0.15,
+            } satisfies Transition,
+          },
+        }}
+        className="text-xs font-medium text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full mt-1"
+      >
+        {dokter.poli?.nama_poli || "–"}
+      </motion.span>
+
+      <motion.div
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 0,
+            transition: {
+              duration: 0.3,
+              ease,
+              delay: innerBaseDelay + 0.22,
+            } satisfies Transition,
+          },
+        }}
+        className="mt-3 flex items-center gap-1 text-mariner-500 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+      >
+        <span>Lihat Jadwal</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/* ─────────────────────────────────────────
+   SKELETON CARD
+───────────────────────────────────────── */
+const SkeletonCard = () => (
+  <div className="bg-white rounded-2xl p-6 ring-1 ring-gray-100 animate-pulse flex flex-col items-center">
+    <div className="w-36 h-36 bg-gray-100 rounded-full mb-4" />
+    <div className="h-4 w-32 bg-gray-100 rounded mb-2" />
+    <div className="h-3 w-20 bg-gray-100 rounded" />
+  </div>
+);
+
+/* ─────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────── */
 const DokterSpesialis = () => {
   const [poliList, setPoliList] = useState<Poli[]>([]);
   const [dokterList, setDokterList] = useState<Dokter[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataReady, setDataReady] = useState(false);
   const [selectedDokter, setSelectedDokter] = useState<Dokter | null>(null);
   const [selectedPoli, setSelectedPoli] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedHari, setSelectedHari] = useState<string>("all");
 
-  const [emblaRef] = useEmblaCarousel({
+  // Embla carousel untuk pills (dikembalikan ke semula)
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
     align: "start",
     skipSnaps: false,
@@ -76,12 +559,28 @@ const DokterSpesialis = () => {
     containScroll: "trimSnaps",
   });
 
+  // Track apakah pills bisa di-scroll ke kanan (untuk tampilkan scrollbar hint)
+  const [pillsCanScroll, setPillsCanScroll] = useState(false);
+
   useEffect(() => {
-    document.body.style.overflow = selectedDokter ? "hidden" : "unset";
-    return () => {
-      document.body.style.overflow = "unset";
+    if (!emblaApi) return;
+
+    const update = () => {
+      setPillsCanScroll(emblaApi.canScrollNext());
     };
-  }, [selectedDokter]);
+
+    update();
+
+    emblaApi.on("select", update);
+    emblaApi.on("resize", update);
+    emblaApi.on("reInit", update);
+
+    return () => {
+      emblaApi.off("select", update);
+      emblaApi.off("resize", update);
+      emblaApi.off("reInit", update);
+    };
+  }, [emblaApi]);
 
   useEffect(() => {
     fetchData();
@@ -140,6 +639,7 @@ const DokterSpesialis = () => {
       console.error(e);
     } finally {
       setLoading(false);
+      setTimeout(() => setDataReady(true), 120);
     }
   };
 
@@ -198,344 +698,211 @@ const DokterSpesialis = () => {
     if (poliId !== "all") setSearchQuery("");
   };
 
-  const formatTime = (t: string) => (t.includes(".") ? t.replace(".", ":") : t);
-
-  const renderJadwalTable = (jadwalList: JadwalDokter[]) => {
-    if (jadwalList.length === 0) return null;
-    const byHari: Record<string, JadwalGroup> = {};
-    jadwalList.forEach((j) => {
-      if (!byHari[j.hari]) byHari[j.hari] = { reguler: [], eksekutif: [] };
-      byHari[j.hari][
-        j.tipe_jadwal === "reguler" ? "reguler" : "eksekutif"
-      ].push(j);
-    });
-    const sortedHari = Object.keys(byHari).sort(
-      (a, b) => (HARI_ORDER[a] || 999) - (HARI_ORDER[b] || 999),
-    );
-    return (
-      <div className="overflow-x-auto rounded-xl ring-1 ring-gray-200">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 w-32">
-                Hari
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
-                Jadwal BPJS
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
-                Jadwal Eksekutif
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedHari.map((hari) => {
-              const { reguler, eksekutif } = byHari[hari];
-              const maxRows = Math.max(reguler.length, eksekutif.length, 1);
-              return Array.from({ length: maxRows }).map((_, i) => (
-                <tr
-                  key={`${hari}-${i}`}
-                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-3 text-sm font-medium text-gray-800">
-                    {i === 0 ? (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-mariner-500 shrink-0" />
-                        <span>{hari}</span>
-                      </div>
-                    ) : (
-                      ""
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {reguler[i] ? (
-                      <span className="font-medium text-gray-800">
-                        {formatTime(reguler[i].jam_mulai)} –{" "}
-                        {formatTime(reguler[i].jam_selesai)}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">–</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {eksekutif[i] ? (
-                      <span className="font-medium text-gray-800">
-                        {formatTime(eksekutif[i].jam_mulai)} –{" "}
-                        {formatTime(eksekutif[i].jam_selesai)}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">–</span>
-                    )}
-                  </td>
-                </tr>
-              ));
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
-
-  const renderDokterCard = (dokter: Dokter) => (
-    <div
-      onClick={() => setSelectedDokter(dokter)}
-      className="group bg-white rounded-2xl p-6 shadow-sm ring-1 ring-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center text-center h-full overflow-hidden relative"
-    >
-      {/* Hover accent bar */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-mariner-400 to-mariner-300 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-t-2xl" />
-
-      {/* Profile image — diperbesar */}
-      <div className="relative w-36 h-36 mb-4 shrink-0">
-        {dokter.profile ? (
-          <Image
-            src={dokter.profile}
-            alt={dokter.nama}
-            fill
-            className="object-cover rounded-full ring-4 ring-mariner-50"
-            sizes="144px"
-          />
-        ) : (
-          <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center ring-4 ring-mariner-50">
-            <UserRound className="w-16 h-16 text-white" />
-          </div>
-        )}
-      </div>
-
-      {/* Name */}
-      <h3 className="text-base font-bold text-mariner-500 mb-1 group-hover:text-mariner-600 transition-colors line-clamp-2 leading-snug">
-        {dokter.nama}
-      </h3>
-
-      {/* Specialization pill */}
-      <span className="text-xs font-medium text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full mt-1">
-        {dokter.poli?.nama_poli || "–"}
-      </span>
-    </div>
-  );
+  const handleCardClick = useCallback((dokter: Dokter) => {
+    setSelectedDokter(dokter);
+  }, []);
 
   return (
-    <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
-      <div className="max-w-7xl mx-auto">
-        <Banner
-          title="Dokter Spesialis Kami"
-          subtitle="Temukan dokter spesialis terbaik untuk kebutuhan kesehatan Anda"
-        />
-
-        <div className="text-center mt-10 mb-12">
-          <Title
-            title="Daftar Dokter Spesialis"
-            align="center"
-            subtitle="Temukan dokter spesialis terbaik untuk kebutuhan kesehatan Anda"
+    <>
+      <AnimatePresence>
+        {selectedDokter && (
+          <JadwalDialog
+            dokter={selectedDokter}
+            onClose={() => setSelectedDokter(null)}
           />
-        </div>
-
-        {/* Filters */}
-        <div className="mb-8 space-y-5">
-          <div className="flex justify-center">
-            <div className="w-full max-w-3xl flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Input
-                  type="text"
-                  placeholder="Cari dokter atau spesialisasi..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  icon={Search}
-                  iconPosition="left"
-                  rounded="full"
-                  inputSize="md"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors z-20"
-                    type="button"
-                  >
-                    <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                  </button>
-                )}
-              </div>
-              <div className="w-full sm:w-48 shrink-0">
-                <Select
-                  icon={Calendar}
-                  value={selectedHari}
-                  onChange={setSelectedHari}
-                  options={HARI_OPTIONS}
-                  placeholder="Pilih hari"
-                  rounded="full"
-                  searchable={false}
-                  selectSize="md"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Pills carousel */}
-          {!loading && poliList.length > 0 && (
-            <div className="relative -mx-4 px-4">
-              <div className="overflow-hidden px-4 py-2" ref={emblaRef}>
-                <div className="flex gap-2.5">
-                  <Pills
-                    label="Semua"
-                    count={
-                      searchQuery
-                        ? searchFilteredDokter.length
-                        : dokterList.length
-                    }
-                    variant={selectedPoli === "all" ? "active" : "default"}
-                    onClick={() => handlePoliChange("all")}
-                    size="md"
-                  />
-                  {relevantPoliList.map((poli) => (
-                    <Pills
-                      key={poli.id}
-                      label={poli.nama_poli}
-                      count={
-                        searchFilteredDokter.filter(
-                          (d) => d.poli_id === poli.id,
-                        ).length
-                      }
-                      variant={selectedPoli === poli.id ? "active" : "default"}
-                      onClick={() => handlePoliChange(poli.id)}
-                      size="md"
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Loading */}
-        {loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[...Array(8)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl p-6 ring-1 ring-gray-100 animate-pulse flex flex-col items-center"
-              >
-                <div className="w-36 h-36 bg-gray-100 rounded-full mb-4" />
-                <div className="h-4 w-32 bg-gray-100 rounded mb-2" />
-                <div className="h-3 w-20 bg-gray-100 rounded" />
-              </div>
-            ))}
-          </div>
         )}
+      </AnimatePresence>
 
-        {/* Empty */}
-        {!loading && filteredDokter.length === 0 && (
-          <div className="text-center py-16">
-            <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
-              <UserRound className="w-12 h-12 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              Tidak Ada Dokter Ditemukan
-            </h3>
-            <p className="text-gray-500">
-              Coba ubah filter atau kata kunci pencarian Anda.
-            </p>
-          </div>
-        )}
+      <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <Animate type="fadein" ready={dataReady}>
+            <Banner
+              title="Dokter Spesialis Kami"
+              subtitle="Temukan dokter spesialis terbaik untuk kebutuhan kesehatan Anda"
+            />
+          </Animate>
 
-        {/* Grid — 4 kolom di desktop */}
-        {!loading && filteredDokter.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
-            {filteredDokter.map((dokter) => (
-              <div key={dokter.id}>{renderDokterCard(dokter)}</div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Detail Modal ── */}
-      {selectedDokter && (
-        <div
-          className="fixed inset-0 bg-black/50 z-60 flex items-start justify-center p-4 overflow-y-auto pt-20"
-          onClick={() => setSelectedDokter(null)}
-        >
-          <div
-            className="bg-white rounded-3xl max-w-2xl w-full my-8 overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+          <Animate
+            type="fadein"
+            ready={dataReady}
+            delay={0.05}
+            className="text-center mt-10 mb-12"
           >
-            {/* Modal header accent */}
-            <div className="h-1.5 w-full bg-linear-to-r from-mariner-400 to-mariner-600" />
+            <Title
+              title="Daftar Dokter Spesialis"
+              align="center"
+              subtitle="Temukan dokter spesialis terbaik untuk kebutuhan kesehatan Anda"
+            />
+          </Animate>
 
-            <div className="p-8">
-              {/* Close */}
-              <div className="flex justify-end mb-2">
-                <button
-                  onClick={() => setSelectedDokter(null)}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-
-              {/* Profile */}
-              <div className="flex flex-col items-center text-center mb-8">
-                <div className="relative w-32 h-32 mb-5">
-                  {selectedDokter.profile ? (
-                    <Image
-                      src={selectedDokter.profile}
-                      alt={selectedDokter.nama}
-                      fill
-                      className="rounded-full object-cover ring-4 ring-mariner-100"
-                      sizes="128px"
-                    />
-                  ) : (
-                    <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center ring-4 ring-mariner-100">
-                      <UserRound className="w-16 h-16 text-white" />
-                    </div>
+          {/* Filters */}
+          <Animate
+            type="slideup"
+            ready={dataReady}
+            delay={0.08}
+            className="mb-8 space-y-5"
+          >
+            <div className="flex justify-center">
+              <div className="w-full max-w-3xl flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Input
+                    type="text"
+                    placeholder="Cari dokter atau spesialisasi..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    icon={Search}
+                    iconPosition="left"
+                    rounded="full"
+                    inputSize="md"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors z-20"
+                      type="button"
+                    >
+                      <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                    </button>
                   )}
                 </div>
-
-                <h3 className="text-2xl font-extrabold text-mariner-600 mb-1">
-                  {selectedDokter.nama}
-                </h3>
-                <span className="text-sm font-medium text-mariner-600 bg-mariner-50 px-4 py-1.5 rounded-full mb-3">
-                  {selectedDokter.poli?.nama_poli || "–"}
-                </span>
-                <span className="inline-block px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-semibold">
-                  {selectedDokter.status === "active"
-                    ? "Aktif"
-                    : selectedDokter.status}
-                </span>
-              </div>
-
-              {/* Jadwal */}
-              {selectedDokter.jadwal_dokter.length > 0 ? (
-                <>
-                  <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest text-center mb-5">
-                    Jadwal Praktik
-                  </h4>
-                  {renderJadwalTable(selectedDokter.jadwal_dokter)}
-                  <div className="flex justify-center mt-8">
-                    <Button
-                      variant="primary"
-                      onClick={() => setSelectedDokter(null)}
-                    >
-                      Tutup
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 mb-6">
-                    Jadwal praktik belum tersedia
-                  </p>
-                  <Button
-                    variant="primary"
-                    onClick={() => setSelectedDokter(null)}
-                  >
-                    Tutup
-                  </Button>
+                <div className="w-full sm:w-48 shrink-0">
+                  <Select
+                    icon={Calendar}
+                    value={selectedHari}
+                    onChange={setSelectedHari}
+                    options={HARI_OPTIONS}
+                    placeholder="Pilih hari"
+                    rounded="full"
+                    searchable={false}
+                    selectSize="md"
+                  />
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+
+            {/* ── Pills carousel (Embla) + scrollbar hint di bawah ── */}
+            {!loading && poliList.length > 0 && (
+              <div className="relative -mx-4 px-4 space-y-2">
+                {/* Track Embla */}
+                <div className="overflow-hidden px-4 py-2" ref={emblaRef}>
+                  <div className="flex gap-2.5">
+                    <Pills
+                      label="Semua"
+                      count={
+                        searchQuery
+                          ? searchFilteredDokter.length
+                          : dokterList.length
+                      }
+                      variant={selectedPoli === "all" ? "active" : "default"}
+                      onClick={() => handlePoliChange("all")}
+                      size="md"
+                    />
+                    {relevantPoliList.map((poli) => (
+                      <Pills
+                        key={poli.id}
+                        label={poli.nama_poli}
+                        count={
+                          searchFilteredDokter.filter(
+                            (d) => d.poli_id === poli.id,
+                          ).length
+                        }
+                        variant={
+                          selectedPoli === poli.id ? "active" : "default"
+                        }
+                        onClick={() => handlePoliChange(poli.id)}
+                        size="md"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Horizontal scrollbar hint — statis, tanpa animasi maju mundur */}
+                <AnimatePresence>
+                  {pillsCanScroll && (
+                    <motion.div
+                      initial={{ opacity: 0, scaleX: 0.6 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      exit={{ opacity: 0, scaleX: 0.6 }}
+                      transition={{ duration: 0.4, ease }}
+                      className="mx-4 flex items-center gap-2"
+                    >
+                      {/* Track statis */}
+                      <div className="flex-1 h-0.5 rounded-full bg-gray-200 overflow-hidden">
+                        <div className="h-full w-1/4 rounded-full bg-gray-200" />
+                      </div>
+                      {/* Label hint */}
+                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest shrink-0 select-none">
+                        geser
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </Animate>
+
+          {/* Loading skeleton */}
+          <AnimatePresence>
+            {loading && (
+              <motion.div
+                key="skeleton"
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={
+                  { duration: 0.45, ease: easeOut } satisfies Transition
+                }
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {[...Array(6)].map((_, i) => (
+                    <SkeletonCard key={i} />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Empty state */}
+          {!loading && filteredDokter.length === 0 && (
+            <Animate
+              type="slideup"
+              ready={dataReady}
+              className="text-center py-16"
+            >
+              <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
+                <UserRound className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                Tidak Ada Dokter Ditemukan
+              </h3>
+              <p className="text-gray-500">
+                Coba ubah filter atau kata kunci pencarian Anda.
+              </p>
+            </Animate>
+          )}
+
+          {/* Grid stagger */}
+          {!loading && filteredDokter.length > 0 && (
+            <Animate
+              key={`${selectedPoli}-${selectedHari}-${searchQuery}`}
+              type="stagger"
+              staggerChildren={0.08}
+              delayChildren={0.02}
+              ready={true}
+              margin="-60px"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12"
+            >
+              {filteredDokter.map((dokter) => (
+                <DokterCard
+                  key={dokter.id}
+                  dokter={dokter}
+                  onClick={handleCardClick}
+                />
+              ))}
+            </Animate>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 

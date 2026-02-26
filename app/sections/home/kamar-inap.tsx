@@ -1,61 +1,15 @@
 // app/sections/home/kamar-inap.tsx
 "use client";
+import Animate, { ease, easeOut } from "@/components/animations/animate";
 import Button from "@/components/ui/custom/button";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import { KamarInap as KamarInapType } from "@/types/index";
 import useEmblaCarousel from "embla-carousel-react";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { AnimatePresence, motion, type Transition } from "framer-motion";
 import { ArrowRight, Bed, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-
-/* ─────────────────────────────────────────
-   ANIMATION VARIANTS — identical to About
-───────────────────────────────────────── */
-const ease = [0.16, 1, 0.3, 1] as const;
-const easeOut = [0.0, 0.0, 0.2, 1] as const;
-
-// Stagger container
-const containerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.11, delayChildren: 0.08 },
-  },
-};
-
-// Text/content items — lift + fade + unblur
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 22, filter: "blur(4px)" },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.85, ease },
-  },
-};
-
-// Card items — staggered pop-in
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 16, scale: 0.94 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.6, ease },
-  },
-};
-
-// Empty state
-const emptyVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.94, y: 16 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { duration: 0.6, ease },
-  },
-};
 
 /* ─────────────────────────────────────────
    INTERFACES
@@ -82,7 +36,25 @@ const SkeletonCard = () => (
 );
 
 /* ─────────────────────────────────────────
-   KAMAR CARD — motion wrapper
+   CARD WRAPPER VARIANTS
+   Card muncul fade-in satu persatu via stagger parent.
+   Konten di dalam muncul setelah card selesai muncul.
+───────────────────────────────────────── */
+const cardWrapVariants = {
+  hidden: { opacity: 0, y: 28, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.65, ease } satisfies Transition,
+  },
+};
+
+// Delay base untuk inner content (muncul setelah card)
+const INNER_DELAY = 0.38;
+
+/* ─────────────────────────────────────────
+   KAMAR CARD
 ───────────────────────────────────────── */
 const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
   const formatPrice = (price: number) =>
@@ -97,10 +69,14 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
 
   return (
     <motion.div
-      variants={cardVariants}
+      variants={cardWrapVariants}
       whileHover={
         !kamar.is_recommended
-          ? { y: -3, scale: 1.02, transition: { duration: 0.28, ease } }
+          ? {
+              y: -3,
+              scale: 1.02,
+              transition: { duration: 0.28, ease } satisfies Transition,
+            }
           : {}
       }
       className={`relative bg-white rounded-2xl flex flex-col h-full overflow-hidden transition-shadow duration-300
@@ -110,44 +86,108 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
             : "ring-1 ring-gray-200 shadow-sm hover:shadow-md"
         }`}
     >
-      {/* Recommended top accent */}
       {kamar.is_recommended && (
         <div className="h-1 w-full bg-linear-to-r from-greenfresh-400 to-greenfresh-600" />
       )}
-
-      {/* Recommended badge */}
       {kamar.is_recommended && (
         <div className="absolute top-4 right-4 z-10">
-          <span className="bg-greenfresh-500 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+          <motion.span
+            variants={{
+              hidden: { opacity: 0, scale: 0.7, y: -6 },
+              visible: {
+                opacity: 1,
+                scale: 1,
+                y: 0,
+                transition: {
+                  duration: 0.4,
+                  ease,
+                  delay: INNER_DELAY,
+                } satisfies Transition,
+              },
+            }}
+            className="block bg-greenfresh-500 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide"
+          >
             Disarankan
-          </span>
+          </motion.span>
         </div>
       )}
 
       <div className="p-6 sm:p-8 flex flex-col grow">
-        {/* Room Name */}
-        <h3
+        {/* Title */}
+        <motion.h3
+          variants={{
+            hidden: { opacity: 0, y: 12 },
+            visible: {
+              opacity: 1,
+              y: 0,
+              transition: {
+                duration: 0.42,
+                ease,
+                delay: INNER_DELAY,
+              } satisfies Transition,
+            },
+          }}
           className={`text-xl sm:text-2xl font-extrabold mb-1 line-clamp-1 ${kamar.is_recommended ? "text-greenfresh-600" : "text-mariner-500"}`}
         >
           {kamar.title}
-        </h3>
+        </motion.h3>
 
-        {/* Recommended sub-label */}
         <div className="min-h-5 mb-3">
           {kamar.is_recommended && (
-            <p className="text-greenfresh-500 text-xs font-semibold tracking-wide uppercase">
+            <motion.p
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    duration: 0.35,
+                    ease,
+                    delay: INNER_DELAY + 0.06,
+                  } satisfies Transition,
+                },
+              }}
+              className="text-greenfresh-500 text-xs font-semibold tracking-wide uppercase"
+            >
               Pilihan Terbaik
-            </p>
+            </motion.p>
           )}
         </div>
 
         {/* Description */}
-        <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-6">
+        <motion.p
+          variants={{
+            hidden: { opacity: 0, y: 8 },
+            visible: {
+              opacity: 1,
+              y: 0,
+              transition: {
+                duration: 0.4,
+                ease,
+                delay: INNER_DELAY + 0.1,
+              } satisfies Transition,
+            },
+          }}
+          className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-6"
+        >
           {kamar.description}
-        </p>
+        </motion.p>
 
-        {/* Price */}
-        <div className="mb-6 pb-6 border-b border-gray-100">
+        {/* Price block */}
+        <motion.div
+          variants={{
+            hidden: { opacity: 0, y: 10 },
+            visible: {
+              opacity: 1,
+              y: 0,
+              transition: {
+                duration: 0.42,
+                ease,
+                delay: INNER_DELAY + 0.18,
+              } satisfies Transition,
+            },
+          }}
+          className="mb-6 pb-6 border-b border-gray-100"
+        >
           <p className="text-xs text-gray-400 font-medium mb-0.5 uppercase tracking-widest">
             Harga / malam
           </p>
@@ -156,10 +196,23 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
           >
             {formatPrice(kamar.price)}
           </p>
-        </div>
+        </motion.div>
 
         {/* Facilities */}
-        <div className="grow">
+        <motion.div
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                duration: 0.35,
+                ease,
+                delay: INNER_DELAY + 0.24,
+              } satisfies Transition,
+            },
+          }}
+          className="grow"
+        >
           <h4 className="text-gray-700 font-semibold text-sm mb-3 flex items-center gap-2">
             <span
               className={`inline-block w-1 h-4 rounded-full ${kamar.is_recommended ? "bg-greenfresh-500" : "bg-mariner-400"}`}
@@ -170,10 +223,18 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
             {kamar.facilities?.map((facility: string, index: number) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, x: -10 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, ease, delay: 0.05 * index }}
+                variants={{
+                  hidden: { opacity: 0, x: -10 },
+                  visible: {
+                    opacity: 1,
+                    x: 0,
+                    transition: {
+                      duration: 0.38,
+                      ease,
+                      delay: INNER_DELAY + 0.28 + 0.05 * index,
+                    } satisfies Transition,
+                  },
+                }}
                 className="flex items-start gap-2"
               >
                 <CheckCircle2
@@ -183,7 +244,7 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
               </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -232,7 +293,6 @@ const KamarInap = () => {
         console.error("Error fetching kamar:", error);
       } finally {
         setLoading(false);
-        // Small delay so skeleton exit finishes before cards animate in
         setTimeout(() => setDataReady(true), 120);
       }
     };
@@ -257,12 +317,11 @@ const KamarInap = () => {
     <section className="bg-gray-50 py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         {/* ── Header ── */}
-        <motion.div
+        <Animate
+          type="fadein"
+          ready={dataReady}
+          margin="-60px"
           className="text-center mb-12 sm:mb-16"
-          variants={itemVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-60px" }}
         >
           <Title
             badge="Kamar Inap"
@@ -270,7 +329,7 @@ const KamarInap = () => {
             badgeVariant="default"
             containerClassName="items-center"
           />
-        </motion.div>
+        </Animate>
 
         {/* ── Loading skeletons ── */}
         <AnimatePresence>
@@ -279,15 +338,15 @@ const KamarInap = () => {
               key="skeleton"
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.45, ease: easeOut }}
+              transition={
+                { duration: 0.45, ease: easeOut } satisfies Transition
+              }
             >
-              {/* Desktop */}
               <div className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12">
                 {[...Array(3)].map((_, i) => (
                   <SkeletonCard key={i} />
                 ))}
               </div>
-              {/* Mobile */}
               <div className="lg:hidden -mx-4 px-4">
                 <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
                   {[...Array(3)].map((_, i) => (
@@ -302,85 +361,79 @@ const KamarInap = () => {
         </AnimatePresence>
 
         {/* ── Empty state ── */}
-        <AnimatePresence>
-          {!loading && kamarList.length === 0 && (
-            <motion.div
-              key="empty"
-              variants={emptyVariants}
-              initial="hidden"
-              animate={dataReady ? "visible" : "hidden"}
-              className="text-center py-12"
-            >
-              <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
-                <Bed className="w-12 h-12 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                Belum Ada Kamar
-              </h3>
-              <p className="text-gray-500">
-                Informasi kamar inap belum tersedia saat ini.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {!loading && kamarList.length === 0 && (
+          <Animate
+            type="slideup"
+            ready={dataReady}
+            className="text-center py-12"
+          >
+            <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
+              <Bed className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              Belum Ada Kamar
+            </h3>
+            <p className="text-gray-500">
+              Informasi kamar inap belum tersedia saat ini.
+            </p>
+          </Animate>
+        )}
 
         {/* ── Content ── */}
         {!loading && sortedKamarList.length > 0 && (
           <>
-            {/* Desktop — stagger container + card children */}
-            <motion.div
+            {/*
+             * Desktop — stagger container
+             * Setiap card muncul fade bergantian (cardWrapVariants)
+             * Konten di dalam card muncul setelah card visible (delay INNER_DELAY)
+             */}
+            <Animate
+              type="stagger"
+              staggerChildren={0.18}
+              delayChildren={0.05}
+              ready={dataReady}
+              margin="-60px"
               className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12 items-stretch"
-              variants={containerVariants}
-              initial="hidden"
-              whileInView={dataReady ? "visible" : "hidden"}
-              viewport={{ once: true, margin: "-60px" }}
             >
               {sortedKamarList.slice(0, 3).map((kamar) => (
                 <KamarCard key={kamar.id} kamar={kamar} />
               ))}
-            </motion.div>
+            </Animate>
 
-            {/* Mobile / Tablet carousel */}
-            <AnimatePresence>
-              {dataReady && (
-                <motion.div
-                  key="carousel"
-                  variants={itemVariants}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-40px" }}
-                  className="lg:hidden mb-12"
-                >
-                  <div className="-mx-4">
-                    <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
-                      <div className="flex gap-4 md:gap-6">
-                        {sortedKamarList.slice(0, 3).map((kamar) => (
-                          <div
-                            key={kamar.id}
-                            className="flex-[0_0_85%] md:flex-[0_0_45%] min-w-0"
-                          >
-                            <KamarCard kamar={kamar} />
-                          </div>
-                        ))}
+            {/* Mobile carousel */}
+            <Animate
+              type="fadein"
+              ready={dataReady}
+              margin="-40px"
+              className="lg:hidden mb-12"
+            >
+              <div className="-mx-4">
+                <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
+                  <div className="flex gap-4 md:gap-6">
+                    {sortedKamarList.slice(0, 3).map((kamar) => (
+                      <div
+                        key={kamar.id}
+                        className="flex-[0_0_85%] md:flex-[0_0_45%] min-w-0"
+                      >
+                        <KamarCard kamar={kamar} />
                       </div>
-                    </div>
+                    ))}
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+              </div>
+            </Animate>
 
             {/* CTA */}
-            <motion.div
+            <Animate
+              type="fadein"
+              ready={dataReady}
+              margin="-40px"
               className="text-center"
-              variants={itemVariants}
-              initial="hidden"
-              whileInView={dataReady ? "visible" : "hidden"}
-              viewport={{ once: true, margin: "-40px" }}
             >
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.2 } satisfies Transition}
                 className="inline-block"
               >
                 <Link href="/sections/home/kamar-inap/informasi">
@@ -394,7 +447,7 @@ const KamarInap = () => {
                   </Button>
                 </Link>
               </motion.div>
-            </motion.div>
+            </Animate>
           </>
         )}
       </div>
