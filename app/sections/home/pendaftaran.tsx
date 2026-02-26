@@ -15,7 +15,6 @@ interface Poli {
   nama_poli: string;
   status: string;
 }
-
 interface Dokter {
   id: string;
   gelar_depan: string | null;
@@ -24,7 +23,6 @@ interface Dokter {
   poli_id: string;
   status: string;
 }
-
 interface JadwalDokter {
   id: string;
   dokter_id: string;
@@ -41,7 +39,6 @@ export default function PendaftaranSection() {
   const [jadwalDokter, setJadwalDokter] = useState<JadwalDokter[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-
   const [loadingPoli, setLoadingPoli] = useState(true);
   const [loadingDokter, setLoadingDokter] = useState(false);
   const [loadingJadwal, setLoadingJadwal] = useState(false);
@@ -56,7 +53,6 @@ export default function PendaftaranSection() {
     time: "",
     description: "",
   });
-
   const [errors, setErrors] = useState({
     name: "",
     email: "",
@@ -76,8 +72,6 @@ export default function PendaftaranSection() {
   const generateAvailableTimes = useCallback(
     (selectedDate: string, jadwal: JadwalDokter[]) => {
       const date = new Date(selectedDate + "T00:00:00");
-      const dayOfWeek = date.getDay();
-
       const hariMap: { [key: number]: string } = {
         0: "Minggu",
         1: "Senin",
@@ -87,29 +81,24 @@ export default function PendaftaranSection() {
         5: "Jumat",
         6: "Sabtu",
       };
-
-      const hariName = hariMap[dayOfWeek];
-      const jadwalHariIni = jadwal.filter((j) => j.hari === hariName);
-
+      const jadwalHariIni = jadwal.filter(
+        (j) => j.hari === hariMap[date.getDay()],
+      );
       if (jadwalHariIni.length === 0) {
         setAvailableTimes([]);
         return;
       }
-
       const times: string[] = [];
-      jadwalHariIni.forEach((jadwalItem) => {
-        if (!jadwalItem.jam_mulai || !jadwalItem.jam_selesai) return;
-        const formatTime = (timeStr: string) => {
-          const parts = timeStr.split(":");
-          if (parts.length >= 2)
-            return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
-          return timeStr;
+      jadwalHariIni.forEach((j) => {
+        if (!j.jam_mulai || !j.jam_selesai) return;
+        const fmt = (t: string) => {
+          const p = t.split(":");
+          return p.length >= 2
+            ? `${p[0].padStart(2, "0")}:${p[1].padStart(2, "0")}`
+            : t;
         };
-        times.push(
-          `${formatTime(jadwalItem.jam_mulai)} - ${formatTime(jadwalItem.jam_selesai)}`,
-        );
+        times.push(`${fmt(j.jam_mulai)} - ${fmt(j.jam_selesai)}`);
       });
-
       setAvailableTimes(times);
     },
     [],
@@ -120,7 +109,6 @@ export default function PendaftaranSection() {
       setAvailableDates([]);
       return;
     }
-
     const hariMap: { [key: string]: number } = {
       Minggu: 0,
       Senin: 1,
@@ -130,22 +118,18 @@ export default function PendaftaranSection() {
       Jumat: 5,
       Sabtu: 6,
     };
-
     const availableHari = jadwal.map((j) => hariMap[j.hari]);
     const dates: string[] = [];
     const today = new Date();
-
     for (let i = 0; i < 60; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       if (availableHari.includes(date.getDay())) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, "0");
-        const d = String(date.getDate()).padStart(2, "0");
-        dates.push(`${y}-${m}-${d}`);
+        dates.push(
+          `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
+        );
       }
     }
-
     setAvailableDates(dates);
   }, []);
 
@@ -163,8 +147,7 @@ export default function PendaftaranSection() {
         setJadwalDokter(jadwalData);
         generateAvailableDates(jadwalData);
         setAvailableTimes([]);
-      } catch (error) {
-        console.error("Error fetching jadwal:", error);
+      } catch {
         setJadwalDokter([]);
         setAvailableDates([]);
         setAvailableTimes([]);
@@ -200,8 +183,6 @@ export default function PendaftaranSection() {
         .order("nama_poli", { ascending: true });
       if (error) throw error;
       setPoliList(data || []);
-    } catch (error) {
-      console.error("Error fetching poli:", error);
     } finally {
       setLoadingPoli(false);
     }
@@ -216,8 +197,8 @@ export default function PendaftaranSection() {
         .order("nama", { ascending: true });
       if (error) throw error;
       setDokterList(data || []);
-    } catch (error) {
-      console.error("Error fetching dokter:", error);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -226,7 +207,7 @@ export default function PendaftaranSection() {
     setErrors({ ...errors, poli: "", doctor: "", date: "", time: "" });
     if (poliId) {
       setLoadingDokter(true);
-      setFilteredDokter(dokterList.filter((doc) => doc.poli_id === poliId));
+      setFilteredDokter(dokterList.filter((d) => d.poli_id === poliId));
       setLoadingDokter(false);
     } else setFilteredDokter([]);
     setJadwalDokter([]);
@@ -240,7 +221,7 @@ export default function PendaftaranSection() {
   };
 
   const handleDateChange = (date: string) => {
-    setFormData({ ...formData, date: date, time: "" });
+    setFormData({ ...formData, date, time: "" });
     setErrors({ ...errors, date: "", time: "" });
   };
 
@@ -264,7 +245,6 @@ export default function PendaftaranSection() {
       description: "",
     };
     let isValid = true;
-
     if (!formData.name.trim()) {
       newErrors.name = "Nama wajib diisi";
       isValid = false;
@@ -303,7 +283,6 @@ export default function PendaftaranSection() {
       newErrors.description = "Deskripsi keluhan wajib diisi";
       isValid = false;
     }
-
     setErrors(newErrors);
     return isValid;
   };
@@ -311,33 +290,10 @@ export default function PendaftaranSection() {
   const sendWhatsAppMessage = () => {
     const selectedPoli = poliList.find((p) => p.id === formData.poli);
     const selectedDokter = filteredDokter.find((d) => d.id === formData.doctor);
-
-    const message = `*PENDAFTARAN JANJI TEMU*
-┌────────────────────┐
-
-*Nama:* ${formData.name}
-*Email:* ${formData.email}
-*No. Telepon:* ${formData.phone}
-
-*Poli:* ${selectedPoli?.nama_poli || "-"}
-*Dokter:* ${selectedDokter ? formatDoctorName(selectedDokter) : "-"}
-*Tanggal:* ${new Date(formData.date + "T00:00:00").toLocaleDateString("id-ID", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })}
-*Waktu:* ${formData.time}
-
-*Keluhan:*
-${formData.description}
-
-└────────────────────┘
-_Mohon konfirmasi ketersediaan jadwal._`;
-
-    const whatsappNumber = Profile.whatsapp.replace(/\D/g, "");
+    const message = `*PENDAFTARAN JANJI TEMU*\n┌────────────────────┐\n\n*Nama:* ${formData.name}\n*Email:* ${formData.email}\n*No. Telepon:* ${formData.phone}\n\n*Poli:* ${selectedPoli?.nama_poli || "-"}\n*Dokter:* ${selectedDokter ? formatDoctorName(selectedDokter) : "-"}\n*Tanggal:* ${new Date(formData.date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}\n*Waktu:* ${formData.time}\n\n*Keluhan:*\n${formData.description}\n\n└────────────────────┘\n_Mohon konfirmasi ketersediaan jadwal._`;
+    const num = Profile.whatsapp.replace(/\D/g, "");
     window.open(
-      `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`,
+      `https://wa.me/${num}?text=${encodeURIComponent(message)}`,
       "_blank",
     );
   };
@@ -345,10 +301,9 @@ _Mohon konfirmasi ketersediaan jadwal._`;
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     setLoading(true);
     try {
-      const { error } = await supabase.from("appointments").insert([
+      await supabase.from("appointments").insert([
         {
           name: formData.name,
           email: formData.email,
@@ -361,10 +316,8 @@ _Mohon konfirmasi ketersediaan jadwal._`;
           status: "pending",
         },
       ]);
-      if (error)
-        console.warn("Data tidak tersimpan ke database:", error.message);
-    } catch (error) {
-      console.error("Error submitting form:", error);
+    } catch (e) {
+      console.error(e);
     } finally {
       sendWhatsAppMessage();
       setFormData({
@@ -418,253 +371,269 @@ _Mohon konfirmasi ketersediaan jadwal._`;
   }));
 
   return (
-    <section className="relative w-full py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <section
+      id="pendaftaran"
+      className="relative w-full py-16 sm:py-20 px-4 sm:px-6 lg:px-8 overflow-hidden"
+    >
       {/* Background */}
-      <div className="absolute inset-0 bg-linear-to-br from-mariner-600 via-mariner-500 to-mariner-700">
+      <div className="absolute inset-0 bg-linear-to-br from-mariner-700 via-mariner-600 to-mariner-800">
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-[0.07]"
           style={{
             backgroundImage:
               "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
-            backgroundSize: "40px 40px",
+            backgroundSize: "32px 32px",
           }}
         />
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-mariner-400/30 rounded-full blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-mariner-900/40 rounded-full blur-3xl" />
       </div>
 
-      {/* Content */}
-      <div className="relative w-full max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-12 items-start">
+      <div className="relative max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_460px] gap-10 xl:gap-16 items-start">
           {/* ── LEFT: Form Card ── */}
-          <div className="w-full bg-white rounded-3xl shadow-2xl p-5 sm:p-8 lg:p-10">
-            <Badge>Buat Janji</Badge>
+          <div className="w-full bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div className="h-1.5 w-full bg-linear-to-r from-bittersweet-400 via-bittersweet-500 to-mariner-500" />
 
-            <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-mariner-500 mb-6 leading-tight">
-              Konsultasi Dokter Lebih Mudah, dan Buat Janji Temu Kamu Disini
-            </h2>
+            <div className="p-6 sm:p-8 lg:p-10">
+              <Badge>Buat Janji</Badge>
+              <h2 className="mt-3 text-2xl sm:text-3xl font-extrabold text-mariner-600 mb-2 leading-tight">
+                Konsultasi Dokter Lebih Mudah
+              </h2>
+              <p className="text-gray-500 text-sm mb-8">
+                Buat janji temu Anda dengan beberapa langkah mudah di bawah ini.
+              </p>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Name & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Data Diri */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Nama"
+                    type="text"
+                    placeholder="Masukkan nama lengkap"
+                    value={formData.name}
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      if (errors.name) setErrors({ ...errors, name: "" });
+                    }}
+                    icon={User}
+                    error={errors.name}
+                    required
+                  />
+                  <Input
+                    label="Email"
+                    type="email"
+                    placeholder="nama@email.com"
+                    value={formData.email}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if (errors.email) setErrors({ ...errors, email: "" });
+                    }}
+                    icon={AtSign}
+                    error={errors.email}
+                    required
+                  />
+                </div>
+
                 <Input
-                  label="Nama"
-                  type="text"
-                  placeholder="Masukkan nama lengkap"
-                  value={formData.name}
+                  label="Nomor Telepon"
+                  type="tel"
+                  placeholder="08xx-xxxx-xxxx"
+                  value={formData.phone}
                   onChange={(e) => {
-                    setFormData({ ...formData, name: e.target.value });
-                    if (errors.name) setErrors({ ...errors, name: "" });
+                    setFormData({ ...formData, phone: e.target.value });
+                    if (errors.phone) setErrors({ ...errors, phone: "" });
                   }}
-                  icon={User}
-                  error={errors.name}
+                  icon={Phone}
+                  error={errors.phone}
                   required
                 />
-                <Input
-                  label="Email"
-                  type="email"
-                  placeholder="nama@email.com"
-                  value={formData.email}
-                  onChange={(e) => {
-                    setFormData({ ...formData, email: e.target.value });
-                    if (errors.email) setErrors({ ...errors, email: "" });
-                  }}
-                  icon={AtSign}
-                  error={errors.email}
-                  required
-                />
-              </div>
 
-              {/* Phone */}
-              <Input
-                label="Nomor Telepon"
-                type="tel"
-                placeholder="08xx-xxxx-xxxx"
-                value={formData.phone}
-                onChange={(e) => {
-                  setFormData({ ...formData, phone: e.target.value });
-                  if (errors.phone) setErrors({ ...errors, phone: "" });
-                }}
-                icon={Phone}
-                error={errors.phone}
-                required
-              />
+                <div className="h-px bg-gray-100" />
 
-              {/* Poli & Dokter */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Select
-                  label="Poli"
-                  placeholder="Pilih poli"
-                  value={formData.poli}
-                  onChange={handlePoliChange}
-                  options={poliOptions}
-                  searchable
-                  loading={loadingPoli}
-                  error={errors.poli}
-                  required
-                />
-                <Select
-                  label="Nama Dokter"
-                  placeholder="Pilih dokter"
-                  value={formData.doctor}
-                  onChange={handleDoctorChange}
-                  options={dokterOptions}
-                  searchable
-                  disabled={!formData.poli}
-                  loading={loadingDokter}
-                  error={errors.doctor}
-                  helperText={
-                    !formData.poli ? "Pilih poli terlebih dahulu" : ""
-                  }
-                  required
-                />
-              </div>
+                {/* Poli & Dokter */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Select
+                    label="Poli"
+                    placeholder="Pilih poli"
+                    value={formData.poli}
+                    onChange={handlePoliChange}
+                    options={poliOptions}
+                    searchable
+                    loading={loadingPoli}
+                    error={errors.poli}
+                    required
+                  />
+                  <Select
+                    label="Nama Dokter"
+                    placeholder="Pilih dokter"
+                    value={formData.doctor}
+                    onChange={handleDoctorChange}
+                    options={dokterOptions}
+                    searchable
+                    disabled={!formData.poli}
+                    loading={loadingDokter}
+                    error={errors.doctor}
+                    helperText={
+                      !formData.poli ? "Pilih poli terlebih dahulu" : ""
+                    }
+                    required
+                  />
+                </div>
 
-              {/* Tanggal & Waktu */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Select
-                  label="Tanggal"
-                  placeholder="Pilih tanggal"
-                  value={formData.date}
-                  onChange={handleDateChange}
-                  options={dateOptions}
-                  searchable={false}
-                  disabled={!formData.doctor || loadingJadwal}
-                  loading={loadingJadwal}
-                  error={errors.date}
-                  helperText={
-                    !formData.doctor
-                      ? "Pilih dokter terlebih dahulu"
-                      : loadingJadwal
-                        ? "Memuat jadwal..."
-                        : availableDates.length === 0 && formData.doctor
-                          ? "Tidak ada jadwal tersedia"
+                <div className="h-px bg-gray-100" />
+
+                {/* Jadwal */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Select
+                    label="Tanggal"
+                    placeholder="Pilih tanggal"
+                    value={formData.date}
+                    onChange={handleDateChange}
+                    options={dateOptions}
+                    searchable={false}
+                    disabled={!formData.doctor || loadingJadwal}
+                    loading={loadingJadwal}
+                    error={errors.date}
+                    helperText={
+                      !formData.doctor
+                        ? "Pilih dokter terlebih dahulu"
+                        : loadingJadwal
+                          ? "Memuat jadwal..."
+                          : availableDates.length === 0 && formData.doctor
+                            ? "Tidak ada jadwal tersedia"
+                            : ""
+                    }
+                    required
+                  />
+                  <Select
+                    label="Waktu"
+                    placeholder="Pilih waktu"
+                    value={formData.time}
+                    onChange={(value) => {
+                      setFormData({ ...formData, time: value });
+                      if (errors.time) setErrors({ ...errors, time: "" });
+                    }}
+                    options={timeOptions}
+                    searchable={false}
+                    disabled={!formData.date}
+                    error={errors.time}
+                    helperText={
+                      !formData.date
+                        ? "Pilih tanggal terlebih dahulu"
+                        : availableTimes.length === 0 && formData.date
+                          ? "Tidak ada waktu tersedia"
                           : ""
-                  }
-                  required
-                />
-                <Select
-                  label="Waktu"
-                  placeholder="Pilih waktu"
-                  value={formData.time}
-                  onChange={(value) => {
-                    setFormData({ ...formData, time: value });
-                    if (errors.time) setErrors({ ...errors, time: "" });
+                    }
+                    required
+                  />
+                </div>
+
+                <Textarea
+                  label="Deskripsi Keluhan Anda"
+                  rows={4}
+                  placeholder="Tuliskan keluhan Anda secara detail..."
+                  value={formData.description}
+                  onChange={(e) => {
+                    setFormData({ ...formData, description: e.target.value });
+                    if (errors.description)
+                      setErrors({ ...errors, description: "" });
                   }}
-                  options={timeOptions}
-                  searchable={false}
-                  disabled={!formData.date}
-                  error={errors.time}
-                  helperText={
-                    !formData.date
-                      ? "Pilih tanggal terlebih dahulu"
-                      : availableTimes.length === 0 && formData.date
-                        ? "Tidak ada waktu tersedia"
-                        : ""
-                  }
+                  error={errors.description}
+                  showCharCount
+                  maxLength={500}
                   required
                 />
-              </div>
 
-              {/* Keluhan */}
-              <Textarea
-                label="Deskripsi Keluhan Anda"
-                rows={4}
-                placeholder="Tuliskan keluhan Anda secara detail..."
-                value={formData.description}
-                onChange={(e) => {
-                  setFormData({ ...formData, description: e.target.value });
-                  if (errors.description)
-                    setErrors({ ...errors, description: "" });
-                }}
-                error={errors.description}
-                showCharCount
-                maxLength={500}
-                required
-              />
-
-              {/* Submit */}
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                className="w-full shadow-lg bg-bittersweet-500 hover:bg-bittersweet-600"
-                disabled={loading}
-              >
-                {loading ? "Mengirim..." : "Kirim ke WhatsApp"}
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  className="w-full shadow-lg bg-bittersweet-500 hover:bg-bittersweet-600 mt-2"
+                  disabled={loading}
+                >
+                  {loading ? "Mengirim..." : "Kirim ke WhatsApp"}
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </form>
+            </div>
           </div>
 
           {/* ── RIGHT: Info Panel ── */}
           <div className="flex flex-col gap-6 lg:sticky lg:top-8">
-            {/* Header */}
             <div>
-              <Badge>Kontak</Badge>
-              <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-white leading-tight mb-4">
+              <Badge
+                variant="primary"
+                className="border-white/30 text-white bg-white/10"
+              >
+                Kontak
+              </Badge>
+              <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-4">
                 Informasi Pendaftaran
               </h2>
-              <p className="text-white/85 text-sm sm:text-base leading-relaxed">
+              <p className="text-white/75 text-sm sm:text-base leading-relaxed">
                 Kini pendaftaran layanan kesehatan di {Profile.shortName}{" "}
                 semakin mudah melalui website kami. Cukup dengan beberapa
-                langkah sederhana, Anda dapat memilih jadwal dokter, jenis
-                layanan. Nikmati kemudahan ini kapan saja dan di mana saja,
-                langsung dari perangkat Anda!
+                langkah sederhana, Anda dapat memilih jadwal dokter dan jenis
+                layanan kapan saja dari perangkat Anda.
               </p>
             </div>
 
-            {/* Contact Cards */}
-            <div className="grid grid-cols-1 gap-4">
-              {/* WhatsApp */}
+            <div className="flex items-center gap-3">
+              <div className="h-0.5 w-8 bg-white/50 rounded-full" />
+              <div className="h-0.5 w-4 bg-white/25 rounded-full" />
+            </div>
+
+            {/* Contact cards */}
+            <div className="space-y-3">
               <a
                 href={`https://wa.me/${Profile.whatsapp.replace(/\D/g, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group bg-white/10 backdrop-blur-lg rounded-2xl p-5 sm:p-6 flex items-center gap-4 hover:bg-white/20 transition-all duration-300"
+                className="group bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-all duration-300"
               >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-bittersweet-500 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
-                  <Phone className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <div className="w-11 h-11 bg-bittersweet-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+                  <Phone className="w-5 h-5 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">
+                  <p className="text-white/55 text-[11px] font-semibold uppercase tracking-widest">
                     WhatsApp
                   </p>
-                  <p className="text-white text-lg sm:text-xl font-bold group-hover:text-teal-300 transition-colors truncate">
+                  <p className="text-white font-bold text-base group-hover:text-teal-200 transition-colors truncate">
                     {Profile.whatsapp}
                   </p>
                 </div>
               </a>
 
-              {/* Email */}
               <a
                 href={`mailto:${Profile.email}`}
-                className="group bg-white/10 backdrop-blur-lg rounded-2xl p-5 sm:p-6 flex items-center gap-4 hover:bg-white/20 transition-all duration-300"
+                className="group bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-all duration-300"
               >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-teal-400 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
-                  <Mail className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <div className="w-11 h-11 bg-teal-400 rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+                  <Mail className="w-5 h-5 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">
+                  <p className="text-white/55 text-[11px] font-semibold uppercase tracking-widest">
                     Email
                   </p>
-                  <p className="text-white text-base sm:text-lg font-bold group-hover:text-teal-300 transition-colors truncate">
+                  <p className="text-white font-bold text-sm group-hover:text-teal-200 transition-colors truncate">
                     {Profile.email}
                   </p>
                 </div>
               </a>
 
-              {/* Pusat Panggilan */}
               <a
                 href={`tel:${Profile.pusatPanggilan}`}
-                className="group bg-white/10 backdrop-blur-lg rounded-2xl p-5 sm:p-6 flex items-center gap-4 hover:bg-white/20 transition-all duration-300"
+                className="group bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-all duration-300"
               >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-mariner-400 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
-                  <Phone className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <div className="w-11 h-11 bg-mariner-400 rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+                  <Phone className="w-5 h-5 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">
+                  <p className="text-white/55 text-[11px] font-semibold uppercase tracking-widest">
                     Pusat Panggilan
                   </p>
-                  <p className="text-white text-lg sm:text-xl font-bold group-hover:text-teal-300 transition-colors truncate">
+                  <p className="text-white font-bold text-base group-hover:text-teal-200 transition-colors truncate">
                     {Profile.pusatPanggilan}
                   </p>
                 </div>

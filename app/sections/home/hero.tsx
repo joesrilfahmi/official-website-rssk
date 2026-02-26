@@ -129,10 +129,13 @@ const Hero: React.FC = () => {
             </p>
 
             <div className="flex flex-wrap gap-4 pt-2 justify-center lg:justify-start">
-              <Button variant="primary" size="lg" className="group">
-                Buat Janji
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <Link href="#pendaftaran">
+                <Button variant="primary" size="lg" className="group">
+                  Buat Janji
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+
               <Link href="/sections/kontak">
                 <Button variant="outline" size="lg">
                   Kontak Kami
@@ -143,7 +146,10 @@ const Hero: React.FC = () => {
             {/* Quick trust indicators */}
             <div className="flex flex-wrap gap-6 pt-2 justify-center lg:justify-start">
               {[
-                { num: "30+", label: "Tahun Pengalaman" },
+                {
+                  num: `${new Date().getFullYear() - Profile.since}`,
+                  label: "Tahun Pengalaman",
+                },
                 { num: "KARS", label: "Akreditasi Paripurna" },
                 { num: "24/7", label: "Layanan Darurat" },
               ].map(({ num, label }) => (

@@ -1,6 +1,7 @@
 // config/profile.ts
 export interface Profile {
   institusi: string;
+  since: number;
   name: string;
   shortName: string;
   subtitle: string;
@@ -32,13 +33,15 @@ export interface SocialMedia {
 }
 
 export const Profile: Profile = {
-  institusi : "Rumah Sakit",
+  institusi: "Rumah Sakit",
   name: "Siti Khodijah",
   shortName: "RS Siti Khodijah",
+  since: 1967,
   subtitle: "Muhammadiyah Cabang Sepanjang",
   logo: "/rssk.webp",
   description: "Rumah Sakit terpercaya dengan layanan kesehatan berkualitas",
-  address: "Jl. Raya Bebekan, RT.02/ RW.01, Bebekan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257",
+  address:
+    "Jl. Raya Bebekan, RT.02/ RW.01, Bebekan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257",
   phone: "0317883980",
   whatsapp: "08113087119",
   ambulance: "08113330988",
@@ -50,47 +53,56 @@ export const rumahSakit: RumahSakit[] = [
   {
     name: "RS Siti Khodijah Muhammadiyah Cabang Sepanjang",
     url: "https://www.sitikhodijah.com",
-    alamat: "Jl. Raya Bebekan, Bebekan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257"
+    alamat:
+      "Jl. Raya Bebekan, Bebekan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257",
   },
   {
     name: "RSU Assakinah Medika",
-    url: "https://assekinah.com",
-    alamat: "Jl. Raya Kebon Agung No.65, Sambang, Kebonagung, Kec. Sukodono, Kabupaten Sidoarjo, Jawa Timur 61258"
+    url: "https://www.rs-assakinah.com",
+    alamat:
+      "Jl. Raya Kebon Agung No.65, Sambang, Kebonagung, Kec. Sukodono, Kabupaten Sidoarjo, Jawa Timur 61258",
+  },
+  {
+    name: "RS Siti Khodijah Gurah",
+    url: "https://sitikhodijahgurah.com",
+    alamat:
+      "JJl. Dr. Sutomo No.322, Sukorejo, Kec. Gurah, Kabupaten Kediri, Jawa Timur 64181",
   },
   {
     name: "RS Moedjito Dwidjosiswojo",
     url: "https://moedjito.com",
-    alamat: "Jl. Hayam Wuruk No.9, Kepanjen, Kec. Jombang, Kabupaten Jombang, Jawa Timur 61411"
+    alamat:
+      "Jl. Hayam Wuruk No.9, Kepanjen, Kec. Jombang, Kabupaten Jombang, Jawa Timur 61411",
   },
   {
     name: "Klinik Siti Khodijah Prima",
-    url: "https://klinik.sitikhodijah.com",
-    alamat: "Jl. Raya Ketegan No.80, Ketegan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257"
-  }
+    url: "#",
+    alamat:
+      "Jl. Raya Ketegan No.80, Ketegan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257",
+  },
 ];
-
 
 export const socialMedia: SocialMedia[] = [
   {
     name: "Instagram",
     url: "https://www.instagram.com/rssitikhodijah",
-    icon: "instagram"
+    icon: "instagram",
   },
   {
     name: "Facebook",
     url: "https://www.facebook.com/rssitikhodijah",
-    icon: "facebook"
+    icon: "facebook",
   },
   {
     name: "Youtube",
     url: "https://www.youtube.com/@rssitikhodijah",
-    icon: "youtube"
+    icon: "youtube",
   },
   {
     name: "Tiktok",
     url: "https://www.tiktok.com/@rssitikhodijah",
-    icon: "tiktok"
-  }
+    icon: "tiktok",
+  },
 ];
 
 export default Profile;

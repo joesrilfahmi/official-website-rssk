@@ -9,7 +9,11 @@ import Link from "next/link";
 import { useState } from "react";
 
 const stats = [
-  { icon: Heart, value: "30+", label: "Tahun Melayani" },
+  {
+    icon: Heart,
+    value: `${new Date().getFullYear() - Profile.since}`,
+    label: "Tahun Melayani",
+  },
   { icon: Shield, value: "Tipe B", label: "Akreditasi RS" },
   { icon: Award, value: "Islami", label: "& Profesional" },
 ];
@@ -50,7 +54,7 @@ const About = () => {
                 <div className="absolute inset-0 bg-linear-to-br from-blue-100 to-blue-200 animate-pulse" />
               )}
               <Image
-                src="/gedung-rssk2.webp"
+                src="/gedung-rssk.webp"
                 alt="Gedung RS Siti Khodijah"
                 fill
                 className={`object-cover transition-opacity duration-500 ${backImageLoaded ? "opacity-100" : "opacity-0"}`}
@@ -66,7 +70,7 @@ const About = () => {
                 <div className="absolute inset-0 bg-linear-to-br from-gray-200 to-gray-300 animate-pulse" />
               )}
               <Image
-                src="/gedung-rssk.webp"
+                src="/gedung-rssk2.webp"
                 alt="Interior RS Siti Khodijah"
                 fill
                 className={`object-cover transition-opacity duration-500 ${mainImageLoaded ? "opacity-100" : "opacity-0"}`}
@@ -85,7 +89,9 @@ const About = () => {
                 <p className="text-[11px] text-gray-400 font-medium">
                   Melayani Sejak
                 </p>
-                <p className="text-sm font-bold text-gray-800">1993</p>
+                <p className="text-sm font-bold text-gray-800">
+                  {Profile.since}
+                </p>
               </div>
             </div>
           </div>

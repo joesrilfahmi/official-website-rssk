@@ -119,6 +119,7 @@ const LayananUnggulan = () => {
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16">
           <Title
+            badge="Layanan"
             title="Klinik Spesialis"
             badgeVariant="default"
             containerClassName="items-center"

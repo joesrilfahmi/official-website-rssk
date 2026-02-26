@@ -177,6 +177,7 @@ const KamarInap = () => {
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16">
           <Title
+            badge="Kamar Inap"
             title="Kamar Inap"
             badgeVariant="default"
             containerClassName="items-center"

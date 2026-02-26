@@ -46,11 +46,11 @@ export default function VisiMisi() {
         <div className="grid lg:grid-cols-[1fr_2fr] gap-8 lg:gap-16 items-start">
           {/* Left label */}
           <div className="lg:sticky lg:top-8">
-            <div className="inline-flex items-center gap-2 bg-mariner-50 text-mariner-600 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-4">
+            <div className="inline-flex items-center gap-2 bg-mariner-50 text-mariner-500 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-mariner-500 inline-block" />
               Tentang Kami
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-mariner-600 leading-snug">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-mariner-500 leading-snug">
               RS {Profile.name}{" "}
               <span className="block text-gray-500 font-semibold text-xl mt-1">
                 {Profile.subtitle}
@@ -85,11 +85,11 @@ export default function VisiMisi() {
           {/* Section heading */}
           <div className="flex items-end justify-between mb-10 border-b border-gray-200 pb-6">
             <div>
-              <div className="inline-flex items-center gap-2 bg-mariner-50 text-mariner-600 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-3">
+              <div className="inline-flex items-center gap-2 bg-mariner-50 text-mariner-500 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-mariner-500 inline-block" />
                 Arah & Tujuan
               </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-mariner-600">
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-mariner-500">
                 Visi & Misi
               </h2>
             </div>
@@ -107,7 +107,7 @@ export default function VisiMisi() {
                   <p className="text-xs font-bold text-mariner-400 uppercase tracking-widest">
                     Visi
                   </p>
-                  <h3 className="text-xl font-extrabold text-mariner-600">
+                  <h3 className="text-xl font-extrabold text-mariner-500">
                     Pandangan Kami
                   </h3>
                 </div>
@@ -131,7 +131,7 @@ export default function VisiMisi() {
                   <p className="text-xs font-bold text-mariner-400 uppercase tracking-widest">
                     Misi
                   </p>
-                  <h3 className="text-xl font-extrabold text-mariner-600">
+                  <h3 className="text-xl font-extrabold text-mariner-500">
                     Langkah Kami
                   </h3>
                 </div>
