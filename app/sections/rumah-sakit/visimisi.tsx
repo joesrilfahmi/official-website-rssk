@@ -1,13 +1,11 @@
 "use client";
 import { Profile } from "@/config/profile";
+import { Eye, Target } from "lucide-react";
+import Image from "next/image";
 
 export default function VisiMisi() {
-  const visiPoints = [
-    `Terwujudnya Rumah Sakit ${Profile.name} ${Profile.subtitle} Yang Unggul, Profesional, Islami, Dan Terpercaya Di Jawa Timur.`,
-  ];
-
   const misiPoints = [
-    "Menyelenggarakan Pelayanan Dasar Jenjang Pelayanan Sedang Rumah Sakit Rujukan Utama Yang Bermutu, Profesional, Islami, Dan Sesuai Standar Akreditasi Universal (Akreditasi)",
+    "Menyelenggarakan Pelayanan Dasar Jenjang Pelayanan Sedang Rumah Sakit Rujukan Utama Yang Bermutu, Profesional, Islami, Dan Sesuai Standar Akreditasi Universal",
     "Trauma & Injury Center, Heart & Stroke Care, Cancer Care, Gerontology Care, Hematology Center & Telemedicine Care",
     "Menyelenggarakan Pendidikan Kesehatan Yang Terpercaya",
     "Mengadakan Sumber Daya Insani Yang Excellent Dan Berakhlak Mulia",
@@ -17,32 +15,52 @@ export default function VisiMisi() {
 
   return (
     <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 mt-20">
-      <div className="max-w-7xl mx-auto">
-        {/* Hero Image/Banner */}
-        <div className="bg-linear-to-br from-mariner-100 to-mariner-200 rounded-3xl aspect-video relative overflow-hidden shadow-lg mb-12">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-mariner-500/20">
-              <svg
-                className="w-32 h-32 mx-auto"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
+      <div className="max-w-7xl mx-auto space-y-16">
+        {/* ── Hero Banner ── */}
+        <div className="relative w-full rounded-3xl overflow-hidden shadow-xl aspect-21/7 min-h-[220px]">
+          <Image
+            src="/gedung-rssk.webp"
+            alt="Gedung RS Siti Khodijah"
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-linear-to-r from-mariner-900/75 via-mariner-900/40 to-transparent" />
+
+          {/* Text overlay */}
+          <div className="absolute inset-0 flex flex-col justify-center px-8 sm:px-12 lg:px-16">
+            <p className="text-mariner-200 text-sm sm:text-base font-semibold uppercase tracking-widest mb-2">
+              Profil Rumah Sakit
+            </p>
+            <h1 className="text-white text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight">
+              RS {Profile.name}
+            </h1>
+            <p className="text-mariner-100 text-lg sm:text-xl font-medium mt-1">
+              {Profile.subtitle}
+            </p>
           </div>
         </div>
 
-        {/* Hospital Profile */}
-        <div className="space-y-8 mb-12">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-mariner-500">
-            RS {Profile.name} {Profile.subtitle}
-          </h2>
-          <p className="text-gray-700 leading-relaxed text-justify">
+        {/* ── Profile Description ── */}
+        <div className="grid lg:grid-cols-[1fr_2fr] gap-8 lg:gap-16 items-start">
+          {/* Left label */}
+          <div className="lg:sticky lg:top-8">
+            <div className="inline-flex items-center gap-2 bg-mariner-50 text-mariner-600 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-mariner-500 inline-block" />
+              Tentang Kami
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-mariner-600 leading-snug">
+              RS {Profile.name}{" "}
+              <span className="block text-gray-500 font-semibold text-xl mt-1">
+                {Profile.subtitle}
+              </span>
+            </h2>
+            <div className="mt-4 h-1 w-12 bg-mariner-500 rounded-full" />
+          </div>
+
+          {/* Right text */}
+          <p className="text-gray-600 leading-relaxed text-base sm:text-[17px] text-justify">
             RS {Profile.name} {Profile.subtitle} berlokasi strategis di kawasan
             Sepanjang, Sidoarjo, dengan area yang terus berkembang guna
             mendukung pelayanan kesehatan yang berkualitas. Rumah sakit
@@ -55,56 +73,84 @@ export default function VisiMisi() {
             Pencapaian ini merupakan wujud nyata dedikasi rumah sakit dalam
             memberikan pelayanan kesehatan yang profesional, aman, dan
             terpercaya bagi masyarakat. Untuk menjaga kenyamanan pasien, RS Siti
-            Khodijah Muhammadiyah Cabang Sepanjang menghadirkan fasilitas rawat
-            inap dengan konsep modern, salah satunya adalah President Suite
-            dengan desain kamar rawat inap satu pasien satu kamar, yang
-            memberikan suasana yang lebih privat, nyaman, dan bersahabat bagi
-            pasien maupun keluarga
+            Khodijah menghadirkan fasilitas rawat inap dengan konsep modern,
+            salah satunya adalah President Suite — kamar rawat inap satu pasien
+            satu kamar yang memberikan suasana privat, nyaman, dan bersahabat
+            bagi pasien maupun keluarga.
           </p>
         </div>
 
-        {/* Visi & Misi Title */}
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-mariner-500 mb-8">
-          Visi & Misi
-        </h2>
-
-        {/* Visi & Misi Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Visi Section */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <h3 className="text-2xl font-bold text-mariner-500">Visi</h3>
-            </div>
-
-            <div className="pl-0">
-              {visiPoints.map((point, index) => (
-                <p
-                  key={index}
-                  className="text-gray-700 leading-relaxed text-justify"
-                >
-                  {point}
-                </p>
-              ))}
+        {/* ── Visi & Misi ── */}
+        <div>
+          {/* Section heading */}
+          <div className="flex items-end justify-between mb-10 border-b border-gray-200 pb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-mariner-50 text-mariner-600 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-mariner-500 inline-block" />
+                Arah & Tujuan
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-mariner-600">
+                Visi & Misi
+              </h2>
             </div>
           </div>
 
-          {/* Misi Section */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <h3 className="text-2xl font-bold text-mariner-500">Misi</h3>
+          {/* Grid cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            {/* ── Visi card ── */}
+            <div className="bg-white rounded-3xl shadow-md ring-1 ring-gray-100 p-8 flex flex-col gap-6 h-full">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-mariner-50 flex items-center justify-center shrink-0">
+                  <Eye className="w-6 h-6 text-mariner-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-mariner-400 uppercase tracking-widest">
+                    Visi
+                  </p>
+                  <h3 className="text-xl font-extrabold text-mariner-600">
+                    Pandangan Kami
+                  </h3>
+                </div>
+              </div>
+
+              <div className="h-px bg-gray-100" />
+
+              <p className="text-gray-700 leading-relaxed text-base sm:text-[17px] text-justify flex-1">
+                Terwujudnya Rumah Sakit {Profile.name} {Profile.subtitle} Yang
+                Unggul, Profesional, Islami, Dan Terpercaya Di Jawa Timur.
+              </p>
             </div>
 
-            <div className="space-y-3">
-              {misiPoints.map((point, index) => (
-                <div key={index} className="flex gap-3">
-                  <div className="shrink-0 w-6 h-6 bg-mariner-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mt-0.5">
-                    {index + 1}
-                  </div>
-                  <p className="text-gray-700 leading-relaxed flex-1 text-justify">
-                    {point}
-                  </p>
+            {/* ── Misi card ── */}
+            <div className="bg-white rounded-3xl shadow-md ring-1 ring-gray-100 p-8 flex flex-col gap-6 h-full">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-mariner-50 flex items-center justify-center shrink-0">
+                  <Target className="w-6 h-6 text-mariner-500" />
                 </div>
-              ))}
+                <div>
+                  <p className="text-xs font-bold text-mariner-400 uppercase tracking-widest">
+                    Misi
+                  </p>
+                  <h3 className="text-xl font-extrabold text-mariner-600">
+                    Langkah Kami
+                  </h3>
+                </div>
+              </div>
+
+              <div className="h-px bg-gray-100" />
+
+              <ol className="space-y-4">
+                {misiPoints.map((point, index) => (
+                  <li key={index} className="flex gap-4 items-start">
+                    <span className="shrink-0 w-6 h-6 rounded-full bg-mariner-500 text-white text-xs font-bold flex items-center justify-center mt-0.5">
+                      {index + 1}
+                    </span>
+                    <p className="text-gray-700 leading-relaxed text-sm sm:text-base text-justify flex-1">
+                      {point}
+                    </p>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
         </div>

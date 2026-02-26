@@ -36,9 +36,7 @@ const LayananUnggulan = () => {
           .select("*")
           .eq("status", "active")
           .order("urutan", { ascending: true });
-
         if (error) throw error;
-
         setLayananList(data || []);
       } catch (error) {
         console.error("Error fetching poli:", error);
@@ -49,15 +47,12 @@ const LayananUnggulan = () => {
 
     fetchLayanan();
 
-    // Real-time subscription
     const channel = supabase
       .channel("poli_public")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "poli" },
-        () => {
-          fetchLayanan();
-        },
+        () => fetchLayanan(),
       )
       .subscribe();
 
@@ -66,41 +61,26 @@ const LayananUnggulan = () => {
     };
   }, []);
 
-  // Filter layanan berdasarkan search query
   const filteredLayanan = useMemo(() => {
     return layananList.filter((layanan) => {
       if (!searchQuery) return true;
-
       const title = layanan.nama_poli?.toLowerCase() || "";
       const description = layanan.description?.toLowerCase() || "";
       const query = searchQuery.toLowerCase();
-
       return title.includes(query) || description.includes(query);
     });
   }, [layananList, searchQuery]);
 
-  // Reset to page 1 when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  // Calculate pagination
   const totalPages = Math.ceil(filteredLayanan.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentLayanan = filteredLayanan.slice(startIndex, endIndex);
-
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery("");
-  };
+  const currentLayanan = filteredLayanan.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
 
   const renderLayananCard = (layanan: Poli, index: number) => {
     const IconComponent = Icons[
@@ -109,14 +89,17 @@ const LayananUnggulan = () => {
     const numberString = (index + 1).toString().padStart(2, "0");
 
     return (
-      <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden h-full flex flex-col">
-        {/* Decorative Number Background */}
+      <div className="group relative bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-full flex flex-col overflow-hidden">
+        {/* Accent bar on hover */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-bittersweet-400 to-bittersweet-300 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-t-2xl" />
+
+        {/* Decorative Number — top right */}
         <div className="absolute top-6 right-6 text-7xl font-bold text-gray-200/50 select-none pointer-events-none">
           {numberString}
         </div>
 
         {/* Icon Badge */}
-        <div className="inline-flex p-4 sm:p-5 rounded-2xl bg-bittersweet-100 text-bittersweet-500 mb-4 sm:mb-6 relative z-10 group-hover:scale-110 transition-transform duration-300 self-start">
+        <div className="relative z-10 inline-flex p-4 sm:p-5 rounded-2xl bg-bittersweet-100 text-bittersweet-500 mb-4 sm:mb-6 self-start group-hover:scale-110 transition-transform duration-300">
           {IconComponent && <IconComponent className="w-7 h-7 sm:w-8 sm:h-8" />}
         </div>
 
@@ -125,13 +108,25 @@ const LayananUnggulan = () => {
           <h3 className="text-xl sm:text-2xl font-bold text-mariner-500 mb-3 sm:mb-4 line-clamp-2 min-h-14">
             {layanan.nama_poli}
           </h3>
-          <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4 sm:mb-6 line-clamp-3 grow">
+          <p className="text-gray-600 text-sm sm:text-base leading-relaxed line-clamp-3 grow">
             {layanan.description}
           </p>
         </div>
       </div>
     );
   };
+
+  const SkeletonCard = () => (
+    <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-100 animate-pulse">
+      <div className="w-16 h-16 bg-gray-100 rounded-2xl mb-6" />
+      <div className="h-6 w-3/4 bg-gray-100 rounded mb-4" />
+      <div className="space-y-2">
+        <div className="h-4 w-full bg-gray-100 rounded" />
+        <div className="h-4 w-5/6 bg-gray-100 rounded" />
+        <div className="h-4 w-2/3 bg-gray-100 rounded" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
@@ -142,10 +137,9 @@ const LayananUnggulan = () => {
         />
 
         {/* Search Bar + Tombol Kembali */}
-        <div className="mb-2 mt-12">
+        <div className="mt-12 mb-2">
           <div className="flex justify-center">
             <div className="w-full max-w-3xl flex items-center gap-3">
-              {/* Tombol Kembali */}
               <Button
                 variant="secondary"
                 size="sm"
@@ -156,7 +150,6 @@ const LayananUnggulan = () => {
                 Kembali
               </Button>
 
-              {/* Search Input */}
               <div className="relative flex-1">
                 <Input
                   type="text"
@@ -170,8 +163,8 @@ const LayananUnggulan = () => {
                 />
                 {searchQuery && (
                   <button
-                    onClick={handleClearSearch}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors z-20"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors z-20"
                     type="button"
                   >
                     <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
@@ -182,24 +175,16 @@ const LayananUnggulan = () => {
           </div>
         </div>
 
-        {/* Loading State */}
+        {/* Loading */}
         {loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 py-12">
             {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg animate-pulse"
-              >
-                <div className="h-16 w-16 bg-gray-200 rounded-2xl mb-4"></div>
-                <div className="h-6 w-32 bg-gray-200 rounded mb-3"></div>
-                <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-              </div>
+              <SkeletonCard key={i} />
             ))}
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Empty */}
         {!loading && filteredLayanan.length === 0 && (
           <div className="text-center py-12">
             <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
@@ -237,7 +222,7 @@ const LayananUnggulan = () => {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={handlePrevPage}
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                   disabled={currentPage === 1}
                   className={
                     currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
@@ -252,7 +237,9 @@ const LayananUnggulan = () => {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={handleNextPage}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
                   disabled={currentPage === totalPages}
                   className={
                     currentPage === totalPages

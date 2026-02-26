@@ -30,7 +30,6 @@ export default function BeritaSection() {
   const [beritaList, setBeritaList] = useState<Berita[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Embla Carousel - untuk semua ukuran layar
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
     align: "start",
@@ -43,13 +42,8 @@ export default function BeritaSection() {
   const [prevBtnEnabled, setPrevBtnEnabled] = useState(false);
   const [nextBtnEnabled, setNextBtnEnabled] = useState(false);
 
-  const scrollPrev = useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev();
-  }, [emblaApi]);
-
-  const scrollNext = useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext();
-  }, [emblaApi]);
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -73,9 +67,7 @@ export default function BeritaSection() {
           .eq("status", "active")
           .order("created_at", { ascending: false })
           .limit(10);
-
         if (error) throw error;
-
         setBeritaList(data || []);
       } catch (error) {
         console.error("Error fetching berita:", error);
@@ -86,15 +78,12 @@ export default function BeritaSection() {
 
     fetchBerita();
 
-    // Real-time subscription
     const channel = supabase
       .channel("berita_public")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "berita" },
-        () => {
-          fetchBerita();
-        },
+        () => fetchBerita(),
       )
       .subscribe();
 
@@ -103,125 +92,168 @@ export default function BeritaSection() {
     };
   }, []);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const options: Intl.DateTimeFormatOptions = {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("id-ID", {
       year: "numeric",
       month: "long",
       day: "numeric",
-    };
-    return date.toLocaleDateString("id-ID", options);
-  };
+    });
 
-  const renderBeritaCard = (berita: Berita, index: number) => {
-    return (
-      <Link
-        href={`/sections/blog/detail/${berita.id}`}
-        className="block h-full"
-      >
-        <div className="h-full flex flex-col">
-          {/* Berita Number */}
-          <div className="text-7xl sm:text-8xl font-bold text-gray-100 leading-none mb-3">
-            {String(index + 1).padStart(2, "0")}
-          </div>
+  const renderBeritaCard = (berita: Berita, index: number) => (
+    <Link
+      href={`/sections/blog/detail/${berita.id}`}
+      className="block h-full group"
+    >
+      <div className="h-full flex flex-col">
+        {/* Number watermark */}
+        <div className="text-7xl sm:text-8xl font-black text-gray-100 leading-none mb-3 select-none">
+          {String(index + 1).padStart(2, "0")}
+        </div>
 
-          {/* Date & Category */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="text-bittersweet-500 text-sm font-medium">
-              {formatDate(berita.created_at)}
+        {/* Meta: date · category */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-bittersweet-500 text-xs font-semibold">
+            {formatDate(berita.created_at)}
+          </span>
+          <span className="text-gray-300 text-xs">•</span>
+          <span className="text-mariner-500 text-xs font-semibold capitalize bg-mariner-50 px-2 py-0.5 rounded-full">
+            {berita.category}
+          </span>
+        </div>
+
+        {/* Title */}
+        <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4 line-clamp-2 leading-snug grow">
+          {berita.title}
+        </h3>
+
+        {/* Thumbnail */}
+        <div
+          className="relative rounded-2xl overflow-hidden bg-gray-100"
+          style={{ minHeight: "180px", aspectRatio: "4/3" }}
+        >
+          {berita.thumbnail ? (
+            <Image
+              src={berita.thumbnail}
+              alt={berita.title}
+              fill
+              sizes="(max-width: 768px) 85vw, (max-width: 1024px) 45vw, 30vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              unoptimized
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-gray-400 text-sm">No Image</span>
             </div>
-            <span className="text-gray-300">•</span>
-            <div className="text-mariner-500 text-sm font-medium capitalize">
-              {berita.category}
-            </div>
-          </div>
-
-          {/* Title - Fixed height with line clamp */}
-          <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 line-clamp-2 min-h-14 sm:min-h-16">
-            {berita.title}
-          </h3>
-
-          {/* Image - Flex grow to fill remaining space */}
-          <div
-            className="relative bg-linear-to-br from-gray-200 to-gray-300 rounded-2xl overflow-hidden group cursor-pointer grow"
-            style={{ minHeight: "200px" }}
-          >
-            {berita.thumbnail ? (
-              <Image
-                src={berita.thumbnail}
-                alt={berita.title}
-                fill
-                sizes="(max-width: 768px) 85vw, (max-width: 1024px) 45vw, 30vw"
-                className="object-cover"
-                unoptimized
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <span className="text-gray-400 text-sm">No Image</span>
-              </div>
-            )}
-            <div className="absolute inset-0 bg-mariner-600/0 group-hover:bg-mariner-600/10 transition-all duration-300"></div>
-            <div className="absolute bottom-4 left-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-mariner-600 transition-all duration-300">
-                <ArrowUpRight className="w-5 h-5 sm:w-6 sm:h-6 text-mariner-600 group-hover:text-white transition-colors duration-300" />
-              </div>
+          )}
+          {/* Dark overlay on hover */}
+          <div className="absolute inset-0 bg-mariner-900/0 group-hover:bg-mariner-900/20 transition-all duration-300" />
+          {/* Arrow badge */}
+          <div className="absolute bottom-3 left-3">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md group-hover:bg-mariner-500 transition-colors duration-300">
+              <ArrowUpRight className="w-4 h-4 text-mariner-500 group-hover:text-white transition-colors duration-300" />
             </div>
           </div>
         </div>
-      </Link>
-    );
-  };
+      </div>
+    </Link>
+  );
+
+  const SkeletonCard = () => (
+    <div className="animate-pulse">
+      <div className="h-16 w-16 bg-gray-100 rounded mb-3" />
+      <div className="h-3.5 w-36 bg-gray-100 rounded mb-3" />
+      <div className="h-5 w-full bg-gray-100 rounded mb-1" />
+      <div className="h-5 w-4/5 bg-gray-100 rounded mb-4" />
+      <div
+        className="w-full bg-gray-100 rounded-2xl"
+        style={{ aspectRatio: "4/3" }}
+      />
+    </div>
+  );
 
   return (
-    <section className="bg-white py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <section className="bg-white py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* Left Content */}
-          <div className="lg:col-span-4 space-y-6">
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+          {/* ── LEFT: header + CTA ── */}
+          <div className="lg:col-span-4 lg:sticky lg:top-10 space-y-6">
             <Title
               badge="INFORMASI"
               badgeVariant="default"
               title="Berita Kesehatan"
               containerClassName=""
             />
-            <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+
+            <p className="text-gray-500 text-base leading-relaxed">
               Temukan berbagai informasi yang Anda butuhkan untuk hidup lebih
               sehat.
             </p>
 
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="h-0.5 w-8 bg-mariner-400 rounded-full" />
+              <div className="h-0.5 w-4 bg-mariner-200 rounded-full" />
+            </div>
+
             <Link href="/sections/blog">
-              <Button variant="primary" size="md" className="group shadow-lg">
+              <Button variant="primary" size="md" className="group shadow-md">
                 Lihat Semua Berita
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
+
+            {/* Prev / Next controls — shown on desktop alongside left column */}
+            {!loading && beritaList.length > 0 && (
+              <div className="hidden lg:flex items-center gap-2 pt-4">
+                <button
+                  onClick={scrollPrev}
+                  disabled={!prevBtnEnabled}
+                  aria-label="Sebelumnya"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-200
+                    ${
+                      prevBtnEnabled
+                        ? "border-mariner-400 text-mariner-500 hover:bg-mariner-50"
+                        : "border-gray-200 text-gray-300 cursor-not-allowed"
+                    }`}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={scrollNext}
+                  disabled={!nextBtnEnabled}
+                  aria-label="Berikutnya"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-200
+                    ${
+                      nextBtnEnabled
+                        ? "border-mariner-400 text-mariner-500 hover:bg-mariner-50"
+                        : "border-gray-200 text-gray-300 cursor-not-allowed"
+                    }`}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Right Content - Berita */}
+          {/* ── RIGHT: berita carousel ── */}
           <div className="lg:col-span-8">
-            {/* Loading State */}
+            {/* Loading */}
             {loading && (
               <div className="-mx-4 px-4">
-                <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
+                <div className="flex gap-5 overflow-x-auto scrollbar-hide pb-4">
                   {[...Array(3)].map((_, i) => (
                     <div
                       key={i}
-                      className="flex-[0_0_85%] md:flex-[0_0_45%] lg:flex-[0_0_30%] animate-pulse"
+                      className="flex-[0_0_85%] md:flex-[0_0_45%] lg:flex-[0_0_31%] shrink-0"
                     >
-                      <div className="h-20 w-20 bg-gray-200 rounded mb-3"></div>
-                      <div className="h-4 w-32 bg-gray-200 rounded mb-3"></div>
-                      <div className="h-6 w-full bg-gray-200 rounded mb-4"></div>
-                      <div
-                        className="w-full bg-gray-200 rounded-2xl"
-                        style={{ aspectRatio: "4/3" }}
-                      ></div>
+                      <SkeletonCard />
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Empty State */}
+            {/* Empty */}
             {!loading && beritaList.length === 0 && (
               <div className="text-center py-12">
                 <div className="inline-flex p-6 rounded-full bg-gray-100 mb-4">
@@ -236,17 +268,16 @@ export default function BeritaSection() {
               </div>
             )}
 
-            {/* Content - Carousel for all screen sizes */}
+            {/* Carousel */}
             {!loading && beritaList.length > 0 && (
               <>
-                {/* Carousel Container */}
                 <div className="-mx-4">
-                  <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
-                    <div className="flex gap-4 md:gap-6">
+                  <div className="overflow-hidden px-4 py-2" ref={emblaRef}>
+                    <div className="flex gap-5 md:gap-6">
                       {beritaList.map((berita, index) => (
                         <div
                           key={berita.id}
-                          className="flex-[0_0_85%] md:flex-[0_0_45%] lg:flex-[0_0_30%] min-w-0"
+                          className="flex-[0_0_85%] md:flex-[0_0_45%] lg:flex-[0_0_31%] min-w-0"
                         >
                           {renderBeritaCard(berita, index)}
                         </div>
@@ -255,32 +286,34 @@ export default function BeritaSection() {
                   </div>
                 </div>
 
-                {/* Navigation Buttons */}
-                <div className="flex items-center gap-3 mt-8">
-                  <Button
-                    variant="secondary"
-                    size="sm"
+                {/* Mobile prev/next */}
+                <div className="flex lg:hidden items-center gap-2 mt-6">
+                  <button
                     onClick={scrollPrev}
                     disabled={!prevBtnEnabled}
-                    className={
-                      !prevBtnEnabled ? "opacity-50 cursor-not-allowed" : ""
-                    }
+                    aria-label="Sebelumnya"
+                    className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-200
+                      ${
+                        prevBtnEnabled
+                          ? "border-mariner-400 text-mariner-500 hover:bg-mariner-50"
+                          : "border-gray-200 text-gray-300 cursor-not-allowed"
+                      }`}
                   >
                     <ChevronLeft className="w-5 h-5" />
-                    Prev
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
+                  </button>
+                  <button
                     onClick={scrollNext}
                     disabled={!nextBtnEnabled}
-                    className={
-                      !nextBtnEnabled ? "opacity-50 cursor-not-allowed" : ""
-                    }
+                    aria-label="Berikutnya"
+                    className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-200
+                      ${
+                        nextBtnEnabled
+                          ? "border-mariner-400 text-mariner-500 hover:bg-mariner-50"
+                          : "border-gray-200 text-gray-300 cursor-not-allowed"
+                      }`}
                   >
-                    Next
                     <ChevronRight className="w-5 h-5" />
-                  </Button>
+                  </button>
                 </div>
               </>
             )}
