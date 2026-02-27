@@ -5,6 +5,9 @@ import Animate, {
   type BezierEase,
 } from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
+import DialogPendaftaran, {
+  type PendaftaranPrefill,
+} from "@/components/ui/custom/dialog-pendaftaran";
 import Input from "@/components/ui/custom/input";
 import Pills from "@/components/ui/custom/pills";
 import Select from "@/components/ui/custom/select";
@@ -13,6 +16,7 @@ import { supabase } from "@/lib/supabase/client";
 import useEmblaCarousel from "embla-carousel-react";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
 import {
+  ArrowRight,
   Calendar,
   ChevronDown,
   ChevronRight,
@@ -96,7 +100,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
 
   return (
     <div className="relative">
-      {/* Top fade */}
       <div
         className="pointer-events-none absolute top-0 inset-x-0 z-10 transition-opacity duration-300"
         style={{
@@ -105,8 +108,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
           background: "linear-gradient(to bottom, white 0%, transparent 100%)",
         }}
       />
-
-      {/* Bottom fade + bouncing chevrons */}
       <div
         className="pointer-events-none absolute bottom-0 inset-x-0 z-10 transition-opacity duration-300"
         style={{
@@ -126,8 +127,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
           </motion.div>
         </div>
       </div>
-
-      {/* Scroll container */}
       <div
         ref={ref}
         className={`dokter-scroll overflow-y-auto scroll-smooth ${className}`}
@@ -170,7 +169,44 @@ interface Dokter {
 }
 interface JadwalGroup {
   hari: string;
-  slots: { id: string; jam_mulai: string; jam_selesai: string }[];
+  slots: {
+    id: string;
+    jam_mulai: string;
+    jam_selesai: string;
+    tipe_jadwal: "reguler" | "eksekutif";
+  }[];
+}
+
+/* ─────────────────────────────────────────
+   HELPERS (lokal untuk render jadwal)
+───────────────────────────────────────── */
+const formatTime = (t: string) => (t.includes(".") ? t.replace(".", ":") : t);
+
+const HARI_ORDER: Record<string, number> = {
+  Senin: 1,
+  Selasa: 2,
+  Rabu: 3,
+  Kamis: 4,
+  Jumat: 5,
+  Sabtu: 6,
+  Minggu: 7,
+};
+
+function groupJadwalByHari(jadwalList: JadwalDokter[]): JadwalGroup[] {
+  const map = new Map<string, JadwalGroup>();
+  const sorted = [...jadwalList].sort(
+    (a, b) => (HARI_ORDER[a.hari] ?? 99) - (HARI_ORDER[b.hari] ?? 99),
+  );
+  for (const j of sorted) {
+    if (!map.has(j.hari)) map.set(j.hari, { hari: j.hari, slots: [] });
+    map.get(j.hari)!.slots.push({
+      id: j.id,
+      jam_mulai: j.jam_mulai,
+      jam_selesai: j.jam_selesai,
+      tipe_jadwal: j.tipe_jadwal,
+    });
+  }
+  return Array.from(map.values());
 }
 
 const HARI_OPTIONS = [
@@ -184,37 +220,6 @@ const HARI_OPTIONS = [
   { value: "Minggu", label: "Minggu" },
 ];
 
-const HARI_ORDER: Record<string, number> = {
-  Senin: 1,
-  Selasa: 2,
-  Rabu: 3,
-  Kamis: 4,
-  Jumat: 5,
-  Sabtu: 6,
-  Minggu: 7,
-};
-
-/* ─────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────── */
-const formatTime = (t: string) => (t.includes(".") ? t.replace(".", ":") : t);
-
-function groupJadwalByHari(jadwalList: JadwalDokter[]): JadwalGroup[] {
-  const map = new Map<string, JadwalGroup>();
-  const sorted = [...jadwalList].sort(
-    (a, b) => (HARI_ORDER[a.hari] ?? 99) - (HARI_ORDER[b.hari] ?? 99),
-  );
-  for (const j of sorted) {
-    if (!map.has(j.hari)) map.set(j.hari, { hari: j.hari, slots: [] });
-    map.get(j.hari)!.slots.push({
-      id: j.id,
-      jam_mulai: j.jam_mulai,
-      jam_selesai: j.jam_selesai,
-    });
-  }
-  return Array.from(map.values());
-}
-
 /* ─────────────────────────────────────────
    JADWAL DIALOG
 ───────────────────────────────────────── */
@@ -224,6 +229,9 @@ interface JadwalDialogProps {
 }
 
 const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
+  const [pendaftaranPrefill, setPendaftaranPrefill] =
+    useState<PendaftaranPrefill | null>(null);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -248,6 +256,19 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
   const groupedReguler = groupJadwalByHari(jadwalReguler as JadwalDokter[]);
   const groupedEksekutif = groupJadwalByHari(jadwalEksekutif as JadwalDokter[]);
 
+  const handleDaftar = (hari: string, jamMulai: string, jamSelesai: string) => {
+    setPendaftaranPrefill({
+      poliId: dokter.poli_id,
+      poliNama: dokter.poli?.nama_poli || "-",
+      dokterId: dokter.id,
+      dokterNama: dokter.nama,
+      dokterProfile: dokter.profile,
+      hari,
+      jamMulai,
+      jamSelesai,
+    });
+  };
+
   const renderGrouped = (
     groups: JadwalGroup[],
     type: "reguler" | "eksekutif",
@@ -271,16 +292,33 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
               {group.hari}
             </span>
           </div>
-          <div className="flex flex-col gap-1 flex-1">
+          <div className="flex flex-col gap-2 flex-1">
             {group.slots.map((slot) => (
               <div
                 key={slot.id}
-                className="flex items-center gap-1.5 text-gray-500 text-sm"
+                className="flex items-center justify-between gap-2"
               >
-                <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span>
-                  {formatTime(slot.jam_mulai)} – {formatTime(slot.jam_selesai)}
-                </span>
+                <div className="flex items-center gap-1.5 text-gray-500 text-sm">
+                  <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <span>
+                    {formatTime(slot.jam_mulai)} –{" "}
+                    {formatTime(slot.jam_selesai)}
+                  </span>
+                </div>
+                {type === "eksekutif" && (
+                  <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.16 } satisfies Transition}
+                    onClick={() =>
+                      handleDaftar(group.hari, slot.jam_mulai, slot.jam_selesai)
+                    }
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-bittersweet-500 hover:bg-bittersweet-600 px-3 py-1.5 rounded-full shadow-sm shadow-bittersweet-500/20 transition-colors duration-150 shrink-0"
+                  >
+                    Daftar
+                    <ArrowRight className="w-3 h-3" />
+                  </motion.button>
+                )}
               </div>
             ))}
           </div>
@@ -289,118 +327,146 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
     ));
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
-      className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
+    <>
+      {/* ── Dialog jadwal dokter ── */}
       <motion.div
-        initial={{ opacity: 0, y: 60, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 40, scale: 0.97 }}
-        transition={{ duration: 0.45, ease } satisfies Transition}
-        className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
+        className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
       >
-        {/* Hero image */}
-        <div className="relative shrink-0 overflow-hidden">
-          <button
-            onClick={onClose}
-            aria-label="Tutup"
-            className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
+        <motion.div
+          initial={{ opacity: 0, y: 60, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 40, scale: 0.97 }}
+          transition={{ duration: 0.45, ease } satisfies Transition}
+          className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Jadwal view */}
           <motion.div
-            initial={{ scale: 1.06, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, ease } satisfies Transition}
-            className="relative w-full"
-            style={{ paddingBottom: "min(56%, 280px)" }}
-          >
-            <div className="absolute inset-0 bg-gray-100">
-              {dokter.profile ? (
-                <Image
-                  src={dokter.profile}
-                  alt={dokter.nama}
-                  fill
-                  className="object-cover"
-                  style={{ objectPosition: "center 30%" }}
-                  sizes="(max-width: 640px) 100vw, 512px"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-mariner-50">
-                  <UserRound className="w-24 h-24 text-mariner-200" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
-            </div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            key="jadwal"
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={
-              { delay: 0.2, duration: 0.45, ease } satisfies Transition
-            }
-            className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
+            transition={{ duration: 0.35, ease } satisfies Transition}
+            className="flex flex-col max-h-[85vh]"
           >
-            <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
-              Jadwal Praktek
-            </p>
-            <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
-              {dokter.nama}
-            </h3>
-            <span className="inline-block mt-1 text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
-              {dokter.poli?.nama_poli || "–"}
-            </span>
-          </motion.div>
-        </div>
-
-        {/* Jadwal content dengan ScrollFadeWrapper */}
-        <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
-          {dokter.jadwal_dokter.length === 0 ? (
-            <div className="text-center py-10">
-              <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
-                <Calendar className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 font-medium">
-                Belum ada jadwal tersedia
-              </p>
+            {/* Hero image */}
+            <div className="relative shrink-0 overflow-hidden">
+              <button
+                onClick={onClose}
+                aria-label="Tutup"
+                className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+              <motion.div
+                initial={{ scale: 1.06, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.6, ease } satisfies Transition}
+                className="relative w-full"
+                style={{ paddingBottom: "min(56%, 280px)" }}
+              >
+                <div className="absolute inset-0 bg-gray-100">
+                  {dokter.profile ? (
+                    <Image
+                      src={dokter.profile}
+                      alt={dokter.nama}
+                      fill
+                      className="object-cover"
+                      style={{ objectPosition: "center 30%" }}
+                      sizes="(max-width: 640px) 100vw, 512px"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-mariner-50">
+                      <UserRound className="w-24 h-24 text-mariner-200" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
+                </div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={
+                  { delay: 0.2, duration: 0.45, ease } satisfies Transition
+                }
+                className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
+              >
+                <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+                  Jadwal Praktek
+                </p>
+                <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
+                  {dokter.nama}
+                </h3>
+                <span className="inline-block mt-1 text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
+                  {dokter.poli?.nama_poli || "–"}
+                </span>
+              </motion.div>
             </div>
-          ) : (
-            <>
-              {groupedReguler.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
-                      BPJS / Reguler
-                    </span>
+
+            {/* Jadwal content */}
+            <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
+              {dokter.jadwal_dokter.length === 0 ? (
+                <div className="text-center py-10">
+                  <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
+                    <Calendar className="w-8 h-8 text-gray-400" />
                   </div>
-                  <div className="space-y-2">
-                    {renderGrouped(groupedReguler, "reguler")}
-                  </div>
+                  <p className="text-gray-500 font-medium">
+                    Belum ada jadwal tersedia
+                  </p>
                 </div>
+              ) : (
+                <>
+                  {groupedReguler.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
+                          BPJS / Reguler
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {renderGrouped(groupedReguler, "reguler")}
+                      </div>
+                    </div>
+                  )}
+                  {groupedEksekutif.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
+                          Eksekutif
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          Klik{" "}
+                          <span className="font-semibold text-bittersweet-500">
+                            Daftar
+                          </span>{" "}
+                          untuk membuat janji
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {renderGrouped(groupedEksekutif, "eksekutif")}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
-              {groupedEksekutif.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
-                      Eksekutif
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {renderGrouped(groupedEksekutif, "eksekutif")}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </ScrollFadeWrapper>
+            </ScrollFadeWrapper>
+          </motion.div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+
+      {/* ── DialogPendaftaran — terpisah, muncul di atas dialog jadwal ── */}
+      {pendaftaranPrefill && (
+        <DialogPendaftaran
+          open={!!pendaftaranPrefill}
+          onClose={() => setPendaftaranPrefill(null)}
+          prefill={pendaftaranPrefill}
+        />
+      )}
+    </>
   );
 };
 
@@ -549,7 +615,6 @@ const DokterSpesialis = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedHari, setSelectedHari] = useState<string>("all");
 
-  // Embla carousel untuk pills (dikembalikan ke semula)
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
     align: "start",
@@ -559,22 +624,15 @@ const DokterSpesialis = () => {
     containScroll: "trimSnaps",
   });
 
-  // Track apakah pills bisa di-scroll ke kanan (untuk tampilkan scrollbar hint)
   const [pillsCanScroll, setPillsCanScroll] = useState(false);
 
   useEffect(() => {
     if (!emblaApi) return;
-
-    const update = () => {
-      setPillsCanScroll(emblaApi.canScrollNext());
-    };
-
+    const update = () => setPillsCanScroll(emblaApi.canScrollNext());
     update();
-
     emblaApi.on("select", update);
     emblaApi.on("resize", update);
     emblaApi.on("reInit", update);
-
     return () => {
       emblaApi.off("select", update);
       emblaApi.off("resize", update);
@@ -780,10 +838,8 @@ const DokterSpesialis = () => {
               </div>
             </div>
 
-            {/* ── Pills carousel (Embla) + scrollbar hint di bawah ── */}
             {!loading && poliList.length > 0 && (
               <div className="relative -mx-4 px-4 space-y-2">
-                {/* Track Embla */}
                 <div className="overflow-hidden px-4 py-2" ref={emblaRef}>
                   <div className="flex gap-2.5">
                     <Pills
@@ -815,8 +871,6 @@ const DokterSpesialis = () => {
                     ))}
                   </div>
                 </div>
-
-                {/* Horizontal scrollbar hint — statis, tanpa animasi maju mundur */}
                 <AnimatePresence>
                   {pillsCanScroll && (
                     <motion.div
@@ -826,11 +880,9 @@ const DokterSpesialis = () => {
                       transition={{ duration: 0.4, ease }}
                       className="mx-4 flex items-center gap-2"
                     >
-                      {/* Track statis */}
                       <div className="flex-1 h-0.5 rounded-full bg-gray-200 overflow-hidden">
                         <div className="h-full w-1/4 rounded-full bg-gray-200" />
                       </div>
-                      {/* Label hint */}
                       <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest shrink-0 select-none">
                         geser
                       </span>
