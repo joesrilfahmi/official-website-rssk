@@ -5,6 +5,9 @@ import Animate, {
   type BezierEase,
 } from "@/components/animations/animate";
 import Button from "@/components/ui/custom/button";
+import DialogPendaftaran, {
+  type PendaftaranPrefill,
+} from "@/components/ui/custom/dialog-pendaftaran";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import useEmblaCarousel from "embla-carousel-react";
@@ -60,7 +63,7 @@ function useScrollIndicator() {
 }
 
 /* ─────────────────────────────────────────
-   ScrollFadeWrapper — reusable scroll area dengan dynamic fade + bounce
+   ScrollFadeWrapper
 ───────────────────────────────────────── */
 interface ScrollFadeWrapperProps {
   children: React.ReactNode;
@@ -75,7 +78,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
 }) => {
   const { ref, canScrollUp, canScrollDown } = useScrollIndicator();
 
-  // Inject webkit scrollbar style once
   useEffect(() => {
     const id = "klinik-scrollbar-style";
     if (document.getElementById(id)) return;
@@ -92,7 +94,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
 
   return (
     <div className="relative">
-      {/* Top fade */}
       <div
         className="pointer-events-none absolute top-0 inset-x-0 z-10 transition-opacity duration-300"
         style={{
@@ -101,8 +102,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
           background: "linear-gradient(to bottom, white 0%, transparent 100%)",
         }}
       />
-
-      {/* Bottom fade + bounce chevron */}
       <div
         className="pointer-events-none absolute bottom-0 inset-x-0 z-10 transition-opacity duration-300"
         style={{
@@ -122,8 +121,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
           </motion.div>
         </div>
       </div>
-
-      {/* Scroll container */}
       <div
         ref={ref}
         className={`klinik-scroll overflow-y-auto scroll-smooth ${className}`}
@@ -202,7 +199,12 @@ const SkeletonCard = () => (
 ───────────────────────────────────────── */
 interface GroupedJadwal {
   hari: string;
-  slots: { id: string; jam_mulai: string; jam_selesai: string }[];
+  slots: {
+    id: string;
+    jam_mulai: string;
+    jam_selesai: string;
+    tipe_jadwal: string;
+  }[];
 }
 
 function groupJadwalByHari(jadwalList: JadwalDokter[]): GroupedJadwal[] {
@@ -216,6 +218,7 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): GroupedJadwal[] {
       id: j.id,
       jam_mulai: j.jam_mulai,
       jam_selesai: j.jam_selesai,
+      tipe_jadwal: j.tipe_jadwal,
     });
   }
   return Array.from(map.values());
@@ -226,6 +229,8 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): GroupedJadwal[] {
 ───────────────────────────────────────── */
 interface JadwalDialogProps {
   dokter: Dokter;
+  poliNama: string;
+  poliId: string;
   jadwalList: JadwalDokter[];
   loading: boolean;
   onClose: () => void;
@@ -233,10 +238,15 @@ interface JadwalDialogProps {
 
 const JadwalDialog: React.FC<JadwalDialogProps> = ({
   dokter,
+  poliNama,
+  poliId,
   jadwalList,
   loading,
   onClose,
 }) => {
+  const [pendaftaranPrefill, setPendaftaranPrefill] =
+    useState<PendaftaranPrefill | null>(null);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -258,6 +268,19 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
   );
   const groupedReguler = groupJadwalByHari(jadwalReguler);
   const groupedEksekutif = groupJadwalByHari(jadwalEksekutif);
+
+  const handleDaftar = (hari: string, jamMulai: string, jamSelesai: string) => {
+    setPendaftaranPrefill({
+      poliId,
+      poliNama,
+      dokterId: dokter.id,
+      dokterNama: dokter.nama,
+      dokterProfile: dokter.profile,
+      hari,
+      jamMulai,
+      jamSelesai,
+    });
+  };
 
   const renderGrouped = (
     groups: GroupedJadwal[],
@@ -282,16 +305,32 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
               {group.hari}
             </span>
           </div>
-          <div className="flex flex-col gap-1 flex-1">
+          <div className="flex flex-col gap-2 flex-1">
             {group.slots.map((slot) => (
               <div
                 key={slot.id}
-                className="flex items-center gap-1.5 text-gray-500 text-sm"
+                className="flex items-center justify-between gap-2"
               >
-                <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span>
-                  {slot.jam_mulai} – {slot.jam_selesai}
-                </span>
+                <div className="flex items-center gap-1.5 text-gray-500 text-sm">
+                  <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <span>
+                    {slot.jam_mulai} – {slot.jam_selesai}
+                  </span>
+                </div>
+                {type === "eksekutif" && (
+                  <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.16 } satisfies Transition}
+                    onClick={() =>
+                      handleDaftar(group.hari, slot.jam_mulai, slot.jam_selesai)
+                    }
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-bittersweet-500 hover:bg-bittersweet-600 px-3 py-1.5 rounded-full shadow-sm shadow-bittersweet-500/20 transition-colors duration-150 shrink-0"
+                  >
+                    Daftar
+                    <ArrowRight className="w-3 h-3" />
+                  </motion.button>
+                )}
               </div>
             ))}
           </div>
@@ -300,124 +339,142 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
     ));
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
-      className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
+    <>
       <motion.div
-        initial={{ opacity: 0, y: 60, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 40, scale: 0.97 }}
-        transition={{ duration: 0.45, ease } satisfies Transition}
-        className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
+        className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
       >
-        {/* Hero foto */}
-        <div className="relative shrink-0 overflow-hidden">
-          <button
-            onClick={onClose}
-            aria-label="Tutup"
-            className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
-          <motion.div
-            initial={{ scale: 1.06, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, ease } satisfies Transition}
-            className="relative w-full"
-            style={{ paddingBottom: "min(56%, 280px)" }}
-          >
-            <div className="absolute inset-0 bg-gray-100">
-              {dokter.profile ? (
-                <Image
-                  src={dokter.profile}
-                  alt={dokter.nama}
-                  fill
-                  className="object-cover"
-                  style={{ objectPosition: "center 30%" }}
-                  sizes="(max-width: 640px) 100vw, 512px"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-bittersweet-50">
-                  <User className="w-24 h-24 text-bittersweet-200" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
-            </div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={
-              { delay: 0.2, duration: 0.45, ease } satisfies Transition
-            }
-            className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
-          >
-            <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
-              Jadwal Praktek
-            </p>
-            <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
-              {dokter.nama}
-            </h3>
-          </motion.div>
-        </div>
-
-        {/* Jadwal content dengan ScrollFadeWrapper */}
-        <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
-          {loading ? (
-            <div className="space-y-3">
-              {[...Array(4)].map((_, i) => (
-                <div
-                  key={i}
-                  className="h-14 bg-gray-100 rounded-2xl animate-pulse"
-                />
-              ))}
-            </div>
-          ) : jadwalList.length === 0 ? (
-            <div className="text-center py-10">
-              <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
-                <Calendar className="w-8 h-8 text-gray-400" />
+        <motion.div
+          initial={{ opacity: 0, y: 60, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 40, scale: 0.97 }}
+          transition={{ duration: 0.45, ease } satisfies Transition}
+          className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Hero foto */}
+          <div className="relative shrink-0 overflow-hidden">
+            <button
+              onClick={onClose}
+              aria-label="Tutup"
+              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+            <motion.div
+              initial={{ scale: 1.06, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6, ease } satisfies Transition}
+              className="relative w-full"
+              style={{ paddingBottom: "min(56%, 280px)" }}
+            >
+              <div className="absolute inset-0 bg-gray-100">
+                {dokter.profile ? (
+                  <Image
+                    src={dokter.profile}
+                    alt={dokter.nama}
+                    fill
+                    className="object-cover"
+                    style={{ objectPosition: "center 30%" }}
+                    sizes="(max-width: 640px) 100vw, 512px"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-bittersweet-50">
+                    <User className="w-24 h-24 text-bittersweet-200" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
               </div>
-              <p className="text-gray-500 font-medium">
-                Belum ada jadwal tersedia
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                { delay: 0.2, duration: 0.45, ease } satisfies Transition
+              }
+              className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
+            >
+              <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+                Jadwal Praktek
               </p>
-            </div>
-          ) : (
-            <>
-              {groupedReguler.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
-                      Reguler
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {renderGrouped(groupedReguler, "reguler")}
-                  </div>
+              <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
+                {dokter.nama}
+              </h3>
+            </motion.div>
+          </div>
+
+          {/* Jadwal content */}
+          <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
+            {loading ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-14 bg-gray-100 rounded-2xl animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : jadwalList.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
+                  <Calendar className="w-8 h-8 text-gray-400" />
                 </div>
-              )}
-              {groupedEksekutif.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
-                      Eksekutif
-                    </span>
+                <p className="text-gray-500 font-medium">
+                  Belum ada jadwal tersedia
+                </p>
+              </div>
+            ) : (
+              <>
+                {groupedReguler.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
+                        Reguler
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {renderGrouped(groupedReguler, "reguler")}
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    {renderGrouped(groupedEksekutif, "eksekutif")}
+                )}
+                {groupedEksekutif.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
+                        Eksekutif
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        Klik{" "}
+                        <span className="font-semibold text-bittersweet-500">
+                          Daftar
+                        </span>{" "}
+                        untuk membuat janji
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {renderGrouped(groupedEksekutif, "eksekutif")}
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </ScrollFadeWrapper>
+                )}
+              </>
+            )}
+          </ScrollFadeWrapper>
+        </motion.div>
       </motion.div>
-    </motion.div>
+
+      {/* DialogPendaftaran — terpisah di atas dialog jadwal */}
+      {pendaftaranPrefill && (
+        <DialogPendaftaran
+          open={!!pendaftaranPrefill}
+          onClose={() => setPendaftaranPrefill(null)}
+          prefill={pendaftaranPrefill}
+        />
+      )}
+    </>
   );
 };
 
@@ -540,6 +597,8 @@ const PoliDialog: React.FC<{ poli: Poli; onClose: () => void }> = ({
         {selectedDokter && (
           <JadwalDialog
             dokter={selectedDokter}
+            poliNama={poli.nama_poli}
+            poliId={poli.id}
             jadwalList={jadwalList}
             loading={loadingJadwal}
             onClose={() => {
@@ -621,7 +680,7 @@ const PoliDialog: React.FC<{ poli: Poli; onClose: () => void }> = ({
             </motion.p>
           </div>
 
-          {/* Daftar dokter dengan ScrollFadeWrapper */}
+          {/* Daftar dokter */}
           <ScrollFadeWrapper maxHeight={360} className="px-6 py-5">
             <div className="flex items-center gap-2 mb-4">
               <Stethoscope className="w-4 h-4 text-bittersweet-500" />
