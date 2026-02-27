@@ -41,6 +41,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -52,6 +53,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -67,10 +69,8 @@ import {
   ArrowUpDown,
   Eye,
   Loader2,
-  Minus,
   Pencil,
   Plus,
-  PlusCircle,
   Search,
   Trash2,
   X,
@@ -82,6 +82,7 @@ import { toast } from "sonner";
 
 type SortField = "title" | "created_at" | "urutan";
 type SortOrder = "asc" | "desc";
+type StatusFilter = "all" | "active" | "inactive";
 
 interface DokterResult {
   id: string;
@@ -175,14 +176,14 @@ interface FormErrorsType {
 const DEFAULT_FORM_DATA: FormDataType = {
   title: "",
   description: "",
-  specializations: [""],
+  specializations: [],
   additional_info: "",
   icon: "",
   status: "active",
   urutan: 0,
   selected_dokter_ids: [],
-  kondisi: [{ title: "", description: "", urutan: 0 }],
-  teknologi: [{ title: "", description: "", urutan: 0 }],
+  kondisi: [],
+  teknologi: [],
 };
 
 const DEFAULT_FORM_ERRORS: FormErrorsType = {
@@ -191,7 +192,7 @@ const DEFAULT_FORM_ERRORS: FormErrorsType = {
   icon: "",
 };
 
-// ── Helper: render icon from string name ───────────────────────────────────
+// ── Helper: render icon ────────────────────────────────────────────────────
 
 function renderIcon(iconName: string, className = "h-5 w-5") {
   const IconComponent = (
@@ -207,7 +208,7 @@ function renderIcon(iconName: string, className = "h-5 w-5") {
   );
 }
 
-// ── Section heading helper ─────────────────────────────────────────────────
+// ── Section heading ────────────────────────────────────────────────────────
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -243,10 +244,11 @@ export default function LayananUnggulanPage() {
   // Selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Pagination & Filter
+  // Filters & Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [itemsPerPage, setItemsPerPage] = useState<number | "all">(10);
   const [sortField, setSortField] = useState<SortField>("urutan");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
@@ -264,7 +266,7 @@ export default function LayananUnggulanPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Filtered dokter by search
+  // Filtered dokter list
   const filteredDokterList = dokterSearch.trim()
     ? dokterList.filter(
         (d) =>
@@ -288,6 +290,10 @@ export default function LayananUnggulanPage() {
       );
     }
 
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((item) => item.status === statusFilter);
+    }
+
     filtered.sort((a, b) => {
       let compareValue = 0;
       if (sortField === "title") {
@@ -305,28 +311,26 @@ export default function LayananUnggulanPage() {
     setFilteredData(filtered);
     setCurrentPage(1);
     setSelectedIds(new Set());
-  }, [debouncedSearch, data, sortField, sortOrder]);
+  }, [debouncedSearch, statusFilter, data, sortField, sortOrder]);
 
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
 
-  // ── Fetch data ─────────────────────────────────────────────────────────
+  // ── Fetch ──────────────────────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
     try {
       const { data: result, error } = await supabase
         .from("layanan_unggulan")
         .select(
-          `
-          *,
+          `*,
           layanan_unggulan_dokter(
             dokter_id,
             dokter:dokter_id(id, nama, poli:poli_id(nama_poli))
           ),
           layanan_unggulan_kondisi(id, title, description, urutan),
-          layanan_unggulan_teknologi(id, title, description, urutan)
-        `,
+          layanan_unggulan_teknologi(id, title, description, urutan)`,
         )
         .order("urutan", { ascending: true });
 
@@ -428,7 +432,14 @@ export default function LayananUnggulanPage() {
     setSortField("urutan");
     setSortOrder("asc");
     setSearchQuery("");
+    setStatusFilter("all");
   };
+
+  const showReset =
+    sortField !== "urutan" ||
+    sortOrder !== "asc" ||
+    searchQuery !== "" ||
+    statusFilter !== "all";
 
   // ── Pagination ─────────────────────────────────────────────────────────
 
@@ -461,7 +472,7 @@ export default function LayananUnggulanPage() {
   const isSomeSelected =
     currentData.some((item) => selectedIds.has(item.id)) && !isAllSelected;
 
-  // ── Dialog open/close ──────────────────────────────────────────────────
+  // ── Dialog helpers ─────────────────────────────────────────────────────
 
   const handleOpenDialog = async (item?: LayananUnggulan) => {
     setDokterSearch("");
@@ -471,7 +482,7 @@ export default function LayananUnggulanPage() {
         title: item.title,
         description: item.description,
         specializations:
-          item.specializations?.length > 0 ? item.specializations : [""],
+          item.specializations?.length > 0 ? item.specializations : [],
         additional_info: item.additional_info ?? "",
         icon: item.icon ?? "",
         status: item.status,
@@ -483,13 +494,13 @@ export default function LayananUnggulanPage() {
             ? [...item.layanan_unggulan_kondisi].sort(
                 (a, b) => a.urutan - b.urutan,
               )
-            : [{ title: "", description: "", urutan: 0 }],
+            : [],
         teknologi:
           item.layanan_unggulan_teknologi?.length > 0
             ? [...item.layanan_unggulan_teknologi].sort(
                 (a, b) => a.urutan - b.urutan,
               )
-            : [{ title: "", description: "", urutan: 0 }],
+            : [],
       });
     } else {
       setSelectedItem(null);
@@ -656,15 +667,13 @@ export default function LayananUnggulanPage() {
       await fetchData();
     } catch (error) {
       console.error("Error saving:", error);
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error(
-          selectedItem
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : selectedItem
             ? "Gagal memperbarui layanan unggulan"
             : "Gagal menambahkan layanan unggulan",
-        );
-      }
+      );
     } finally {
       setSubmitting(false);
     }
@@ -718,7 +727,7 @@ export default function LayananUnggulanPage() {
     }
   };
 
-  // ── Dynamic list helpers ───────────────────────────────────────────────
+  // ── List helpers ───────────────────────────────────────────────────────
 
   const addSpecialization = () =>
     setFormData((prev) => ({
@@ -813,10 +822,7 @@ export default function LayananUnggulanPage() {
     { value: "created_at-asc", label: "Terlama" },
   ];
 
-  const showReset =
-    sortField !== "urutan" || sortOrder !== "asc" || searchQuery !== "";
-
-  // ── Loading skeleton ───────────────────────────────────────────────────
+  // ── Loading ────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -895,27 +901,26 @@ export default function LayananUnggulanPage() {
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <CardTitle>Daftar Layanan Unggulan ({totalItems})</CardTitle>
-              <div className="flex gap-3 w-full sm:w-auto">
-                <div className="relative grow sm:grow-0 sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Cari layanan..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Cari layanan..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </div>
 
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-3 flex-wrap items-center">
+              {/* Sort */}
               <Select
                 value={`${sortField}-${sortOrder}`}
                 onValueChange={handleSortChange}
               >
-                <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <div className="flex items-center gap-2">
-                    <ArrowUpDown className="h-4 w-4" />
+                    <ArrowUpDown className="h-4 w-4 shrink-0" />
                     <span>{getSortLabel()}</span>
                   </div>
                 </SelectTrigger>
@@ -925,6 +930,21 @@ export default function LayananUnggulanPage() {
                       {option.label}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+
+              {/* Status filter */}
+              <Select
+                value={statusFilter}
+                onValueChange={(val) => setStatusFilter(val as StatusFilter)}
+              >
+                <SelectTrigger className="w-full sm:w-[150px]">
+                  <SelectValue placeholder="Semua Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="active">Aktif</SelectItem>
+                  <SelectItem value="inactive">Nonaktif</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -973,7 +993,7 @@ export default function LayananUnggulanPage() {
                       colSpan={10}
                       className="text-center text-muted-foreground h-32"
                     >
-                      {searchQuery
+                      {searchQuery || statusFilter !== "all"
                         ? "Tidak ada data yang sesuai dengan pencarian"
                         : "Belum ada data layanan unggulan"}
                     </TableCell>
@@ -1051,9 +1071,7 @@ export default function LayananUnggulanPage() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Detail</p>
-                              </TooltipContent>
+                              <TooltipContent>Detail</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
 
@@ -1070,9 +1088,7 @@ export default function LayananUnggulanPage() {
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Edit</p>
-                              </TooltipContent>
+                              <TooltipContent>Edit</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
 
@@ -1089,9 +1105,7 @@ export default function LayananUnggulanPage() {
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Hapus</p>
-                              </TooltipContent>
+                              <TooltipContent>Hapus</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
@@ -1116,9 +1130,9 @@ export default function LayananUnggulanPage() {
         </CardContent>
       </Card>
 
-      {/* ════════════════════════════════════════
+      {/* ═══════════════════════════
           Detail Dialog
-      ════════════════════════════════════════ */}
+      ═══════════════════════════ */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -1137,7 +1151,6 @@ export default function LayananUnggulanPage() {
 
           {selectedItem && (
             <div className="space-y-4 py-2">
-              {/* Status & Urutan */}
               <div className="flex gap-2 flex-wrap">
                 <Badge
                   variant="outline"
@@ -1154,7 +1167,6 @@ export default function LayananUnggulanPage() {
                 </Badge>
               </div>
 
-              {/* Deskripsi */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                   Deskripsi
@@ -1164,7 +1176,6 @@ export default function LayananUnggulanPage() {
                 </p>
               </div>
 
-              {/* Additional Info */}
               {selectedItem.additional_info && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
@@ -1176,7 +1187,6 @@ export default function LayananUnggulanPage() {
                 </div>
               )}
 
-              {/* Spesialisasi */}
               {selectedItem.specializations?.length > 0 && (
                 <div>
                   <Separator className="mb-3" />
@@ -1195,7 +1205,6 @@ export default function LayananUnggulanPage() {
                 </div>
               )}
 
-              {/* Dokter */}
               {selectedItem.layanan_unggulan_dokter?.length > 0 && (
                 <div>
                   <Separator className="mb-3" />
@@ -1222,7 +1231,6 @@ export default function LayananUnggulanPage() {
                 </div>
               )}
 
-              {/* Kondisi Medis */}
               {selectedItem.layanan_unggulan_kondisi?.length > 0 && (
                 <div>
                   <Separator className="mb-3" />
@@ -1245,7 +1253,6 @@ export default function LayananUnggulanPage() {
                 </div>
               )}
 
-              {/* Teknologi Medis */}
               {selectedItem.layanan_unggulan_teknologi?.length > 0 && (
                 <div>
                   <Separator className="mb-3" />
@@ -1290,12 +1297,12 @@ export default function LayananUnggulanPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ════════════════════════════════════════
+      {/* ═══════════════════════════
           Add / Edit Dialog
-      ════════════════════════════════════════ */}
+      ═══════════════════════════ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="shrink-0">
             <DialogTitle>
               {selectedItem
                 ? "Edit Layanan Unggulan"
@@ -1308,348 +1315,439 @@ export default function LayananUnggulanPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={(e) => void handleSubmit(e)}>
-            <div className="space-y-5 py-2">
-              {/* ── Informasi Dasar ── */}
-              <SectionHeading>Informasi Dasar</SectionHeading>
+          <form
+            onSubmit={(e) => void handleSubmit(e)}
+            className="flex flex-col flex-1 min-h-0"
+          >
+            <Tabs defaultValue="info" className="flex flex-col flex-1 min-h-0">
+              <TabsList className="shrink-0 w-full grid grid-cols-4">
+                <TabsTrigger value="info">Info Dasar</TabsTrigger>
+                <TabsTrigger value="spesialisasi">
+                  Spesialisasi
+                  {formData.specializations.filter((s) => s.trim()).length >
+                    0 && (
+                    <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                      {formData.specializations.filter((s) => s.trim()).length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="kondisi">
+                  Kondisi
+                  {formData.kondisi.filter((k) => k.title.trim()).length >
+                    0 && (
+                    <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                      {formData.kondisi.filter((k) => k.title.trim()).length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="teknologi">
+                  Teknologi
+                  {formData.teknologi.filter((t) => t.title.trim()).length >
+                    0 && (
+                    <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                      {formData.teknologi.filter((t) => t.title.trim()).length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Judul */}
+              {/* ── Tab: Info Dasar ── */}
+              <TabsContent
+                value="info"
+                className="flex-1 overflow-y-auto mt-3 space-y-4 pr-1"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">
+                      Judul Layanan <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => {
+                        setFormData({ ...formData, title: e.target.value });
+                        if (formErrors.title)
+                          setFormErrors({ ...formErrors, title: "" });
+                      }}
+                      placeholder="Contoh: Jantung Care"
+                      disabled={submitting}
+                      className={formErrors.title ? "border-red-500" : ""}
+                    />
+                    {formErrors.title && (
+                      <p className="text-xs text-red-500">{formErrors.title}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="urutan">
+                      Urutan <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="urutan"
+                      type="number"
+                      min={0}
+                      value={formData.urutan}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          urutan: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      disabled={submitting}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Angka lebih kecil tampil lebih awal
+                    </p>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="title">
-                    Judul Layanan <span className="text-red-500">*</span>
+                  <Label htmlFor="description">
+                    Deskripsi <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
+                  <Textarea
+                    id="description"
+                    value={formData.description}
                     onChange={(e) => {
-                      setFormData({ ...formData, title: e.target.value });
-                      if (formErrors.title)
-                        setFormErrors({ ...formErrors, title: "" });
+                      setFormData({ ...formData, description: e.target.value });
+                      if (formErrors.description)
+                        setFormErrors({ ...formErrors, description: "" });
                     }}
-                    placeholder="Contoh: Jantung Care"
+                    placeholder="Deskripsi singkat layanan unggulan..."
                     disabled={submitting}
-                    className={formErrors.title ? "border-red-500" : ""}
+                    rows={3}
+                    className={cn(
+                      "resize-y",
+                      formErrors.description ? "border-red-500" : "",
+                    )}
                   />
-                  {formErrors.title && (
-                    <p className="text-xs text-red-500">{formErrors.title}</p>
+                  {formErrors.description && (
+                    <p className="text-xs text-red-500">
+                      {formErrors.description}
+                    </p>
                   )}
                 </div>
 
-                {/* Urutan */}
                 <div className="space-y-2">
-                  <Label htmlFor="urutan">
-                    Urutan <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="urutan"
-                    type="number"
-                    min={0}
-                    value={formData.urutan}
+                  <Label htmlFor="additional_info">Informasi Tambahan</Label>
+                  <Textarea
+                    id="additional_info"
+                    value={formData.additional_info}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        urutan: parseInt(e.target.value) || 0,
+                        additional_info: e.target.value,
                       })
                     }
+                    placeholder="Informasi tambahan (opsional)..."
                     disabled={submitting}
+                    rows={2}
+                    className="resize-y"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Angka lebih kecil tampil lebih awal
-                  </p>
                 </div>
-              </div>
 
-              {/* Deskripsi */}
-              <div className="space-y-2">
-                <Label htmlFor="description">
-                  Deskripsi <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => {
-                    setFormData({ ...formData, description: e.target.value });
-                    if (formErrors.description)
-                      setFormErrors({ ...formErrors, description: "" });
-                  }}
-                  placeholder="Deskripsi singkat layanan unggulan..."
-                  disabled={submitting}
-                  rows={3}
-                  className={cn(
-                    "resize-y",
-                    formErrors.description ? "border-red-500" : "",
-                  )}
-                />
-                {formErrors.description && (
-                  <p className="text-xs text-red-500">
-                    {formErrors.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Additional Info */}
-              <div className="space-y-2">
-                <Label htmlFor="additional_info">Informasi Tambahan</Label>
-                <Textarea
-                  id="additional_info"
-                  value={formData.additional_info}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      additional_info: e.target.value,
-                    })
-                  }
-                  placeholder="Informasi tambahan (opsional)..."
-                  disabled={submitting}
-                  rows={2}
-                  className="resize-y"
-                />
-              </div>
-
-              {/* Status */}
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, status: val })
-                  }
-                  disabled={submitting}
-                >
-                  <SelectTrigger className="w-full sm:w-48">
-                    <span>
-                      {formData.status === "active" ? "Aktif" : "Nonaktif"}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Aktif</SelectItem>
-                    <SelectItem value="inactive">Nonaktif</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Icon — sama seperti daftar-poli */}
-              <IconSelector
-                value={formData.icon}
-                onChange={(iconName) => {
-                  setFormData({ ...formData, icon: iconName });
-                  if (formErrors.icon)
-                    setFormErrors({ ...formErrors, icon: "" });
-                }}
-                error={formErrors.icon}
-                disabled={submitting}
-              />
-
-              {/* ── Spesialisasi ── */}
-              <SectionHeading>Layanan / Spesialisasi</SectionHeading>
-
-              <div className="space-y-2">
-                {formData.specializations.map((spec, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={spec}
-                      onChange={(e) =>
-                        updateSpecialization(index, e.target.value)
+                {/* Status — hanya tampil saat edit */}
+                {selectedItem !== null && (
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(val) =>
+                        setFormData({ ...formData, status: val })
                       }
-                      placeholder={`Spesialisasi ${index + 1}...`}
+                      disabled={submitting}
+                    >
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Aktif</SelectItem>
+                        <SelectItem value="inactive">Nonaktif</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <IconSelector
+                  value={formData.icon}
+                  onChange={(iconName) => {
+                    setFormData({ ...formData, icon: iconName });
+                    if (formErrors.icon)
+                      setFormErrors({ ...formErrors, icon: "" });
+                  }}
+                  error={formErrors.icon}
+                  disabled={submitting}
+                />
+
+                <SectionHeading>Dokter</SectionHeading>
+
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      value={dokterSearch}
+                      onChange={(e) => setDokterSearch(e.target.value)}
+                      placeholder="Cari nama dokter atau poli..."
+                      className="pl-10"
                       disabled={submitting}
                     />
-                    {formData.specializations.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => removeSpecialization(index)}
-                        disabled={submitting}
-                        className="shrink-0"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addSpecialization}
-                  disabled={submitting}
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Tambah Spesialisasi
-                </Button>
-              </div>
 
-              {/* ── Dokter ── */}
-              <SectionHeading>Dokter</SectionHeading>
+                  {filteredDokterList.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic py-2 px-1">
+                      {dokterSearch
+                        ? "Dokter tidak ditemukan."
+                        : "Tidak ada dokter aktif."}
+                    </p>
+                  ) : (
+                    <div className="border rounded-md max-h-40 overflow-y-auto divide-y">
+                      {filteredDokterList.map((dokter) => (
+                        <label
+                          key={dokter.id}
+                          className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={formData.selected_dokter_ids.includes(
+                              dokter.id,
+                            )}
+                            onCheckedChange={() => toggleDokter(dokter.id)}
+                            disabled={submitting}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {dokter.nama}
+                            </p>
+                            {dokter.poli?.nama_poli && (
+                              <p className="text-xs text-muted-foreground">
+                                {dokter.poli.nama_poli}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
-              <div className="space-y-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    value={dokterSearch}
-                    onChange={(e) => setDokterSearch(e.target.value)}
-                    placeholder="Cari nama dokter atau poli..."
-                    className="pl-10"
+                  {formData.selected_dokter_ids.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {formData.selected_dokter_ids.length} dokter dipilih
+                    </p>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* ── Tab: Spesialisasi ── */}
+              <TabsContent
+                value="spesialisasi"
+                className="flex-1 overflow-y-auto mt-3 space-y-3 pr-1"
+              >
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addSpecialization}
                     disabled={submitting}
-                  />
+                    className="h-7 text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Tambah
+                  </Button>
                 </div>
 
-                {filteredDokterList.length === 0 ? (
-                  <p className="text-sm text-muted-foreground italic py-2 px-1">
-                    {dokterSearch
-                      ? "Dokter tidak ditemukan."
-                      : "Tidak ada dokter aktif."}
-                  </p>
+                {formData.specializations.length === 0 ? (
+                  <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      Belum ada spesialisasi
+                    </p>
+                  </div>
                 ) : (
-                  <div className="border rounded-md max-h-44 overflow-y-auto divide-y">
-                    {filteredDokterList.map((dokter) => (
-                      <label
-                        key={dokter.id}
-                        className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer"
+                  <div className="space-y-2">
+                    {formData.specializations.map((spec, index) => (
+                      <div
+                        key={index}
+                        className="p-3 border rounded-lg bg-muted/30"
                       >
-                        <Checkbox
-                          checked={formData.selected_dokter_ids.includes(
-                            dokter.id,
-                          )}
-                          onCheckedChange={() => toggleDokter(dokter.id)}
-                          disabled={submitting}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {dokter.nama}
-                          </p>
-                          {dokter.poli?.nama_poli && (
-                            <p className="text-xs text-muted-foreground">
-                              {dokter.poli.nama_poli}
-                            </p>
-                          )}
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-xs font-medium">
+                            Spesialisasi #{index + 1}
+                          </Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeSpecialization(index)}
+                            disabled={submitting}
+                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
-                      </label>
+                        <Input
+                          value={spec}
+                          onChange={(e) =>
+                            updateSpecialization(index, e.target.value)
+                          }
+                          placeholder={`Nama spesialisasi ${index + 1}...`}
+                          disabled={submitting}
+                          className="h-8 text-xs"
+                        />
+                      </div>
                     ))}
                   </div>
                 )}
+              </TabsContent>
 
-                {formData.selected_dokter_ids.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {formData.selected_dokter_ids.length} dokter dipilih
-                  </p>
+              {/* ── Tab: Kondisi Medis ── */}
+              <TabsContent
+                value="kondisi"
+                className="flex-1 overflow-y-auto mt-3 space-y-3 pr-1"
+              >
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addKondisi}
+                    disabled={submitting}
+                    className="h-7 text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Tambah
+                  </Button>
+                </div>
+
+                {formData.kondisi.length === 0 ? (
+                  <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      Belum ada kondisi medis
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {formData.kondisi.map((k, index) => (
+                      <div
+                        key={index}
+                        className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium">
+                            Kondisi #{index + 1}
+                          </Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeKondisi(index)}
+                            disabled={submitting}
+                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <Input
+                          value={k.title}
+                          onChange={(e) =>
+                            updateKondisi(index, "title", e.target.value)
+                          }
+                          placeholder="Judul kondisi medis..."
+                          disabled={submitting}
+                          className="h-8 text-xs"
+                        />
+                        <Textarea
+                          value={k.description}
+                          onChange={(e) =>
+                            updateKondisi(index, "description", e.target.value)
+                          }
+                          placeholder="Deskripsi kondisi medis..."
+                          disabled={submitting}
+                          rows={2}
+                          className="resize-y text-xs"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </div>
+              </TabsContent>
 
-              {/* ── Kondisi Medis ── */}
-              <SectionHeading>Kondisi Medis</SectionHeading>
+              {/* ── Tab: Teknologi Medis ── */}
+              <TabsContent
+                value="teknologi"
+                className="flex-1 overflow-y-auto mt-3 space-y-3 pr-1"
+              >
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addTeknologi}
+                    disabled={submitting}
+                    className="h-7 text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Tambah
+                  </Button>
+                </div>
 
-              <div className="space-y-3">
-                {formData.kondisi.map((k, index) => (
-                  <div key={index} className="border rounded-md p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Kondisi {index + 1}
-                      </span>
-                      {formData.kondisi.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeKondisi(index)}
-                          disabled={submitting}
-                          className="h-6 w-6 text-red-500 hover:text-red-600"
-                        >
-                          <Minus className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                    <Input
-                      value={k.title}
-                      onChange={(e) =>
-                        updateKondisi(index, "title", e.target.value)
-                      }
-                      placeholder="Judul kondisi medis..."
-                      disabled={submitting}
-                    />
-                    <Textarea
-                      value={k.description}
-                      onChange={(e) =>
-                        updateKondisi(index, "description", e.target.value)
-                      }
-                      placeholder="Deskripsi kondisi medis..."
-                      disabled={submitting}
-                      rows={2}
-                      className="resize-y"
-                    />
+                {formData.teknologi.length === 0 ? (
+                  <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      Belum ada teknologi medis
+                    </p>
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addKondisi}
-                  disabled={submitting}
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Tambah Kondisi Medis
-                </Button>
-              </div>
-
-              {/* ── Teknologi Medis ── */}
-              <SectionHeading>Teknologi Medis</SectionHeading>
-
-              <div className="space-y-3">
-                {formData.teknologi.map((t, index) => (
-                  <div key={index} className="border rounded-md p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Teknologi {index + 1}
-                      </span>
-                      {formData.teknologi.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeTeknologi(index)}
+                ) : (
+                  <div className="space-y-2">
+                    {formData.teknologi.map((t, index) => (
+                      <div
+                        key={index}
+                        className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium">
+                            Teknologi #{index + 1}
+                          </Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeTeknologi(index)}
+                            disabled={submitting}
+                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <Input
+                          value={t.title}
+                          onChange={(e) =>
+                            updateTeknologi(index, "title", e.target.value)
+                          }
+                          placeholder="Judul teknologi medis..."
                           disabled={submitting}
-                          className="h-6 w-6 text-red-500 hover:text-red-600"
-                        >
-                          <Minus className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                    <Input
-                      value={t.title}
-                      onChange={(e) =>
-                        updateTeknologi(index, "title", e.target.value)
-                      }
-                      placeholder="Judul teknologi medis..."
-                      disabled={submitting}
-                    />
-                    <Textarea
-                      value={t.description}
-                      onChange={(e) =>
-                        updateTeknologi(index, "description", e.target.value)
-                      }
-                      placeholder="Deskripsi teknologi medis..."
-                      disabled={submitting}
-                      rows={2}
-                      className="resize-y"
-                    />
+                          className="h-8 text-xs"
+                        />
+                        <Textarea
+                          value={t.description}
+                          onChange={(e) =>
+                            updateTeknologi(
+                              index,
+                              "description",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="Deskripsi teknologi medis..."
+                          disabled={submitting}
+                          rows={2}
+                          className="resize-y text-xs"
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addTeknologi}
-                  disabled={submitting}
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Tambah Teknologi Medis
-                </Button>
-              </div>
-            </div>
+                )}
+              </TabsContent>
+            </Tabs>
 
-            <DialogFooter className="mt-4 pt-4 border-t">
+            <DialogFooter className="shrink-0 mt-4 pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
@@ -1669,7 +1767,7 @@ export default function LayananUnggulanPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Confirmation ── */}
+      {/* ── Delete ── */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1695,7 +1793,7 @@ export default function LayananUnggulanPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Bulk Delete Confirmation ── */}
+      {/* ── Bulk Delete ── */}
       <AlertDialog
         open={bulkDeleteDialogOpen}
         onOpenChange={setBulkDeleteDialogOpen}
@@ -1724,7 +1822,6 @@ export default function LayananUnggulanPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Access Denied */}
       <AccessDeniedDialog
         open={showAccessDenied}
         onOpenChange={setShowAccessDenied}
