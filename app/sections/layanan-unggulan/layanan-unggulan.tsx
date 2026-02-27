@@ -1,522 +1,207 @@
 "use client";
 import Animate from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
-import { Activity, Bone, FileText, Heart, Stethoscope } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
+import {
+  Activity,
+  Baby,
+  Bone,
+  Brain,
+  Eye,
+  FileText,
+  Heart,
+  Stethoscope,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 
-interface MedicalCondition {
+// ── Types ──────────────────────────────────────────────────────────────────
+
+interface KondisiMedis {
+  id: string;
   title: string;
   description: string;
+  urutan: number;
 }
 
-interface MedicalTechnology {
+interface TeknologiMedis {
+  id: string;
   title: string;
   description: string;
+  urutan: number;
 }
 
-interface DoctorInfo {
-  name: string;
-  specialization: string;
-  schedule?: string;
+interface DokterItem {
+  dokter_id: string;
+  dokter: {
+    nama: string;
+    poli: { nama_poli: string } | null;
+  } | null;
 }
 
-interface ServiceContent {
+interface LayananUnggulan {
+  id: string;
   title: string;
   description: string;
   specializations: string[];
-  additionalInfo?: string;
-  medicalConditions?: MedicalCondition[];
-  medicalTechnologies?: MedicalTechnology[];
-  doctors?: DoctorInfo[];
+  additional_info: string | null;
+  icon: string;
+  status: string;
+  urutan: number;
+  poli: { nama_poli: string } | null;
+  layanan_unggulan_kondisi: KondisiMedis[];
+  layanan_unggulan_teknologi: TeknologiMedis[];
+  layanan_unggulan_dokter: DokterItem[];
 }
 
-interface Service {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  content: ServiceContent;
+// ── Icon resolver ──────────────────────────────────────────────────────────
+
+function resolveIcon(iconName: string, className = "w-5 h-5"): React.ReactNode {
+  const map: Record<string, React.ReactNode> = {
+    heart: <Heart className={className} />,
+    bone: <Bone className={className} />,
+    activity: <Activity className={className} />,
+    "file-text": <FileText className={className} />,
+    stethoscope: <Stethoscope className={className} />,
+    brain: <Brain className={className} />,
+    eye: <Eye className={className} />,
+    baby: <Baby className={className} />,
+  };
+  return map[iconName] ?? <Stethoscope className={className} />;
 }
 
-export default function LayananUnggulan() {
-  const [selectedService, setSelectedService] = useState<string>("jantung");
-  const [activeTab, setActiveTab] = useState<string>("kondisi");
+// ── Skeleton ───────────────────────────────────────────────────────────────
+
+function SidebarSkeleton() {
+  return (
+    <div className="bg-gray-100 rounded-2xl p-2 space-y-2">
+      {[...Array(4)].map((_, i) => (
+        <div
+          key={i}
+          className="px-6 py-4 rounded-xl bg-white/60 animate-pulse flex items-center gap-3"
+        >
+          <div className="w-5 h-5 rounded-full bg-gray-200 shrink-0" />
+          <div className="h-4 w-28 bg-gray-200 rounded" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ContentSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-8 lg:p-12 space-y-6 animate-pulse">
+      <div className="h-8 w-48 bg-gray-200 rounded" />
+      <div className="space-y-2">
+        <div className="h-4 w-full bg-gray-100 rounded" />
+        <div className="h-4 w-5/6 bg-gray-100 rounded" />
+        <div className="h-4 w-4/6 bg-gray-100 rounded" />
+      </div>
+      <div className="space-y-2 pt-4">
+        <div className="h-5 w-40 bg-gray-200 rounded" />
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-4 w-full bg-gray-100 rounded" />
+        ))}
+      </div>
+      <div className="pt-6 border-t border-gray-100 space-y-3">
+        <div className="h-6 w-56 bg-gray-200 rounded" />
+        <div className="flex gap-4 mt-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-8 w-24 bg-gray-100 rounded" />
+          ))}
+        </div>
+        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg p-4 space-y-2">
+              <div className="h-4 w-32 bg-gray-200 rounded" />
+              <div className="h-3 w-full bg-gray-100 rounded" />
+              <div className="h-3 w-4/5 bg-gray-100 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
+
+export default function LayananUnggulanSection() {
+  const [services, setServices] = useState<LayananUnggulan[]>([]);
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<
+    "kondisi" | "teknologi" | "dokter"
+  >("kondisi");
+  const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
 
-  // Simulate data ready (static data, so just a brief tick to let layout paint)
-  useEffect(() => {
-    const timer = setTimeout(() => setDataReady(true), 80);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Reset tab to "kondisi" when service changes
+  // Reset tab when service changes
   useEffect(() => {
     setActiveTab("kondisi");
-  }, [selectedService]);
+  }, [selectedId]);
 
-  const services: Service[] = [
-    {
-      id: "jantung",
-      name: "Jantung Care",
-      icon: <Heart className="w-5 h-5" />,
-      content: {
-        title: "Jantung Care",
-        description:
-          "RS Siti Khodijah Muhammadiyah Cabang Sepanjang merupakan pusat layanan jantung terpadu yang memberikan pelayanan komprehensif dalam menangani berbagai golongan kardiovaskular pada pasien jantung pada semua usia.",
-        specializations: [
-          "Spesialis Jantung dan Pembuluh Darah Subspesialis Aritmia",
-          "Spesialis Jantung dan Pembuluh Darah Subspesialis Bawaan",
-          "Spesialis Jantung dan Pembuluh Darah Subspesialis Kardiologi Intervensi",
-          "Spesialis Jantung dan Pembuluh Darah Subspesialis Kardiologi Pediatrik dan Penyakit Jantung Bawaan",
-          "Spesialis Bedah Toraks, Kardiak, dan Vaskular",
-          "Spesialis Jantung dan Pembuluh Darah Subspesialis Imaging dan Pencatatan Kardiovaskular",
-        ],
-        additionalInfo: `Dalam layanan diagnosis, tersedia pula berbagai tindakan Intervensi dan terapi jantung, meliputi tindakan kardiologi intervensi (PCI) dengan dukungan teknologi modern, tindakan ablasi aritmia, pemasangan Permanent Pacemaker (PPM), Cardiac Resynchronization Therapy (CRT), serta Implantable Cardioverter Defibrillator (ICD).
+  useEffect(() => {
+    fetchLayanan();
 
-RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantung dan pembuluh darah, termasuk Tindakan Bedah Pintas Koroner (Bypass/CABG) serta penanggulangan kelainan katup dan pembuluh darah besar jantung.`,
-        medicalConditions: [
-          {
-            title: "Penyakit Jantung Koroner",
-            description:
-              "Kondisi akibat penyempitan atau sumbatan pada pembuluh darah koroner yang disebabkan oleh penumpukan lemak dan kolesterol, sehingga aliran darah ke otot jantung berkurang dan dapat memunculkan nyeri dada hingga serangan jantung.",
-          },
-          {
-            title: "Aritmia (Gangguan Irama Jantung)",
-            description:
-              "Gangguan pada cara kerja sistem listrik jantung yang tidak normal, baik terlalu cepat, terlalu lambat, atau tidak beraturan. Kondisi ini dapat membuat tubuh lainnya berdetak terlalu cepat, terlalu lambat, atau tidak beraturan.",
-          },
-          {
-            title: "Kelainan Katup Jantung",
-            description:
-              "Masalah pada katup jantung yang tidak berfungsi optimal sehingga aliran darah dalam jantung menjadi terganggu dan berpotensi membutuhkan sesak napas serta kelelahan.",
-          },
-          {
-            title: "Penyakit Jantung Bawaan",
-            description:
-              "Kelainan struktur jantung yang sudah ada sejak lahir dan dapat mengganggu aliran darah, sehingga memerlukan pemantauan dan penanganan khusus sejak dini.",
-          },
-          {
-            title: "Aneurisma Pembuluh Darah Jantung",
-            description:
-              "Kondisi peledakan anormal pada dinding pembuluh darah jantung akibat melemahnya jaringan pembuluh darah, yang berisiko pecah dan menyebabkan komplikasi serius.",
-          },
-          {
-            title: "Kardiomiopati",
-            description:
-              "Kelainan pada otot jantung yang menyebabkan dinding jantung menebal, melentuk, atau membesar, sehingga kemampuan jantung dalam memompa darah ke seluruh tubuh menurun.",
-          },
-          {
-            title: "Gagal Jantung",
-            description:
-              "Kondisi kronis ketika jantung tidak mampu memompa darah secara optimal untuk memenuhi kebutuhan oksigen tubuh, ditandai dengan mudah lelah, sesak napas, dan pembengkakan pada kaki.",
-          },
-          {
-            title: "Perikarditis",
-            description:
-              "Peradangan pada selaputi pembungkus jantung (perikardium) yang dapat memunculkan nyeri dada, sesak napas, dan rasa tidak nyaman saat berbaring.",
-          },
-          {
-            title: "Tumor Jantung",
-            description:
-              "Pertumbuhan jaringan abnormal pada jantung yang dapat mengganggu aliran darah dan fungsi jantung, baik bersifat jinak maupun ganas, sehingga memerlukan evaluasi medis lanjutan.",
-          },
-        ],
-        medicalTechnologies: [
-          {
-            title: "MRI Jantung 1.5 Tesla",
-            description:
-              "Pemeriksaan jantung non-invasif dengan teknologi magnet canggih untuk melihat struktur dan fungsi jantung secara detail tanpa radiasi.",
-          },
-          {
-            title: "CT Scan Jantung",
-            description:
-              "Pemeriksaan cepat untuk melihat kondisi jantung dan pembuluh darah, membantu deteksi penyumbatan atau kelainan jantung.",
-          },
-          {
-            title: "Color Doppler Echocardiography",
-            description:
-              "USG jantung berwarna untuk melihat aliran darah dan fungsi katup jantung secara aman.",
-          },
-          {
-            title: "Treadmill Test",
-            description:
-              "Tes jantung saat aktivitas fisik untuk menilai respons jantung, mendeteksi penyakit jantung, dan menentukan program latihan yang aman.",
-          },
-        ],
-        doctors: [
-          {
-            name: "dr. Ahmad Syaifuddin, Sp.JP(K), FIHA",
-            specialization: "Spesialis Jantung dan Pembuluh Darah - Konsultan",
-          },
-          {
-            name: "dr. Budi Santoso, Sp.JP",
-            specialization: "Spesialis Jantung dan Pembuluh Darah",
-          },
-          {
-            name: "dr. Citra Dewi, Sp.JP",
-            specialization: "Spesialis Jantung dan Pembuluh Darah",
-          },
-        ],
-      },
-    },
-    {
-      id: "orthopedi",
-      name: "Orthopedi Care",
-      icon: <Bone className="w-5 h-5" />,
-      content: {
-        title: "Orthopedi Care",
-        description:
-          "Layanan orthopedi kami menyediakan perawatan komprehensif untuk masalah tulang, sendi, dan otot dengan teknologi terkini dan tim dokter spesialis berpengalaman.",
-        specializations: [
-          "Bedah Tulang dan Sendi",
-          "Penanganan Patah Tulang dan Cedera Olahraga",
-          "Operasi Penggantian Sendi (Total Joint Replacement)",
-          "Arthroscopy",
-          "Spinal Surgery (Bedah Tulang Belakang)",
-          "Pediatric Orthopedi",
-        ],
-        additionalInfo: `Dilengkapi dengan fasilitas fisioterapi modern untuk rehabilitasi pasca operasi dan pemulihan cedera. Tim kami terdiri dari dokter spesialis orthopedi yang berpengalaman dalam menangani berbagai kasus dari yang sederhana hingga kompleks.`,
-        medicalConditions: [
-          {
-            title: "Fraktur (Patah Tulang)",
-            description:
-              "Penanganan berbagai jenis patah tulang akibat trauma atau kecelakaan dengan metode konservatif maupun operatif.",
-          },
-          {
-            title: "Osteoarthritis",
-            description:
-              "Peradangan sendi degeneratif yang menyebabkan nyeri dan kekakuan, terutama pada lutut, pinggul, dan tulang belakang.",
-          },
-          {
-            title: "Cedera Ligamen",
-            description:
-              "Penanganan cedera ligamen seperti ACL, PCL, dan meniscus dengan teknik arthroscopy minimal invasif.",
-          },
-          {
-            title: "Skoliosis",
-            description:
-              "Kelainan tulang belakang yang melengkung ke samping, memerlukan pemantauan dan penanganan khusus.",
-          },
-          {
-            title: "Carpal Tunnel Syndrome",
-            description:
-              "Gangguan saraf di pergelangan tangan yang menyebabkan kesemutan dan nyeri pada jari-jari tangan.",
-          },
-        ],
-        medicalTechnologies: [
-          {
-            title: "Arthroscopy",
-            description:
-              "Teknik bedah minimal invasif menggunakan kamera kecil untuk melihat dan memperbaiki kerusakan di dalam sendi.",
-          },
-          {
-            title: "C-Arm Fluoroscopy",
-            description:
-              "Alat pencitraan real-time untuk memandu prosedur bedah orthopedi dengan presisi tinggi.",
-          },
-          {
-            title: "MRI Musculoskeletal",
-            description:
-              "Pemeriksaan pencitraan detail untuk mendiagnosis masalah pada tulang, sendi, otot, dan ligamen.",
-          },
-          {
-            title: "Bone Densitometry (DEXA Scan)",
-            description:
-              "Pemeriksaan kepadatan tulang untuk mendeteksi osteoporosis dan risiko patah tulang.",
-          },
-        ],
-        doctors: [
-          {
-            name: "dr. Eko Prasetyo, Sp.OT(K)",
-            specialization: "Spesialis Bedah Orthopedi - Konsultan Spine",
-          },
-          {
-            name: "dr. Fitri Handayani, Sp.OT",
-            specialization: "Spesialis Bedah Orthopedi",
-          },
-          {
-            name: "dr. Gunawan Wibowo, Sp.OT",
-            specialization: "Spesialis Bedah Orthopedi",
-          },
-        ],
-      },
-    },
-    {
-      id: "kanker",
-      name: "Kanker Care",
-      icon: <Activity className="w-5 h-5" />,
-      content: {
-        title: "Kanker Care",
-        description:
-          "Pusat layanan kanker terpadu yang menyediakan diagnosis, pengobatan, dan perawatan komprehensif untuk pasien kanker dengan pendekatan multidisiplin.",
-        specializations: [
-          "Kemoterapi",
-          "Radioterapi",
-          "Bedah Onkologi",
-          "Imunoterapi",
-          "Terapi Target",
-          "Perawatan Paliatif",
-        ],
-        additionalInfo: `Didukung oleh tim multidisiplin yang terdiri dari dokter spesialis onkologi, radiologi, patologi, dan perawat onkologi terlatih. Kami menyediakan fasilitas kemoterapi day care yang nyaman dan peralatan radioterapi modern untuk memberikan perawatan terbaik bagi pasien kanker.`,
-        medicalConditions: [
-          {
-            title: "Kanker Payudara",
-            description:
-              "Diagnosis dan penanganan komprehensif kanker payudara dengan berbagai modalitas terapi sesuai stadium.",
-          },
-          {
-            title: "Kanker Paru-paru",
-            description:
-              "Penanganan kanker paru dengan terapi kombinasi kemoterapi, radioterapi, dan targeted therapy.",
-          },
-          {
-            title: "Kanker Kolorektal",
-            description:
-              "Penanganan kanker usus besar dan rektum dengan pendekatan bedah dan terapi adjuvan.",
-          },
-          {
-            title: "Kanker Serviks",
-            description:
-              "Program skrining, deteksi dini, dan penanganan kanker leher rahim dengan berbagai metode terapi.",
-          },
-          {
-            title: "Kanker Prostat",
-            description:
-              "Diagnosis dan penanganan kanker prostat dengan pendekatan individual sesuai kondisi pasien.",
-          },
-          {
-            title: "Leukemia",
-            description:
-              "Penanganan kanker darah dengan kemoterapi intensif dan perawatan suportif komprehensif.",
-          },
-        ],
-        medicalTechnologies: [
-          {
-            title: "Linear Accelerator (LINAC)",
-            description:
-              "Teknologi radioterapi canggih untuk memberikan radiasi presisi tinggi pada sel kanker dengan minimal kerusakan jaringan sehat.",
-          },
-          {
-            title: "PET-CT Scan",
-            description:
-              "Pemeriksaan pencitraan kombinasi untuk deteksi dan staging kanker dengan akurasi tinggi.",
-          },
-          {
-            title: "Mammografi Digital",
-            description:
-              "Skrining dan diagnosis kanker payudara dengan teknologi digital untuk hasil lebih akurat.",
-          },
-          {
-            title: "Kemoterapi Day Care",
-            description:
-              "Fasilitas kemoterapi rawat jalan yang nyaman dengan peralatan modern dan tim medis berpengalaman.",
-          },
-        ],
-        doctors: [
-          {
-            name: "dr. Hendra Kusuma, Sp.PD-KHOM",
-            specialization:
-              "Spesialis Penyakit Dalam - Konsultan Hematologi Onkologi Medik",
-          },
-          {
-            name: "dr. Indah Permata, Sp.Rad(K)Onk.Rad",
-            specialization: "Spesialis Radiologi - Konsultan Onkologi Radiasi",
-          },
-          {
-            name: "dr. Jessica Tan, Sp.B(K)Onk",
-            specialization: "Spesialis Bedah - Konsultan Bedah Onkologi",
-          },
-        ],
-      },
-    },
-    {
-      id: "radiologi",
-      name: "Radiologi Center",
-      icon: <FileText className="w-5 h-5" />,
-      content: {
-        title: "Radiologi Center",
-        description:
-          "Pusat diagnostik pencitraan medis dengan teknologi terkini untuk mendukung diagnosis yang akurat dan cepat.",
-        specializations: [
-          "CT-Scan (Computed Tomography)",
-          "MRI (Magnetic Resonance Imaging)",
-          "USG (Ultrasonografi) 4D",
-          "Rontgen Digital",
-          "Mammografi Digital",
-          "Fluoroscopy",
-        ],
-        additionalInfo: `Dilengkapi dengan peralatan radiologi terkini dan tim radiografer serta dokter spesialis radiologi yang berpengalaman. Hasil pemeriksaan dapat diakses secara digital dengan sistem PACS (Picture Archiving and Communication System) untuk kemudahan konsultasi dan second opinion.`,
-        medicalConditions: [
-          {
-            title: "Deteksi Tumor dan Kanker",
-            description:
-              "Pemeriksaan pencitraan untuk mendeteksi, menentukan lokasi, dan mengukur ukuran tumor di berbagai organ tubuh.",
-          },
-          {
-            title: "Penyakit Kardiovaskular",
-            description:
-              "Evaluasi kondisi jantung dan pembuluh darah menggunakan CT Angiografi dan MRI Jantung.",
-          },
-          {
-            title: "Gangguan Neurologis",
-            description:
-              "Diagnosis penyakit otak dan saraf seperti stroke, tumor otak, dan multiple sclerosis dengan MRI.",
-          },
-          {
-            title: "Penyakit Paru",
-            description:
-              "Deteksi pneumonia, TB, PPOK, dan kanker paru melalui rontgen thorax dan CT Scan.",
-          },
-          {
-            title: "Kelainan Muskuloskeletal",
-            description:
-              "Evaluasi patah tulang, cedera ligamen, dan gangguan sendi dengan berbagai modalitas pencitraan.",
-          },
-        ],
-        medicalTechnologies: [
-          {
-            title: "CT-Scan 128 Slice",
-            description:
-              "Teknologi CT-Scan canggih untuk pencitraan cepat dan detail dengan radiasi minimal.",
-          },
-          {
-            title: "MRI 1.5 Tesla",
-            description:
-              "Pemeriksaan pencitraan tanpa radiasi untuk detail jaringan lunak yang superior.",
-          },
-          {
-            title: "USG 4D Color Doppler",
-            description:
-              "Ultrasonografi 4 dimensi dengan color doppler untuk pemeriksaan kehamilan dan pembuluh darah.",
-          },
-          {
-            title: "Digital Radiography (DR)",
-            description:
-              "Sistem rontgen digital untuk hasil cepat dengan kualitas gambar tinggi dan radiasi rendah.",
-          },
-          {
-            title: "Mammografi Digital",
-            description:
-              "Skrining dan diagnosis kanker payudara dengan teknologi digital resolusi tinggi.",
-          },
-          {
-            title: "PACS System",
-            description:
-              "Sistem penyimpanan dan distribusi gambar digital untuk akses mudah dan konsultasi jarak jauh.",
-          },
-        ],
-        doctors: [
-          {
-            name: "dr. Kartika Sari, Sp.Rad",
-            specialization: "Spesialis Radiologi",
-          },
-          {
-            name: "dr. Lukman Hakim, Sp.Rad",
-            specialization: "Spesialis Radiologi",
-          },
-          {
-            name: "dr. Maya Dewi, Sp.Rad",
-            specialization: "Spesialis Radiologi",
-          },
-        ],
-      },
-    },
-    {
-      id: "urologi",
-      name: "Urologi Center",
-      icon: <Stethoscope className="w-5 h-5" />,
-      content: {
-        title: "Urologi Center",
-        description:
-          "Layanan spesialis urologi untuk menangani gangguan sistem kemih dan reproduksi pria dengan teknologi minimal invasif.",
-        specializations: [
-          "ESWL (Extracorporeal Shock Wave Lithotripsy) untuk Batu Ginjal",
-          "Endourologi",
-          "Bedah Prostat",
-          "Urologi Anak",
-          "Urologi Onkologi",
-          "Andrologi dan Infertilitas Pria",
-        ],
-        additionalInfo: `Dilengkapi dengan teknologi ESWL untuk penanganan batu ginjal tanpa operasi dan fasilitas endourologi untuk tindakan minimal invasif. Tim kami terdiri dari dokter spesialis urologi yang berpengalaman dalam menangani berbagai kondisi urologi dari yang sederhana hingga kompleks.`,
-        medicalConditions: [
-          {
-            title: "Batu Saluran Kemih",
-            description:
-              "Penanganan batu ginjal, ureter, dan kandung kemih dengan metode ESWL, endoskopi, atau pembedahan.",
-          },
-          {
-            title: "Pembesaran Prostat (BPH)",
-            description:
-              "Diagnosis dan terapi pembesaran prostat jinak yang menyebabkan gangguan berkemih.",
-          },
-          {
-            title: "Infeksi Saluran Kemih",
-            description:
-              "Penanganan infeksi berulang pada ginjal, ureter, kandung kemih, dan uretra.",
-          },
-          {
-            title: "Kanker Urologi",
-            description:
-              "Diagnosis dan penanganan kanker ginjal, kandung kemih, prostat, dan testis.",
-          },
-          {
-            title: "Disfungsi Ereksi",
-            description:
-              "Evaluasi dan terapi gangguan fungsi seksual pria dengan pendekatan medis dan minimal invasif.",
-          },
-          {
-            title: "Inkontinensia Urin",
-            description:
-              "Penanganan gangguan kontrol berkemih pada pria dan wanita.",
-          },
-        ],
-        medicalTechnologies: [
-          {
-            title: "ESWL (Extracorporeal Shock Wave Lithotripsy)",
-            description:
-              "Teknologi penghancur batu ginjal tanpa sayatan menggunakan gelombang kejut dari luar tubuh.",
-          },
-          {
-            title: "Ureteroscopy (URS)",
-            description:
-              "Prosedur endoskopi untuk melihat dan mengatasi masalah di ureter dan ginjal secara minimal invasif.",
-          },
-          {
-            title: "Transurethral Resection of Prostate (TURP)",
-            description:
-              "Teknik bedah minimal invasif untuk mengangkat jaringan prostat yang membesar.",
-          },
-          {
-            title: "Uroflowmetry",
-            description:
-              "Pemeriksaan untuk mengukur kecepatan dan volume aliran urin guna mendeteksi gangguan berkemih.",
-          },
-          {
-            title: "Cystoscopy",
-            description:
-              "Pemeriksaan endoskopi untuk melihat bagian dalam kandung kemih dan uretra.",
-          },
-        ],
-        doctors: [
-          {
-            name: "dr. Nugroho Wijaya, Sp.U",
-            specialization: "Spesialis Urologi",
-          },
-          {
-            name: "dr. Okta Ramadhan, Sp.U",
-            specialization: "Spesialis Urologi",
-          },
-          {
-            name: "dr. Putri Andini, Sp.U",
-            specialization: "Spesialis Urologi",
-          },
-        ],
-      },
-    },
-  ];
+    const channel = supabase
+      .channel("layanan_unggulan_section")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "layanan_unggulan" },
+        () => {
+          fetchLayanan();
+        },
+      )
+      .subscribe();
 
-  const currentService = services.find(
-    (s) => s.id === selectedService,
-  )?.content;
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchLayanan = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("layanan_unggulan")
+        .select(
+          `
+          id, title, description, specializations, additional_info, icon, status, urutan,
+          poli:poli_id(nama_poli),
+          layanan_unggulan_kondisi(id, title, description, urutan),
+          layanan_unggulan_teknologi(id, title, description, urutan),
+          layanan_unggulan_dokter(
+            dokter_id,
+            dokter:dokter_id(nama, poli:poli_id(nama_poli))
+          )
+        `,
+        )
+        .eq("status", "active")
+        .order("urutan", { ascending: true });
+
+      if (error) throw error;
+
+      const result = (data ?? []) as unknown as LayananUnggulan[];
+      // Sort sub-arrays by urutan
+      result.forEach((s) => {
+        s.layanan_unggulan_kondisi?.sort((a, b) => a.urutan - b.urutan);
+        s.layanan_unggulan_teknologi?.sort((a, b) => a.urutan - b.urutan);
+      });
+
+      setServices(result);
+      if (result.length > 0) setSelectedId(result[0].id);
+    } catch (err) {
+      console.error("Error fetching layanan unggulan:", err);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setDataReady(true), 120);
+    }
+  };
+
+  const current = services.find((s) => s.id === selectedId);
+
+  const hasKondisi = (current?.layanan_unggulan_kondisi?.length ?? 0) > 0;
+  const hasTeknologi = (current?.layanan_unggulan_teknologi?.length ?? 0) > 0;
+  const hasDokter = (current?.layanan_unggulan_dokter?.length ?? 0) > 0;
 
   return (
     <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8">
@@ -525,109 +210,125 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
         <Animate type="fadein" ready={dataReady}>
           <Banner
             title="Layanan Unggulan"
-            subtitle="Kami menyediakan layanan urologi terbaik untuk memenuhi kebutuhan kesehatan Anda."
+            subtitle="Kami menyediakan layanan terbaik untuk memenuhi kebutuhan kesehatan Anda."
           />
         </Animate>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-12">
-          {/* Left Sidebar - Service List */}
+          {/* ── Sidebar ── */}
           <Animate type="slideleft" ready={dataReady} className="lg:col-span-1">
-            <div className="bg-gray-100 rounded-2xl p-2 space-y-2 sticky top-4">
-              <Animate
-                type="stagger"
-                staggerChildren={0.08}
-                delayChildren={0.1}
-                ready={dataReady}
-              >
-                {services.map((service) => (
-                  <Animate key={service.id} type="fielditem">
-                    <button
-                      onClick={() => setSelectedService(service.id)}
-                      className={`w-full text-left px-6 py-4 rounded-xl transition-all duration-300 flex items-center gap-3 ${
-                        selectedService === service.id
-                          ? "bg-white shadow-md text-mariner-600 font-semibold"
-                          : "text-gray-700 hover:bg-white/50"
-                      }`}
-                    >
-                      <span
-                        className={
-                          selectedService === service.id
-                            ? "text-mariner-600"
-                            : "text-gray-500"
-                        }
+            {loading ? (
+              <SidebarSkeleton />
+            ) : services.length === 0 ? (
+              <div className="bg-gray-100 rounded-2xl p-6 text-center text-gray-400 text-sm">
+                Belum ada layanan tersedia.
+              </div>
+            ) : (
+              <div className="bg-gray-100 rounded-2xl p-2 space-y-2 sticky top-4">
+                <Animate
+                  type="stagger"
+                  staggerChildren={0.08}
+                  delayChildren={0.1}
+                  ready={dataReady}
+                >
+                  {services.map((service) => (
+                    <Animate key={service.id} type="fielditem">
+                      <button
+                        onClick={() => setSelectedId(service.id)}
+                        className={`w-full text-left px-6 py-4 rounded-xl transition-all duration-300 flex items-center gap-3 ${
+                          selectedId === service.id
+                            ? "bg-white shadow-md text-mariner-600 font-semibold"
+                            : "text-gray-700 hover:bg-white/50"
+                        }`}
                       >
-                        {service.icon}
-                      </span>
-                      <span className="text-base">{service.name}</span>
-                    </button>
-                  </Animate>
-                ))}
-              </Animate>
-            </div>
+                        <span
+                          className={
+                            selectedId === service.id
+                              ? "text-mariner-600"
+                              : "text-gray-500"
+                          }
+                        >
+                          {resolveIcon(service.icon)}
+                        </span>
+                        <span className="text-base">{service.title}</span>
+                      </button>
+                    </Animate>
+                  ))}
+                </Animate>
+              </div>
+            )}
           </Animate>
 
-          {/* Right Content Area */}
+          {/* ── Content ── */}
           <Animate
             type="slideright"
             ready={dataReady}
             delay={0.1}
             className="lg:col-span-3"
           >
-            <div className="bg-white rounded-2xl shadow-lg p-8 lg:p-12">
-              {currentService && (
+            {loading ? (
+              <ContentSkeleton />
+            ) : !current ? (
+              <div className="bg-white rounded-2xl shadow-lg p-12 text-center text-gray-400">
+                Pilih layanan di sebelah kiri.
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-lg p-8 lg:p-12">
                 <div className="space-y-6">
                   {/* Title */}
                   <Animate type="fadein" ready={dataReady}>
                     <h2 className="text-3xl font-bold text-mariner-600 mb-6">
-                      {currentService.title}
+                      {current.title}
                     </h2>
                   </Animate>
 
                   {/* Description */}
                   <Animate type="fadein" ready={dataReady} delay={0.05}>
                     <p className="text-gray-700 text-base leading-relaxed">
-                      {currentService.description}
+                      {current.description}
                     </p>
                   </Animate>
 
                   {/* Specializations */}
-                  <Animate type="fadein" ready={dataReady} delay={0.1}>
-                    <div className="mt-8">
-                      <h3 className="text-xl font-semibold text-mariner-600 mb-4">
-                        Layanan yang Tersedia:
-                      </h3>
-                      <Animate
-                        type="stagger"
-                        staggerChildren={0.07}
-                        delayChildren={0.05}
-                        ready={dataReady}
-                      >
-                        {currentService.specializations.map((spec, index) => (
-                          <Animate key={index} type="slideleftitem">
-                            <li className="flex items-start list-none">
-                              <span className="inline-block w-2 h-2 bg-mariner-500 rounded-full mt-2 mr-3 shrink-0"></span>
-                              <span className="text-gray-700 text-base">
-                                {spec}
-                              </span>
-                            </li>
-                          </Animate>
-                        ))}
-                      </Animate>
-                    </div>
-                  </Animate>
+                  {current.specializations?.length > 0 && (
+                    <Animate type="fadein" ready={dataReady} delay={0.1}>
+                      <div className="mt-8">
+                        <h3 className="text-xl font-semibold text-mariner-600 mb-4">
+                          Layanan yang Tersedia:
+                        </h3>
+                        <Animate
+                          type="stagger"
+                          staggerChildren={0.07}
+                          delayChildren={0.05}
+                          ready={dataReady}
+                        >
+                          {current.specializations.map((spec, index) => (
+                            <Animate key={index} type="slideleftitem">
+                              <li className="flex items-start list-none">
+                                <span className="inline-block w-2 h-2 bg-mariner-500 rounded-full mt-2 mr-3 shrink-0" />
+                                <span className="text-gray-700 text-base">
+                                  {spec}
+                                </span>
+                              </li>
+                            </Animate>
+                          ))}
+                        </Animate>
+                      </div>
+                    </Animate>
+                  )}
 
                   {/* Additional Info */}
-                  {currentService.additionalInfo && (
+                  {current.additional_info && (
                     <Animate type="fadein" ready={dataReady} delay={0.15}>
                       <div className="mt-8 pt-6 border-t border-gray-200">
                         <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">
-                          {currentService.additionalInfo}
+                          {current.additional_info}
                         </p>
                       </div>
                     </Animate>
                   )}
 
-                  {/* Jadwal Praktik Dokter Section */}
+                  {/* Tabs Section */}
                   <Animate type="slideup" ready={dataReady} delay={0.2}>
                     <div className="mt-8 pt-6 border-t border-gray-200">
                       <h3 className="text-2xl font-bold text-mariner-600 mb-2">
@@ -635,42 +336,50 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
                         Cabang Sepanjang
                       </h3>
                       <p className="text-gray-600 text-sm mb-6">
-                        Klinik rawat jalan Layanan Jantung buka Senin - Sabtu
-                        mulai pukul 07.00-20.00, memberikan fleksibilitas bagi
-                        Anda untuk membuat janji temu sesuai dengan waktu yang
-                        tersedia.
+                        Klinik rawat jalan{" "}
+                        {current.poli?.nama_poli
+                          ? `Layanan ${current.poli.nama_poli}`
+                          : "Layanan"}{" "}
+                        buka Senin – Sabtu mulai pukul 07.00–20.00, memberikan
+                        fleksibilitas bagi Anda untuk membuat janji temu sesuai
+                        dengan waktu yang tersedia.
                       </p>
 
-                      {/* Tabs */}
+                      {/* Tab buttons */}
                       <Animate type="growx" ready={dataReady} delay={0.05}>
                         <div className="flex gap-2 mb-6 border-b border-gray-200">
-                          {["kondisi", "teknologi", "dokter"].map((tab) => (
+                          {(
+                            [
+                              { key: "kondisi", label: "Kondisi Medis" },
+                              { key: "teknologi", label: "Teknologi Medis" },
+                              { key: "dokter", label: "Dokter Kami" },
+                            ] as {
+                              key: "kondisi" | "teknologi" | "dokter";
+                              label: string;
+                            }[]
+                          ).map((tab) => (
                             <button
-                              key={tab}
-                              onClick={() => setActiveTab(tab)}
+                              key={tab.key}
+                              onClick={() => setActiveTab(tab.key)}
                               className={`px-6 py-3 font-medium transition-all ${
-                                activeTab === tab
+                                activeTab === tab.key
                                   ? "text-mariner-600 border-b-2 border-mariner-600"
                                   : "text-gray-600 hover:text-mariner-600"
                               }`}
                             >
-                              {tab === "kondisi"
-                                ? "Kondisi Medis"
-                                : tab === "teknologi"
-                                  ? "Teknologi Medis"
-                                  : "Dokter Kami"}
+                              {tab.label}
                             </button>
                           ))}
                         </div>
                       </Animate>
 
-                      {/* Tab Content — key berubah setiap ganti tab/service agar animasi re-trigger */}
+                      {/* Tab Content */}
                       <div className="bg-gray-50 rounded-xl p-6">
-                        {/* Kondisi Medis Tab */}
+                        {/* Kondisi Medis */}
                         {activeTab === "kondisi" &&
-                          currentService?.medicalConditions && (
+                          (hasKondisi ? (
                             <Animate
-                              key={`kondisi-${selectedService}`}
+                              key={`kondisi-${selectedId}`}
                               type="stagger"
                               staggerChildren={0.08}
                               delayChildren={0.0}
@@ -678,113 +387,115 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
                               ready={dataReady}
                               className="space-y-4"
                             >
-                              {currentService.medicalConditions.map(
-                                (condition, index) => (
-                                  <Animate
-                                    key={index}
-                                    type="slideup"
-                                    once={false}
-                                  >
-                                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                                      <h4 className="font-semibold text-mariner-600 mb-2">
-                                        {condition.title}
-                                      </h4>
-                                      <p className="text-gray-700 text-sm leading-relaxed">
-                                        {condition.description}
-                                      </p>
-                                    </div>
-                                  </Animate>
-                                ),
-                              )}
-                            </Animate>
-                          )}
-
-                        {/* Teknologi Medis Tab */}
-                        {activeTab === "teknologi" &&
-                          currentService?.medicalTechnologies && (
-                            <Animate
-                              key={`teknologi-${selectedService}`}
-                              type="stagger"
-                              staggerChildren={0.08}
-                              delayChildren={0.0}
-                              once={false}
-                              ready={dataReady}
-                              className="space-y-4"
-                            >
-                              {currentService.medicalTechnologies.map(
-                                (tech, index) => (
-                                  <Animate
-                                    key={index}
-                                    type="slideup"
-                                    once={false}
-                                  >
-                                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                                      <h4 className="font-semibold text-mariner-600 mb-2">
-                                        {tech.title}
-                                      </h4>
-                                      <p className="text-gray-700 text-sm leading-relaxed">
-                                        {tech.description}
-                                      </p>
-                                    </div>
-                                  </Animate>
-                                ),
-                              )}
-                            </Animate>
-                          )}
-
-                        {/* Dokter Kami Tab */}
-                        {activeTab === "dokter" && currentService?.doctors && (
-                          <Animate
-                            key={`dokter-${selectedService}`}
-                            type="stagger"
-                            staggerChildren={0.08}
-                            delayChildren={0.0}
-                            once={false}
-                            ready={dataReady}
-                            className="space-y-4"
-                          >
-                            {currentService.doctors.map((doctor, index) => (
-                              <Animate key={index} type="slideup" once={false}>
-                                <div className="bg-white rounded-lg p-4 shadow-sm">
-                                  <h4 className="font-semibold text-mariner-600 mb-1">
-                                    {doctor.name}
-                                  </h4>
-                                  <p className="text-gray-600 text-sm">
-                                    {doctor.specialization}
-                                  </p>
-                                  {doctor.schedule && (
-                                    <p className="text-gray-500 text-sm mt-2">
-                                      {doctor.schedule}
+                              {current.layanan_unggulan_kondisi.map((item) => (
+                                <Animate
+                                  key={item.id}
+                                  type="slideup"
+                                  once={false}
+                                >
+                                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                                    <h4 className="font-semibold text-mariner-600 mb-2">
+                                      {item.title}
+                                    </h4>
+                                    <p className="text-gray-700 text-sm leading-relaxed">
+                                      {item.description}
                                     </p>
-                                  )}
-                                </div>
-                              </Animate>
-                            ))}
-                          </Animate>
-                        )}
+                                  </div>
+                                </Animate>
+                              ))}
+                            </Animate>
+                          ) : (
+                            <EmptyTab />
+                          ))}
 
-                        {/* Fallback if no data */}
-                        {((activeTab === "kondisi" &&
-                          !currentService?.medicalConditions) ||
-                          (activeTab === "teknologi" &&
-                            !currentService?.medicalTechnologies) ||
-                          (activeTab === "dokter" &&
-                            !currentService?.doctors)) && (
-                          <div className="text-center py-8">
-                            <p className="text-gray-500">
-                              Informasi tidak tersedia untuk layanan ini.
-                            </p>
-                          </div>
-                        )}
+                        {/* Teknologi Medis */}
+                        {activeTab === "teknologi" &&
+                          (hasTeknologi ? (
+                            <Animate
+                              key={`teknologi-${selectedId}`}
+                              type="stagger"
+                              staggerChildren={0.08}
+                              delayChildren={0.0}
+                              once={false}
+                              ready={dataReady}
+                              className="space-y-4"
+                            >
+                              {current.layanan_unggulan_teknologi.map(
+                                (item) => (
+                                  <Animate
+                                    key={item.id}
+                                    type="slideup"
+                                    once={false}
+                                  >
+                                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                                      <h4 className="font-semibold text-mariner-600 mb-2">
+                                        {item.title}
+                                      </h4>
+                                      <p className="text-gray-700 text-sm leading-relaxed">
+                                        {item.description}
+                                      </p>
+                                    </div>
+                                  </Animate>
+                                ),
+                              )}
+                            </Animate>
+                          ) : (
+                            <EmptyTab />
+                          ))}
+
+                        {/* Dokter Kami */}
+                        {activeTab === "dokter" &&
+                          (hasDokter ? (
+                            <Animate
+                              key={`dokter-${selectedId}`}
+                              type="stagger"
+                              staggerChildren={0.08}
+                              delayChildren={0.0}
+                              once={false}
+                              ready={dataReady}
+                              className="space-y-4"
+                            >
+                              {current.layanan_unggulan_dokter.map((item) => (
+                                <Animate
+                                  key={item.dokter_id}
+                                  type="slideup"
+                                  once={false}
+                                >
+                                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                                    <h4 className="font-semibold text-mariner-600 mb-1">
+                                      {item.dokter?.nama ?? "—"}
+                                    </h4>
+                                    {item.dokter?.poli?.nama_poli && (
+                                      <p className="text-gray-600 text-sm">
+                                        {item.dokter.poli.nama_poli}
+                                      </p>
+                                    )}
+                                  </div>
+                                </Animate>
+                              ))}
+                            </Animate>
+                          ) : (
+                            <EmptyTab />
+                          ))}
                       </div>
                     </div>
                   </Animate>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </Animate>
         </div>
       </div>
     </section>
+  );
+}
+
+function EmptyTab() {
+  return (
+    <div className="text-center py-8">
+      <p className="text-gray-500">
+        Informasi tidak tersedia untuk layanan ini.
+      </p>
+    </div>
   );
 }

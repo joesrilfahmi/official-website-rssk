@@ -79,6 +79,12 @@ const menuItems = [
     access: ["administrator", "user"] as UserRole[],
   },
   {
+    title: "Layanan Unggulan",
+    icon: FolderTree,
+    url: "/layanan-unggulan",
+    access: ["administrator", "user"] as UserRole[],
+  },
+  {
     title: "Kritik & Saran",
     icon: MessageSquare,
     access: ["administrator", "user"] as UserRole[],
