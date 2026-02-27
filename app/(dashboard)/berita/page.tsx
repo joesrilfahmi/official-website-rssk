@@ -988,7 +988,8 @@ xl:grid-cols-4
                         alt={item.title}
                         fill
                         className="object-cover transition-transform group-hover:scale-105"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        style={{ objectPosition: "center 30%" }}
+                        sizes="(max-width: 640px) 100vw, 512px"
                         unoptimized
                       />
                     ) : (

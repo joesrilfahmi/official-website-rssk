@@ -537,7 +537,7 @@ export default function JadwalDokterPage() {
       if (formData.profileFile) {
         const uploadResult = await uploadFile({
           bucket: "dokter",
-          folder: currentUserId,
+          folder: "images",
           file: formData.profileFile,
         });
         if (!uploadResult.success) {
@@ -602,11 +602,8 @@ export default function JadwalDokterPage() {
         selectedDokter?.profile &&
         (formData.profileFile || formData.profileDeleted)
       ) {
-        const oldPath = getFilePathFromUrl(
-          selectedDokter.profile,
-          "dokter-profiles",
-        );
-        if (oldPath) await deleteFile("dokter-profiles", oldPath);
+        const oldPath = getFilePathFromUrl(selectedDokter.profile, "dokter");
+        if (oldPath) await deleteFile("dokter", oldPath);
       }
 
       toast.success(
@@ -618,7 +615,7 @@ export default function JadwalDokterPage() {
       fetchDokter();
     } catch (error) {
       console.error("Error saving dokter:", error);
-      if (newUploadedPath) await deleteFile("dokter-profiles", newUploadedPath);
+      if (newUploadedPath) await deleteFile("dokter", newUploadedPath);
       toast.error(
         error instanceof Error ? error.message : "Gagal menyimpan data dokter",
       );
@@ -633,11 +630,8 @@ export default function JadwalDokterPage() {
 
     try {
       if (selectedDokter.profile) {
-        const path = getFilePathFromUrl(
-          selectedDokter.profile,
-          "dokter-profiles",
-        );
-        if (path) await deleteFile("dokter-profiles", path);
+        const path = getFilePathFromUrl(selectedDokter.profile, "dokter");
+        if (path) await deleteFile("dokter", path);
       }
       const { error } = await supabase
         .from("dokter")
@@ -665,8 +659,8 @@ export default function JadwalDokterPage() {
       for (const id of selectedItems) {
         const item = dokterList.find((d) => d.id === id);
         if (item?.profile) {
-          const path = getFilePathFromUrl(item.profile, "dokter-profiles");
-          if (path) await deleteFile("dokter-profiles", path);
+          const path = getFilePathFromUrl(item.profile, "dokter");
+          if (path) await deleteFile("dokter", path);
         }
         const { error } = await supabase.from("dokter").delete().eq("id", id);
         if (error) throw error;
@@ -1017,7 +1011,8 @@ export default function JadwalDokterPage() {
                         alt={item.nama}
                         fill
                         className="object-cover transition-transform group-hover:scale-105"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        style={{ objectPosition: "center 30%" }}
+                        sizes="(max-width: 640px) 100vw, 512px"
                         unoptimized
                       />
                     ) : (
@@ -1274,6 +1269,8 @@ export default function JadwalDokterPage() {
                     alt="Preview"
                     fill
                     className="object-cover"
+                    style={{ objectPosition: "center 30%" }}
+                    sizes="(max-width: 640px) 100vw, 512px"
                     unoptimized
                   />
                   <Button
@@ -1725,6 +1722,8 @@ export default function JadwalDokterPage() {
                     alt={selectedDokter.nama}
                     fill
                     className="object-cover"
+                    style={{ objectPosition: "center 30%" }}
+                    sizes="(max-width: 640px) 100vw, 512px"
                     unoptimized
                     priority
                   />

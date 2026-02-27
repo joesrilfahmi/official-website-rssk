@@ -2,6 +2,7 @@
 import Animate from "@/components/animations/animate";
 import Button from "@/components/ui/custom/button";
 import Title from "@/components/ui/custom/title";
+import Profile from "@/config/profile";
 import { Ambulance, Award, Stethoscope, Users, Zap } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -24,6 +25,7 @@ interface Service {
   icon: React.ReactNode;
   color: string;
   bgIcon: string;
+  onClick: () => void;
 }
 
 const KenapaMemilih: React.FC = () => {
@@ -81,6 +83,9 @@ const KenapaMemilih: React.FC = () => {
       icon: <Stethoscope className="w-8 h-8" />,
       color: "text-red-500",
       bgIcon: "bg-red-50",
+      onClick: () => {
+        window.location.href = "/sections/dokter";
+      },
     },
     {
       id: 2,
@@ -89,6 +94,9 @@ const KenapaMemilih: React.FC = () => {
       icon: <Ambulance className="w-8 h-8" />,
       color: "text-red-500",
       bgIcon: "bg-red-50",
+      onClick: () => {
+        window.location.href = `tel:${Profile.ambulance}`;
+      },
     },
     {
       id: 3,
@@ -97,6 +105,9 @@ const KenapaMemilih: React.FC = () => {
       icon: <Award className="w-8 h-8" />,
       color: "text-red-500",
       bgIcon: "bg-red-50",
+      onClick: () => {
+        window.location.href = "/#pendaftaran";
+      },
     },
   ];
 
@@ -197,7 +208,11 @@ const KenapaMemilih: React.FC = () => {
                     <h4 className="text-sm sm:text-base font-semibold text-mariner-500 mb-3 leading-snug">
                       {service.title}
                     </h4>
-                    <Button variant="secondary" size="sm">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={service.onClick}
+                    >
                       {service.buttonText}
                     </Button>
                   </div>

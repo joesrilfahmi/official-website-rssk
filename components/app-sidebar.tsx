@@ -84,13 +84,13 @@ const menuItems = [
     access: ["administrator", "user"] as UserRole[],
     subItems: [
       {
-        title: "Daftar Kritik & Saran",
+        title: "Pesan Masuk",
         icon: FileText,
         url: "/kritik-saran",
         access: ["administrator", "user"] as UserRole[],
       },
       {
-        title: "Cetak Kritik & Saran",
+        title: "Cetak Laporan Kritikan",
         icon: Printer,
         url: "/cetak-kritik-saran",
         access: ["administrator", "user"] as UserRole[],
@@ -103,19 +103,19 @@ const menuItems = [
     access: ["administrator", "user"] as UserRole[],
     subItems: [
       {
-        title: "Daftar Poli Dokter",
+        title: "Daftar Poli Spesiali",
         icon: Stethoscope,
         url: "/daftar-poli",
         access: ["administrator", "user"] as UserRole[],
       },
       {
-        title: "Daftar Kategori",
+        title: "Daftar Kategori Berita",
         icon: FolderTree,
         url: "/kategori",
         access: ["administrator", "user"] as UserRole[],
       },
       {
-        title: "Daftar Unit Pelayanan",
+        title: "Daftar Unit Kritikan",
         icon: Hospital,
         url: "/unit-pelayanan",
         access: ["administrator", "user"] as UserRole[],

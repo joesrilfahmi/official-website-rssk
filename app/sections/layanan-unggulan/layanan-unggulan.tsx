@@ -1,4 +1,5 @@
 "use client";
+import Animate from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
 import { Activity, Bone, FileText, Heart, Stethoscope } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -39,6 +40,13 @@ interface Service {
 export default function LayananUnggulan() {
   const [selectedService, setSelectedService] = useState<string>("jantung");
   const [activeTab, setActiveTab] = useState<string>("kondisi");
+  const [dataReady, setDataReady] = useState(false);
+
+  // Simulate data ready (static data, so just a brief tick to let layout paint)
+  useEffect(() => {
+    const timer = setTimeout(() => setDataReady(true), 80);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Reset tab to "kondisi" when service changes
   useEffect(() => {
@@ -513,217 +521,268 @@ RS Siti Khodijah Muhammadiyah Cabang Sepanjang juga memiliki layanan bedah jantu
   return (
     <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <Banner
-          title="Layanan Unggulan"
-          subtitle="Kami menyediakan layanan urologi terbaik untuk memenuhi kebutuhan kesehatan Anda."
-        />
+        {/* Banner */}
+        <Animate type="fadein" ready={dataReady}>
+          <Banner
+            title="Layanan Unggulan"
+            subtitle="Kami menyediakan layanan urologi terbaik untuk memenuhi kebutuhan kesehatan Anda."
+          />
+        </Animate>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-12">
           {/* Left Sidebar - Service List */}
-          <div className="lg:col-span-1">
+          <Animate type="slideleft" ready={dataReady} className="lg:col-span-1">
             <div className="bg-gray-100 rounded-2xl p-2 space-y-2 sticky top-4">
-              {services.map((service) => (
-                <button
-                  key={service.id}
-                  onClick={() => setSelectedService(service.id)}
-                  className={`w-full text-left px-6 py-4 rounded-xl transition-all duration-300 flex items-center gap-3 ${
-                    selectedService === service.id
-                      ? "bg-white shadow-md text-mariner-600 font-semibold"
-                      : "text-gray-700 hover:bg-white/50"
-                  }`}
-                >
-                  <span
-                    className={
-                      selectedService === service.id
-                        ? "text-mariner-600"
-                        : "text-gray-500"
-                    }
-                  >
-                    {service.icon}
-                  </span>
-                  <span className="text-base">{service.name}</span>
-                </button>
-              ))}
+              <Animate
+                type="stagger"
+                staggerChildren={0.08}
+                delayChildren={0.1}
+                ready={dataReady}
+              >
+                {services.map((service) => (
+                  <Animate key={service.id} type="fielditem">
+                    <button
+                      onClick={() => setSelectedService(service.id)}
+                      className={`w-full text-left px-6 py-4 rounded-xl transition-all duration-300 flex items-center gap-3 ${
+                        selectedService === service.id
+                          ? "bg-white shadow-md text-mariner-600 font-semibold"
+                          : "text-gray-700 hover:bg-white/50"
+                      }`}
+                    >
+                      <span
+                        className={
+                          selectedService === service.id
+                            ? "text-mariner-600"
+                            : "text-gray-500"
+                        }
+                      >
+                        {service.icon}
+                      </span>
+                      <span className="text-base">{service.name}</span>
+                    </button>
+                  </Animate>
+                ))}
+              </Animate>
             </div>
-          </div>
+          </Animate>
 
           {/* Right Content Area */}
-          <div className="lg:col-span-3">
+          <Animate
+            type="slideright"
+            ready={dataReady}
+            delay={0.1}
+            className="lg:col-span-3"
+          >
             <div className="bg-white rounded-2xl shadow-lg p-8 lg:p-12">
               {currentService && (
                 <div className="space-y-6">
                   {/* Title */}
-                  <h2 className="text-3xl font-bold text-mariner-600 mb-6">
-                    {currentService.title}
-                  </h2>
+                  <Animate type="fadein" ready={dataReady}>
+                    <h2 className="text-3xl font-bold text-mariner-600 mb-6">
+                      {currentService.title}
+                    </h2>
+                  </Animate>
 
                   {/* Description */}
-                  <p className="text-gray-700 text-base leading-relaxed">
-                    {currentService.description}
-                  </p>
+                  <Animate type="fadein" ready={dataReady} delay={0.05}>
+                    <p className="text-gray-700 text-base leading-relaxed">
+                      {currentService.description}
+                    </p>
+                  </Animate>
 
                   {/* Specializations */}
-                  <div className="mt-8">
-                    <h3 className="text-xl font-semibold text-mariner-600 mb-4">
-                      Layanan yang Tersedia:
-                    </h3>
-                    <ul className="space-y-3">
-                      {currentService.specializations.map((spec, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="inline-block w-2 h-2 bg-mariner-500 rounded-full mt-2 mr-3 shrink-0"></span>
-                          <span className="text-gray-700 text-base">
-                            {spec}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <Animate type="fadein" ready={dataReady} delay={0.1}>
+                    <div className="mt-8">
+                      <h3 className="text-xl font-semibold text-mariner-600 mb-4">
+                        Layanan yang Tersedia:
+                      </h3>
+                      <Animate
+                        type="stagger"
+                        staggerChildren={0.07}
+                        delayChildren={0.05}
+                        ready={dataReady}
+                      >
+                        {currentService.specializations.map((spec, index) => (
+                          <Animate key={index} type="slideleftitem">
+                            <li className="flex items-start list-none">
+                              <span className="inline-block w-2 h-2 bg-mariner-500 rounded-full mt-2 mr-3 shrink-0"></span>
+                              <span className="text-gray-700 text-base">
+                                {spec}
+                              </span>
+                            </li>
+                          </Animate>
+                        ))}
+                      </Animate>
+                    </div>
+                  </Animate>
 
                   {/* Additional Info */}
                   {currentService.additionalInfo && (
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                      <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">
-                        {currentService.additionalInfo}
-                      </p>
-                    </div>
+                    <Animate type="fadein" ready={dataReady} delay={0.15}>
+                      <div className="mt-8 pt-6 border-t border-gray-200">
+                        <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">
+                          {currentService.additionalInfo}
+                        </p>
+                      </div>
+                    </Animate>
                   )}
 
                   {/* Jadwal Praktik Dokter Section */}
-                  <div className="mt-8 pt-6 border-t border-gray-200">
-                    <h3 className="text-2xl font-bold text-mariner-600 mb-2">
-                      Jadwal Praktik Dokter RS Siti Khodijah Muhammadiyah Cabang
-                      Sepanjang
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-6">
-                      Klinik rawat jalan Layanan Jantung buka Senin - Sabtu
-                      mulai pukul 07.00-20.00, memberikan fleksibilitas bagi
-                      Anda untuk membuat janji temu sesuai dengan waktu yang
-                      tersedia.
-                    </p>
+                  <Animate type="slideup" ready={dataReady} delay={0.2}>
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <h3 className="text-2xl font-bold text-mariner-600 mb-2">
+                        Jadwal Praktik Dokter RS Siti Khodijah Muhammadiyah
+                        Cabang Sepanjang
+                      </h3>
+                      <p className="text-gray-600 text-sm mb-6">
+                        Klinik rawat jalan Layanan Jantung buka Senin - Sabtu
+                        mulai pukul 07.00-20.00, memberikan fleksibilitas bagi
+                        Anda untuk membuat janji temu sesuai dengan waktu yang
+                        tersedia.
+                      </p>
 
-                    {/* Tabs */}
-                    <div className="flex gap-2 mb-6 border-b border-gray-200">
-                      <button
-                        onClick={() => setActiveTab("kondisi")}
-                        className={`px-6 py-3 font-medium transition-all ${
-                          activeTab === "kondisi"
-                            ? "text-mariner-600 border-b-2 border-mariner-600"
-                            : "text-gray-600 hover:text-mariner-600"
-                        }`}
-                      >
-                        Kondisi Medis
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("teknologi")}
-                        className={`px-6 py-3 font-medium transition-all ${
-                          activeTab === "teknologi"
-                            ? "text-mariner-600 border-b-2 border-mariner-600"
-                            : "text-gray-600 hover:text-mariner-600"
-                        }`}
-                      >
-                        Teknologi Medis
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("dokter")}
-                        className={`px-6 py-3 font-medium transition-all ${
-                          activeTab === "dokter"
-                            ? "text-mariner-600 border-b-2 border-mariner-600"
-                            : "text-gray-600 hover:text-mariner-600"
-                        }`}
-                      >
-                        Dokter Kami
-                      </button>
-                    </div>
-
-                    {/* Tab Content */}
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      {/* Kondisi Medis Tab */}
-                      {activeTab === "kondisi" &&
-                        currentService?.medicalConditions && (
-                          <div className="space-y-4">
-                            {currentService.medicalConditions.map(
-                              (condition, index) => (
-                                <div
-                                  key={index}
-                                  className="bg-white rounded-lg p-4 shadow-sm"
-                                >
-                                  <h4 className="font-semibold text-mariner-600 mb-2">
-                                    {condition.title}
-                                  </h4>
-                                  <p className="text-gray-700 text-sm leading-relaxed">
-                                    {condition.description}
-                                  </p>
-                                </div>
-                              ),
-                            )}
-                          </div>
-                        )}
-
-                      {/* Teknologi Medis Tab */}
-                      {activeTab === "teknologi" &&
-                        currentService?.medicalTechnologies && (
-                          <div className="space-y-4">
-                            {currentService.medicalTechnologies.map(
-                              (tech, index) => (
-                                <div
-                                  key={index}
-                                  className="bg-white rounded-lg p-4 shadow-sm"
-                                >
-                                  <h4 className="font-semibold text-mariner-600 mb-2">
-                                    {tech.title}
-                                  </h4>
-                                  <p className="text-gray-700 text-sm leading-relaxed">
-                                    {tech.description}
-                                  </p>
-                                </div>
-                              ),
-                            )}
-                          </div>
-                        )}
-
-                      {/* Dokter Kami Tab */}
-                      {activeTab === "dokter" && currentService?.doctors && (
-                        <div className="space-y-4">
-                          {currentService.doctors.map((doctor, index) => (
-                            <div
-                              key={index}
-                              className="bg-white rounded-lg p-4 shadow-sm"
+                      {/* Tabs */}
+                      <Animate type="growx" ready={dataReady} delay={0.05}>
+                        <div className="flex gap-2 mb-6 border-b border-gray-200">
+                          {["kondisi", "teknologi", "dokter"].map((tab) => (
+                            <button
+                              key={tab}
+                              onClick={() => setActiveTab(tab)}
+                              className={`px-6 py-3 font-medium transition-all ${
+                                activeTab === tab
+                                  ? "text-mariner-600 border-b-2 border-mariner-600"
+                                  : "text-gray-600 hover:text-mariner-600"
+                              }`}
                             >
-                              <h4 className="font-semibold text-mariner-600 mb-1">
-                                {doctor.name}
-                              </h4>
-                              <p className="text-gray-600 text-sm">
-                                {doctor.specialization}
-                              </p>
-                              {doctor.schedule && (
-                                <p className="text-gray-500 text-sm mt-2">
-                                  {doctor.schedule}
-                                </p>
-                              )}
-                            </div>
+                              {tab === "kondisi"
+                                ? "Kondisi Medis"
+                                : tab === "teknologi"
+                                  ? "Teknologi Medis"
+                                  : "Dokter Kami"}
+                            </button>
                           ))}
                         </div>
-                      )}
+                      </Animate>
 
-                      {/* Fallback if no data */}
-                      {((activeTab === "kondisi" &&
-                        !currentService?.medicalConditions) ||
-                        (activeTab === "teknologi" &&
-                          !currentService?.medicalTechnologies) ||
-                        (activeTab === "dokter" &&
-                          !currentService?.doctors)) && (
-                        <div className="text-center py-8">
-                          <p className="text-gray-500">
-                            Informasi tidak tersedia untuk layanan ini.
-                          </p>
-                        </div>
-                      )}
+                      {/* Tab Content — key berubah setiap ganti tab/service agar animasi re-trigger */}
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        {/* Kondisi Medis Tab */}
+                        {activeTab === "kondisi" &&
+                          currentService?.medicalConditions && (
+                            <Animate
+                              key={`kondisi-${selectedService}`}
+                              type="stagger"
+                              staggerChildren={0.08}
+                              delayChildren={0.0}
+                              once={false}
+                              ready={dataReady}
+                              className="space-y-4"
+                            >
+                              {currentService.medicalConditions.map(
+                                (condition, index) => (
+                                  <Animate
+                                    key={index}
+                                    type="slideup"
+                                    once={false}
+                                  >
+                                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                                      <h4 className="font-semibold text-mariner-600 mb-2">
+                                        {condition.title}
+                                      </h4>
+                                      <p className="text-gray-700 text-sm leading-relaxed">
+                                        {condition.description}
+                                      </p>
+                                    </div>
+                                  </Animate>
+                                ),
+                              )}
+                            </Animate>
+                          )}
+
+                        {/* Teknologi Medis Tab */}
+                        {activeTab === "teknologi" &&
+                          currentService?.medicalTechnologies && (
+                            <Animate
+                              key={`teknologi-${selectedService}`}
+                              type="stagger"
+                              staggerChildren={0.08}
+                              delayChildren={0.0}
+                              once={false}
+                              ready={dataReady}
+                              className="space-y-4"
+                            >
+                              {currentService.medicalTechnologies.map(
+                                (tech, index) => (
+                                  <Animate
+                                    key={index}
+                                    type="slideup"
+                                    once={false}
+                                  >
+                                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                                      <h4 className="font-semibold text-mariner-600 mb-2">
+                                        {tech.title}
+                                      </h4>
+                                      <p className="text-gray-700 text-sm leading-relaxed">
+                                        {tech.description}
+                                      </p>
+                                    </div>
+                                  </Animate>
+                                ),
+                              )}
+                            </Animate>
+                          )}
+
+                        {/* Dokter Kami Tab */}
+                        {activeTab === "dokter" && currentService?.doctors && (
+                          <Animate
+                            key={`dokter-${selectedService}`}
+                            type="stagger"
+                            staggerChildren={0.08}
+                            delayChildren={0.0}
+                            once={false}
+                            ready={dataReady}
+                            className="space-y-4"
+                          >
+                            {currentService.doctors.map((doctor, index) => (
+                              <Animate key={index} type="slideup" once={false}>
+                                <div className="bg-white rounded-lg p-4 shadow-sm">
+                                  <h4 className="font-semibold text-mariner-600 mb-1">
+                                    {doctor.name}
+                                  </h4>
+                                  <p className="text-gray-600 text-sm">
+                                    {doctor.specialization}
+                                  </p>
+                                  {doctor.schedule && (
+                                    <p className="text-gray-500 text-sm mt-2">
+                                      {doctor.schedule}
+                                    </p>
+                                  )}
+                                </div>
+                              </Animate>
+                            ))}
+                          </Animate>
+                        )}
+
+                        {/* Fallback if no data */}
+                        {((activeTab === "kondisi" &&
+                          !currentService?.medicalConditions) ||
+                          (activeTab === "teknologi" &&
+                            !currentService?.medicalTechnologies) ||
+                          (activeTab === "dokter" &&
+                            !currentService?.doctors)) && (
+                          <div className="text-center py-8">
+                            <p className="text-gray-500">
+                              Informasi tidak tersedia untuk layanan ini.
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </Animate>
                 </div>
               )}
             </div>
-          </div>
+          </Animate>
         </div>
       </div>
     </section>
