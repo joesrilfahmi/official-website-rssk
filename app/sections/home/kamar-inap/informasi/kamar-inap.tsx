@@ -7,30 +7,20 @@ import { supabase } from "@/lib/supabase/client";
 import { KamarInap as KamarInapType } from "@/types/index";
 import { Bed } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const InformasiKamarInap = () => {
   const [kamarList, setKamarList] = useState<KamarInapType[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
 
-  const sortedKamarList = useMemo(() => {
-    if (kamarList.length === 0) return [];
-    const recommended = kamarList.filter((k) => k.is_recommended);
-    const notRecommended = kamarList.filter((k) => !k.is_recommended);
-    if (recommended.length > 0) {
-      if (notRecommended.length === 0) return recommended;
-      if (notRecommended.length === 1)
-        return [notRecommended[0], ...recommended];
-      return [notRecommended[0], ...recommended, ...notRecommended.slice(1)];
-    }
-    return kamarList;
-  }, [kamarList]);
-
   useEffect(() => {
     const fetchKamar = async () => {
       try {
-        const { data, error } = await supabase.from("kamar_inap").select("*");
+        const { data, error } = await supabase
+          .from("kamar_inap")
+          .select("*")
+          .order("created_at", { ascending: true });
         if (error) throw error;
         setKamarList(data || []);
       } catch (error) {
@@ -79,7 +69,7 @@ const InformasiKamarInap = () => {
             </h3>
             {kamar.is_recommended && (
               <div className="bg-greenfresh-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                Disarankan
+                Recommended
               </div>
             )}
           </div>
@@ -220,7 +210,7 @@ const InformasiKamarInap = () => {
           )}
 
           {/* Cards */}
-          {!loading && sortedKamarList.length > 0 && (
+          {!loading && kamarList.length > 0 && (
             <Animate
               type="stagger"
               staggerChildren={0.12}
@@ -228,7 +218,7 @@ const InformasiKamarInap = () => {
               ready={dataReady}
               className="space-y-8 lg:space-y-12"
             >
-              {sortedKamarList.map((kamar) => (
+              {kamarList.map((kamar) => (
                 <Animate key={kamar.id} type="slideup">
                   {renderKamarCard(kamar)}
                 </Animate>
