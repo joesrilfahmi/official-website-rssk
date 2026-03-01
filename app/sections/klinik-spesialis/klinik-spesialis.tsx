@@ -375,7 +375,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
                     alt={dokter.nama}
                     fill
                     className="object-cover"
-                    style={{ objectPosition: "center 30%" }}
+                    style={{ objectPosition: "center 55%" }}
                     sizes="(max-width: 640px) 100vw, 512px"
                   />
                 ) : (
