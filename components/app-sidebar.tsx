@@ -6,7 +6,9 @@ import {
   Calendar,
   ChevronDown,
   Database,
+  File,
   FolderTree,
+  Form,
   Inbox,
   LayoutDashboard,
   LayoutList,
@@ -87,19 +89,32 @@ const menuItems = [
     access: ["administrator", "user"] as UserRole[],
   },
   {
+    title: "Formulir",
+    icon: File,
+    access: ["administrator", "user"] as UserRole[],
+    subItems: [
+      {
+        title: "FMO Pembayaran Uang Muka",
+        icon: Form,
+        url: "/formulir/pembayaran-uang-muka",
+        access: ["administrator", "user"] as UserRole[],
+      },
+    ],
+  },
+  {
     title: "Kritik & Saran",
-    icon: MessageCircle, // lebih sesuai untuk feedback/kritik
+    icon: MessageCircle,
     access: ["administrator", "user"] as UserRole[],
     subItems: [
       {
         title: "Pesan Masuk",
-        icon: Inbox, // lebih sesuai untuk inbox/pesan masuk
+        icon: Inbox,
         url: "/kritik-saran",
         access: ["administrator", "user"] as UserRole[],
       },
       {
         title: "Cetak Laporan Kritikan",
-        icon: Printer, // sudah sesuai
+        icon: Printer,
         url: "/cetak-kritik-saran",
         access: ["administrator", "user"] as UserRole[],
       },
@@ -112,31 +127,31 @@ const menuItems = [
     subItems: [
       {
         title: "Daftar Poli Spesialis",
-        icon: Stethoscope, // sudah sesuai untuk poli/medis
+        icon: Stethoscope,
         url: "/daftar-poli",
         access: ["administrator", "user"] as UserRole[],
       },
       {
         title: "Daftar Penjamin",
-        icon: ShieldCheck, // lebih sesuai untuk penjamin/asuransi/jaminan
+        icon: ShieldCheck,
         url: "/daftar-penjamin",
         access: ["administrator", "user"] as UserRole[],
       },
       {
         title: "Daftar Kelas",
-        icon: LayoutList, // lebih sesuai untuk daftar kelas/tier
+        icon: LayoutList,
         url: "/daftar-kelas",
         access: ["administrator", "user"] as UserRole[],
       },
       {
         title: "Daftar Kategori Berita",
-        icon: FolderTree, // sudah sesuai untuk kategori/folder
+        icon: FolderTree,
         url: "/daftar-kategori",
         access: ["administrator", "user"] as UserRole[],
       },
       {
         title: "Daftar Unit Kritikan",
-        icon: Building2, // lebih sesuai untuk unit/departemen rumah sakit
+        icon: Building2,
         url: "/unit-pelayanan",
         access: ["administrator", "user"] as UserRole[],
       },

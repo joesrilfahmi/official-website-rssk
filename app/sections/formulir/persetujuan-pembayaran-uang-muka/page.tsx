@@ -4,6 +4,7 @@ import Input from "@/components/ui/custom/input";
 import Select from "@/components/ui/custom/select";
 import Textarea from "@/components/ui/custom/textarea";
 import Profile from "@/config/profile";
+import { supabase } from "@/lib/supabase/client";
 import Image from "next/image";
 import { useRef, useState } from "react";
 
@@ -19,6 +20,7 @@ interface FormState {
   noHP: string;
   penjamin: string;
   kelas: string;
+  deskripsi: string;
 }
 type FormErrors = Partial<Record<keyof FormState, string>>;
 
@@ -32,6 +34,7 @@ interface ConfirmDialogProps {
   form: FormState;
   penjaminLabel: string;
   kelasLabel: string;
+  isSubmitting: boolean;
 }
 
 /* ─────────────────────────────────────────
@@ -54,6 +57,16 @@ function getTodayFormatted(): string {
     "Desember",
   ];
   return `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+/** Ambil data URI canvas, kembalikan null jika canvas kosong */
+function getSignatureDataUrl(canvas: HTMLCanvasElement | null): string | null {
+  if (!canvas) return null;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  const hasContent = data.some((v, i) => i % 4 === 3 && v > 0);
+  return hasContent ? canvas.toDataURL("image/png") : null;
 }
 
 /* ─────────────────────────────────────────
@@ -83,6 +96,7 @@ const EMPTY: FormState = {
   noHP: "",
   penjamin: "",
   kelas: "",
+  deskripsi: "",
 };
 
 /* ─────────────────────────────────────────
@@ -192,7 +206,6 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef }) => {
   return (
     <div>
       <div className="relative border border-gray-300 rounded-lg bg-white overflow-hidden cursor-crosshair touch-none h-40 hover:border-blue-500 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.12)] transition-all">
-        {/* grid overlay */}
         <div
           aria-hidden
           className="absolute inset-0 pointer-events-none opacity-[0.04]"
@@ -202,9 +215,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef }) => {
             backgroundSize: "24px 24px",
           }}
         />
-        {/* baseline */}
         <div className="absolute bottom-9 left-5 right-5 border-b border-dashed border-gray-200 pointer-events-none" />
-
         <canvas
           ref={canvasRef}
           width={860}
@@ -218,7 +229,6 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef }) => {
           onTouchMove={move}
           onTouchEnd={stop}
         />
-
         {!hasDrawn && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 pointer-events-none z-20">
             <svg
@@ -240,7 +250,6 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef }) => {
           </div>
         )}
       </div>
-
       <button
         type="button"
         onClick={clear}
@@ -275,6 +284,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   form,
   penjaminLabel,
   kelasLabel,
+  isSubmitting,
 }) => {
   if (!open) return null;
   const rows: [string, string][] = [
@@ -295,7 +305,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
@@ -341,8 +350,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             </svg>
           </button>
         </div>
-
-        {/* Body */}
         <div className="px-6 py-4 max-h-72 overflow-y-auto">
           <table className="w-full border-collapse">
             <tbody>
@@ -362,27 +369,41 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             Pastikan semua data sudah benar sebelum mengirim.
           </p>
         </div>
-
-        {/* Footer */}
         <div className="flex gap-2.5 justify-end flex-wrap px-6 py-4 border-t border-gray-200">
-          <Button variant="secondary" size="sm" onClick={onClose}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Periksa Lagi
           </Button>
-          <Button variant="primary" size="sm" onClick={onConfirm}>
-            Ya, Kirim Formulir
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onConfirm}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              "Mengirim..."
+            ) : (
+              <>
+                Ya, Kirim Formulir
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
+                </svg>
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -483,6 +504,8 @@ export default function FormulirDP() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const today = getTodayFormatted();
 
@@ -512,8 +535,51 @@ export default function FormulirDP() {
   const handleReset = () => {
     setForm(EMPTY);
     setErrors({});
+    setSubmitError(null);
     const c = canvasRef.current;
     if (c) c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
+  };
+
+  /* ── Submit ke Supabase ── */
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const ttdDataUrl = getSignatureDataUrl(canvasRef.current);
+
+      const { error } = await supabase.from("fmo_1").insert([
+        {
+          nama_pasien: form.namaPasien.trim(),
+          no_rm: form.noRM.trim() || null,
+          nama_penanggung_jawab: form.namaPJ.trim(),
+          no_ktp: form.noKTP.trim() || null,
+          no_hp: form.noHP.trim() || null,
+          alamat: form.alamat.trim() || null,
+          jenis_penjamin: form.penjamin,
+          rencana_kelas: form.kelas,
+          deskripsi: form.deskripsi.trim() || null,
+          ttd: ttdDataUrl,
+          // tanggal & created_at terisi otomatis oleh DEFAULT
+        },
+      ]);
+
+      if (error) throw error;
+
+      setShowConfirm(false);
+      setTimeout(() => {
+        setShowSuccess(true);
+        handleReset();
+      }, 300);
+    } catch (e: unknown) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "Gagal mengirim formulir. Silakan coba lagi.";
+      setSubmitError(msg);
+      setShowConfirm(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const penjaminLabel =
@@ -528,14 +594,11 @@ export default function FormulirDP() {
       <ConfirmDialog
         open={showConfirm}
         onClose={() => setShowConfirm(false)}
-        onConfirm={() => {
-          setShowConfirm(false);
-          setShowSuccess(true);
-          handleReset();
-        }}
+        onConfirm={handleConfirm}
         form={form}
         penjaminLabel={penjaminLabel}
         kelasLabel={kelasLabel}
+        isSubmitting={isSubmitting}
       />
       <SuccessDialog open={showSuccess} onClose={() => setShowSuccess(false)} />
 
@@ -546,7 +609,6 @@ export default function FormulirDP() {
           {/* ── Letterhead ── */}
           <div className="px-5 pt-6 pb-5 sm:px-8 sm:pt-7 sm:pb-6 lg:px-[52px] lg:pt-9 lg:pb-7 border-b border-gray-200">
             <div className="flex flex-col gap-3.5 sm:flex-row sm:items-start sm:gap-[18px]">
-              {/* Logo */}
               <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
                 <Image
                   src={Profile.logo}
@@ -578,8 +640,6 @@ export default function FormulirDP() {
                   </svg>
                 </div>
               </div>
-
-              {/* Title */}
               <div className="min-w-0">
                 <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
                   {Profile.institusi} {Profile.name} · {Profile.subtitle}
@@ -603,13 +663,32 @@ export default function FormulirDP() {
 
           {/* ── Body ── */}
           <div className="px-5 py-6 sm:px-8 sm:py-7 lg:px-[52px] lg:py-9">
+            {/* Error banner */}
+            {submitError && (
+              <div className="mb-6 flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                <svg
+                  className="w-4 h-4 text-red-500 shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <p className="text-[12px] text-red-700">{submitError}</p>
+              </div>
+            )}
+
             {/* §1 Data Identitas */}
             <div className="mb-8">
               <SectionLabel>Data Identitas</SectionLabel>
               <p className="text-[13px] text-gray-500 mb-3.5 leading-relaxed">
                 Yang bertanda tangan di bawah ini:
               </p>
-
               <div className="border border-gray-200 rounded-md overflow-hidden">
                 <FieldRow label="Nama Pasien" required>
                   <Input
@@ -622,7 +701,6 @@ export default function FormulirDP() {
                     inputSize="sm"
                   />
                 </FieldRow>
-
                 <FieldRow label="No. Rekam Medis">
                   <Input
                     type="tel"
@@ -633,7 +711,6 @@ export default function FormulirDP() {
                     inputSize="sm"
                   />
                 </FieldRow>
-
                 <FieldRow label="Nama Penanggung Jawab" required>
                   <Input
                     value={form.namaPJ}
@@ -645,7 +722,6 @@ export default function FormulirDP() {
                     inputSize="sm"
                   />
                 </FieldRow>
-
                 <FieldRow label="No. KTP / Identitas">
                   <Input
                     type="tel"
@@ -656,7 +732,6 @@ export default function FormulirDP() {
                     inputSize="sm"
                   />
                 </FieldRow>
-
                 <FieldRow label="No. HP">
                   <Input
                     type="tel"
@@ -667,7 +742,6 @@ export default function FormulirDP() {
                     inputSize="sm"
                   />
                 </FieldRow>
-
                 <FieldRow label="Alamat" alignTop>
                   <Textarea
                     value={form.alamat}
@@ -685,7 +759,6 @@ export default function FormulirDP() {
             {/* §2 Pernyataan */}
             <div className="mb-8">
               <SectionLabel>Pernyataan Persetujuan</SectionLabel>
-
               <div className="text-[13px] text-gray-700 leading-[1.8] mb-3.5">
                 <p className="mb-2.5">
                   Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan
@@ -701,8 +774,6 @@ export default function FormulirDP() {
                   melakukan pembayaran uang muka (DP) persalinan sebesar:
                 </p>
               </div>
-
-              {/* DP amount box */}
               <div className="flex gap-2.5 items-start bg-blue-50 rounded-lg px-4 py-3 mb-4">
                 <svg
                   className="w-[18px] h-[18px] text-blue-600 shrink-0 mt-0.5"
@@ -726,7 +797,6 @@ export default function FormulirDP() {
                   </div>
                 </div>
               </div>
-
               <p className="text-[13px] text-gray-700 font-medium mb-2.5">
                 Saya memahami dan menyetujui bahwa:
               </p>
@@ -754,7 +824,6 @@ export default function FormulirDP() {
               <SectionLabel>
                 Rencana Penjamin &amp; Kelas Perawatan
               </SectionLabel>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 {[
                   {
@@ -795,8 +864,6 @@ export default function FormulirDP() {
                   </div>
                 ))}
               </div>
-
-              {/* Warning box */}
               <div className="flex gap-2.5 items-start bg-amber-50 rounded-lg px-4 py-3">
                 <svg
                   className="w-4 h-4 text-amber-600 shrink-0 mt-0.5"
@@ -825,12 +892,10 @@ export default function FormulirDP() {
               pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.
             </p>
 
-            {/* §4 Tanda Tangan */}
+            {/* §5 Tanda Tangan */}
             <div className="mb-8">
               <SectionLabel>Tanda Tangan</SectionLabel>
-
               <div className="flex flex-col gap-4 sm:flex-row sm:gap-6 sm:items-start">
-                {/* Date card */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3.5 sm:w-40 shrink-0">
                   <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.06em] mb-2">
                     Tanggal
@@ -840,8 +905,6 @@ export default function FormulirDP() {
                     {today}
                   </div>
                 </div>
-
-                {/* Signature */}
                 <div className="flex-1 min-w-0">
                   <div className="text-[11px] font-medium text-gray-400 uppercase tracking-[0.06em] mb-2 text-center">
                     Pasien / Penanggung Jawab
@@ -911,6 +974,7 @@ export default function FormulirDP() {
                 onClick={() => {
                   if (validate()) setShowConfirm(true);
                 }}
+                disabled={isSubmitting}
               >
                 <svg
                   className="w-3.5 h-3.5"
@@ -929,7 +993,6 @@ export default function FormulirDP() {
               </Button>
             </div>
           </div>
-          {/* /body */}
 
           {/* Doc footer */}
           <div className="border-t border-gray-200 bg-gray-50 px-5 sm:px-8 lg:px-[52px] py-2.5 flex justify-between items-center flex-wrap gap-1">
