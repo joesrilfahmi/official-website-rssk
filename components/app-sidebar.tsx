@@ -2,16 +2,18 @@
 
 import {
   Bed,
+  Building2,
   Calendar,
   ChevronDown,
   Database,
-  FileText,
   FolderTree,
-  Hospital,
+  Inbox,
   LayoutDashboard,
-  MessageSquare,
+  LayoutList,
+  MessageCircle,
   Newspaper,
   Printer,
+  ShieldCheck,
   Stethoscope,
   Tag,
   Users,
@@ -86,18 +88,18 @@ const menuItems = [
   },
   {
     title: "Kritik & Saran",
-    icon: MessageSquare,
+    icon: MessageCircle, // lebih sesuai untuk feedback/kritik
     access: ["administrator", "user"] as UserRole[],
     subItems: [
       {
         title: "Pesan Masuk",
-        icon: FileText,
+        icon: Inbox, // lebih sesuai untuk inbox/pesan masuk
         url: "/kritik-saran",
         access: ["administrator", "user"] as UserRole[],
       },
       {
         title: "Cetak Laporan Kritikan",
-        icon: Printer,
+        icon: Printer, // sudah sesuai
         url: "/cetak-kritik-saran",
         access: ["administrator", "user"] as UserRole[],
       },
@@ -109,20 +111,32 @@ const menuItems = [
     access: ["administrator", "user"] as UserRole[],
     subItems: [
       {
-        title: "Daftar Poli Spesiali",
-        icon: Stethoscope,
+        title: "Daftar Poli Spesialis",
+        icon: Stethoscope, // sudah sesuai untuk poli/medis
         url: "/daftar-poli",
         access: ["administrator", "user"] as UserRole[],
       },
       {
+        title: "Daftar Penjamin",
+        icon: ShieldCheck, // lebih sesuai untuk penjamin/asuransi/jaminan
+        url: "/daftar-penjamin",
+        access: ["administrator", "user"] as UserRole[],
+      },
+      {
+        title: "Daftar Kelas",
+        icon: LayoutList, // lebih sesuai untuk daftar kelas/tier
+        url: "/daftar-kelas",
+        access: ["administrator", "user"] as UserRole[],
+      },
+      {
         title: "Daftar Kategori Berita",
-        icon: FolderTree,
-        url: "/kategori",
+        icon: FolderTree, // sudah sesuai untuk kategori/folder
+        url: "/daftar-kategori",
         access: ["administrator", "user"] as UserRole[],
       },
       {
         title: "Daftar Unit Kritikan",
-        icon: Hospital,
+        icon: Building2, // lebih sesuai untuk unit/departemen rumah sakit
         url: "/unit-pelayanan",
         access: ["administrator", "user"] as UserRole[],
       },
