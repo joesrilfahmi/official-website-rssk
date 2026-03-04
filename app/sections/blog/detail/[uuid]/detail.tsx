@@ -144,27 +144,108 @@ const BeritaDetailPage = () => {
   if (loading)
     return (
       <div className="min-h-screen bg-gray-50 pt-24 py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 animate-pulse space-y-4">
-            <div className="h-80 bg-gray-200 rounded-2xl" />
-            <div className="bg-white rounded-2xl p-8 space-y-4">
-              <div className="h-6 w-32 bg-gray-100 rounded-full" />
-              <div className="h-10 w-full bg-gray-100 rounded" />
-              <div className="h-4 w-64 bg-gray-100 rounded" />
-              <div className="space-y-3 pt-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-4 bg-gray-100 rounded" />
-                ))}
+        <div className="max-w-7xl mx-auto">
+          {/* Skeleton tombol Kembali */}
+          <div className="flex items-center gap-2 mb-8 animate-pulse">
+            <div className="w-8 h-8 rounded-full bg-gray-200" />
+            <div className="h-4 w-16 bg-gray-200 rounded" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Skeleton artikel utama */}
+            <div className="lg:col-span-2 animate-pulse space-y-0">
+              <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
+                {/* Hero image skeleton */}
+                <div className="h-72 sm:h-96 bg-gray-200" />
+                <div className="p-7 sm:p-10 space-y-4">
+                  {/* Category badge */}
+                  <div className="h-6 w-24 bg-gray-100 rounded-full" />
+                  {/* Title */}
+                  <div className="space-y-2">
+                    <div className="h-9 w-full bg-gray-100 rounded" />
+                    <div className="h-9 w-3/4 bg-gray-100 rounded" />
+                  </div>
+                  {/* Meta bar */}
+                  <div className="flex items-center gap-4 py-4 border-b border-gray-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-full bg-gray-100" />
+                      <div className="space-y-1">
+                        <div className="h-3.5 w-24 bg-gray-100 rounded" />
+                        <div className="h-3 w-12 bg-gray-100 rounded" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="h-3.5 w-32 bg-gray-100 rounded" />
+                      <div className="h-3.5 w-24 bg-gray-100 rounded" />
+                    </div>
+                  </div>
+                  {/* Body */}
+                  <div className="space-y-3 pt-2">
+                    {[...Array(6)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-4 bg-gray-100 rounded"
+                        style={{ width: i % 3 === 2 ? "75%" : "100%" }}
+                      />
+                    ))}
+                  </div>
+                  {/* Tags */}
+                  <div className="flex gap-2 pt-4">
+                    {[...Array(4)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-7 w-16 bg-gray-100 rounded-full"
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="space-y-5">
-            {[...Array(2)].map((_, i) => (
-              <div
-                key={i}
-                className="h-64 bg-white rounded-2xl ring-1 ring-gray-100 animate-pulse"
-              />
-            ))}
+
+            {/* Skeleton sidebar */}
+            <div className="space-y-5">
+              {/* Popular posts widget skeleton */}
+              <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden animate-pulse">
+                <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
+                  <div className="w-7 h-7 rounded-lg bg-gray-100" />
+                  <div className="h-4 w-28 bg-gray-100 rounded" />
+                </div>
+                <div className="p-5 space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex gap-3 items-start">
+                      <div className="relative shrink-0">
+                        <div className="w-14 h-14 rounded-xl bg-gray-100" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 w-full bg-gray-100 rounded" />
+                        <div className="h-3.5 w-4/5 bg-gray-100 rounded" />
+                        <div className="h-3 w-24 bg-gray-100 rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Related articles widget skeleton */}
+              <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden animate-pulse">
+                <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
+                  <div className="w-7 h-7 rounded-lg bg-gray-100" />
+                  <div className="h-4 w-28 bg-gray-100 rounded" />
+                </div>
+                <div className="p-5 space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex gap-3 items-start">
+                      <div className="w-14 h-14 rounded-xl bg-gray-100 shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 w-full bg-gray-100 rounded" />
+                        <div className="h-3.5 w-3/4 bg-gray-100 rounded" />
+                        <div className="h-3 w-20 bg-gray-100 rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -188,13 +269,13 @@ const BeritaDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-24 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        {/* Back nav — fadein setelah loading selesai */}
+        {/* Tombol Kembali — konsisten dengan halaman Partner & DetailDokter */}
         <Animate type="fadein" duration={0.5} ready={!loading}>
           <motion.button
             onClick={handleBackToBlog}
             whileHover={{ x: -2 }}
             whileTap={{ scale: 0.97 }}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors duration-150 mb-8 group"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors duration-150 group mb-8"
           >
             <span className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:border-gray-300 transition-all duration-150 shadow-sm">
               <ArrowLeft className="w-4 h-4" />
@@ -206,7 +287,6 @@ const BeritaDetailPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* ── Main article ── */}
           <div className="lg:col-span-2">
-            {/* Seluruh article card — slideup setelah loading selesai */}
             <Animate type="slideup" duration={0.75} ready={!loading}>
               <article className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
                 {/* Hero image */}
@@ -220,7 +300,6 @@ const BeritaDetailPage = () => {
                       priority
                       sizes="(max-width:768px) 100vw, 896px"
                     />
-                    {/* Category overlay */}
                     <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
                     <span className="absolute bottom-5 left-6 px-3 py-1.5 bg-bittersweet-500 text-white text-xs font-bold rounded-full shadow">
                       {berita.category}
@@ -229,14 +308,12 @@ const BeritaDetailPage = () => {
                 )}
 
                 <div className="p-7 sm:p-10">
-                  {/* Category badge (no thumbnail fallback) */}
                   {!berita.thumbnail && (
                     <span className="inline-block px-3 py-1.5 bg-bittersweet-50 text-bittersweet-600 rounded-full text-xs font-bold mb-4">
                       {berita.category}
                     </span>
                   )}
 
-                  {/* Title — fadein dengan sedikit delay */}
                   <Animate
                     type="fadein"
                     duration={0.6}
@@ -248,7 +325,6 @@ const BeritaDetailPage = () => {
                     </h1>
                   </Animate>
 
-                  {/* Meta bar — fadein dengan delay lebih lama */}
                   <Animate
                     type="fadein"
                     duration={0.6}
@@ -285,7 +361,6 @@ const BeritaDetailPage = () => {
 
                       <div className="hidden sm:block w-px h-8 bg-gray-200" />
 
-                      {/* Date + reading time */}
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span className="flex items-center gap-1.5">
                           <Calendar className="w-3.5 h-3.5" />
@@ -352,7 +427,6 @@ const BeritaDetailPage = () => {
                     </div>
                   </Animate>
 
-                  {/* Article body — fadein dengan delay paling lama */}
                   <Animate
                     type="fadein"
                     duration={0.7}
@@ -366,7 +440,6 @@ const BeritaDetailPage = () => {
                     </div>
                   </Animate>
 
-                  {/* Tags — slideup setelah konten */}
                   {berita.tags && berita.tags.length > 0 && (
                     <Animate
                       type="slideup"
@@ -399,7 +472,6 @@ const BeritaDetailPage = () => {
           {/* ── Sidebar ── */}
           <div className="lg:col-span-1">
             <div className="sticky top-28 space-y-5">
-              {/* Popular Posts — slideleft setelah loading selesai */}
               <Animate
                 type="slideleft"
                 duration={0.8}
@@ -449,7 +521,6 @@ const BeritaDetailPage = () => {
                 </Widget>
               </Animate>
 
-              {/* Related Articles — slideleft dengan delay lebih lama */}
               {relatedBerita.length > 0 && (
                 <Animate
                   type="slideleft"

@@ -5,11 +5,13 @@ import Banner from "@/components/ui/custom/banner";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import { KamarInap as KamarInapType } from "@/types/index";
-import { Bed } from "lucide-react";
+import { ArrowLeft, Bed } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const InformasiKamarInap = () => {
+  const router = useRouter();
   const [kamarList, setKamarList] = useState<KamarInapType[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
@@ -136,8 +138,21 @@ const InformasiKamarInap = () => {
   );
 
   return (
-    <div className="bg-gray-50 min-h-screen py-16 px-4 sm:px-6 lg:px-8">
+    <div className="bg-gray-50 pt-24 min-h-screen py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        {/* Tombol Kembali */}
+        <Animate type="fadein" duration={0.5} ready={!loading}>
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors duration-150 group"
+          >
+            <span className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:border-gray-300 transition-all duration-150 shadow-sm">
+              <ArrowLeft className="w-4 h-4" />
+            </span>
+            Kembali
+          </button>
+        </Animate>
+
         {/* Banner */}
         <Animate type="fadein" ready={dataReady}>
           <Banner
@@ -159,7 +174,7 @@ const InformasiKamarInap = () => {
             </div>
           </Animate>
 
-          {/* Loading skeleton */}
+          {/* Loading skeleton — sesuai layout kartu asli */}
           {loading && (
             <div className="space-y-8 lg:space-y-12">
               {[...Array(3)].map((_, i) => (
@@ -168,23 +183,44 @@ const InformasiKamarInap = () => {
                   className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse"
                 >
                   <div className="flex flex-col lg:flex-row gap-6 p-6 lg:p-8">
+                    {/* Left skeleton */}
                     <div className="flex-1">
-                      <div className="h-8 w-48 bg-gray-200 rounded mb-3"></div>
-                      <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-                      <div className="h-4 w-3/4 bg-gray-200 rounded mb-6"></div>
-                      <div className="h-6 w-32 bg-gray-200 rounded mb-3"></div>
+                      {/* Title row */}
+                      <div className="flex items-center gap-3 mb-3 lg:mb-4">
+                        <div className="h-8 w-52 bg-gray-200 rounded-lg" />
+                        <div className="h-6 w-24 bg-gray-200 rounded-full" />
+                      </div>
+                      {/* Description */}
+                      <div className="space-y-2 mb-6 lg:mb-8">
+                        <div className="h-4 w-full bg-gray-200 rounded" />
+                        <div className="h-4 w-5/6 bg-gray-200 rounded" />
+                        <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                      </div>
+                      {/* Fasilitas label */}
+                      <div className="h-5 w-36 bg-gray-200 rounded mb-4" />
+                      {/* Facilities list */}
                       <div className="space-y-2">
                         {[...Array(6)].map((_, j) => (
-                          <div
-                            key={j}
-                            className="h-4 w-full bg-gray-200 rounded"
-                          ></div>
+                          <div key={j} className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
+                            <div
+                              className="h-4 bg-gray-200 rounded"
+                              style={{ width: `${60 + (j % 3) * 15}%` }}
+                            />
+                          </div>
                         ))}
                       </div>
                     </div>
-                    <div className="w-full lg:w-[380px] bg-gray-50 rounded-2xl p-6 lg:p-8">
-                      <div className="w-full h-56 lg:h-72 bg-gray-200 rounded-2xl mb-6"></div>
-                      <div className="h-12 w-full bg-gray-200 rounded"></div>
+                    {/* Right skeleton */}
+                    <div className="w-full lg:w-[420px] bg-gray-50 rounded-2xl p-6 lg:p-8 flex flex-col">
+                      <div className="w-full h-56 lg:h-72 bg-gray-200 rounded-2xl mb-6" />
+                      <div className="mt-auto">
+                        <div className="h-4 w-28 bg-gray-200 rounded mb-2" />
+                        <div className="flex items-end gap-1">
+                          <div className="h-12 w-48 bg-gray-200 rounded" />
+                          <div className="h-6 w-12 bg-gray-200 rounded mb-1" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

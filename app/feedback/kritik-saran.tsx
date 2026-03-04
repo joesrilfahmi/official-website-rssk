@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Building2,
   CheckCircle2,
+  ExternalLink,
   Heart,
   MessageSquare,
   Send,
@@ -89,18 +90,137 @@ const successVariants: Variants = {
   },
 };
 
+const pageVariants: Variants = {
+  hidden: { opacity: 0, x: 40, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: { duration: 0.45, ease } satisfies Transition,
+  },
+  exit: {
+    opacity: 0,
+    x: -40,
+    scale: 0.98,
+    transition: { duration: 0.3, ease: [0.0, 0.0, 0.2, 1] },
+  },
+};
+
+const choiceCardVariants: Variants = {
+  hidden: { opacity: 0, y: 32, scale: 0.95 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      delay: i * 0.12 + 0.2,
+      duration: 0.5,
+      ease,
+    } satisfies Transition,
+  }),
+};
+
+/* ─────────────────────────────────────────
+   EMOJI ANIMATION VARIANTS
+───────────────────────────────────────── */
+const emojiIdleVariants: Variants = {
+  idle: { rotate: 0, scale: 1, y: 0 },
+  hover: {
+    rotate: [0, -15, 15, -10, 10, -5, 5, 0],
+    scale: [1, 1.25, 1.15, 1.22, 1.18, 1.2],
+    y: [0, -8, -4, -10, -6, -8],
+    transition: {
+      duration: 0.7,
+      ease: "easeInOut",
+      times: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1],
+    },
+  },
+};
+
+const emojiHappyVariants: Variants = {
+  idle: { rotate: 0, scale: 1, y: 0 },
+  hover: {
+    rotate: [0, 12, -12, 8, -8, 4, 0],
+    scale: [1, 1.3, 1.15, 1.28, 1.2, 1.25],
+    y: [0, -12, -5, -14, -8, -10],
+    transition: {
+      duration: 0.65,
+      ease: "easeInOut",
+      times: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1],
+    },
+  },
+};
+
+/* Floating particle that pops out on hover */
+const particles = ["✨", "⭐", "💫", "🌟"];
+const sadParticles = ["💬", "📝", "✍️", "💡"];
+
 /* ─────────────────────────────────────────
    TYPES
 ───────────────────────────────────────── */
+type Step = "choice" | "form";
+
 interface UnitPelayanan {
   id: string;
   title: string;
 }
 
 /* ─────────────────────────────────────────
+   GOOGLE REVIEW URL
+───────────────────────────────────────── */
+const GOOGLE_REVIEW_URL =
+  "https://search.google.com/local/writereview?placeid=ChIJcf3PP4nk1y0RBSul7-dymak";
+
+/* ─────────────────────────────────────────
+   FLOATING PARTICLE COMPONENT
+───────────────────────────────────────── */
+const FloatingParticle = ({
+  emoji,
+  index,
+  isVisible,
+}: {
+  emoji: string;
+  index: number;
+  isVisible: boolean;
+}) => {
+  const angle = (index / 4) * Math.PI * 2 - Math.PI / 2;
+  const radius = 52 + (index % 2) * 14;
+  const x = Math.cos(angle) * radius;
+  const y = Math.sin(angle) * radius - 16;
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <motion.span
+          key={`particle-${index}`}
+          initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+          animate={{
+            opacity: [0, 1, 1, 0],
+            scale: [0, 1.2, 1, 0.6],
+            x: [0, x * 0.5, x],
+            y: [0, y * 0.5, y],
+          }}
+          exit={{ opacity: 0, scale: 0 }}
+          transition={{
+            duration: 0.75,
+            delay: index * 0.07,
+            ease: "easeOut",
+          }}
+          className="absolute text-base pointer-events-none select-none"
+          style={{ left: "50%", top: "38%", marginLeft: -10, marginTop: -10 }}
+        >
+          {emoji}
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
+};
+
+/* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
 const KritikSaran = () => {
+  const [step, setStep] = useState<Step>("choice");
   const [unitPelayananList, setUnitPelayananList] = useState<UnitPelayanan[]>(
     [],
   );
@@ -109,6 +229,13 @@ const KritikSaran = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [choiceReady, setChoiceReady] = useState(false);
+
+  // Track hover state per card for particles
+  const [sadHovered, setSadHovered] = useState(false);
+  const [happyHovered, setHappyHovered] = useState(false);
+  const [sadParticleKey, setSadParticleKey] = useState(0);
+  const [happyParticleKey, setHappyParticleKey] = useState(0);
 
   const [formData, setFormData] = useState({
     nama: "",
@@ -130,6 +257,7 @@ const KritikSaran = () => {
   ];
 
   useEffect(() => {
+    setTimeout(() => setChoiceReady(true), 80);
     const fetchUnitPelayanan = async () => {
       try {
         const { data, error } = await supabase
@@ -197,7 +325,6 @@ const KritikSaran = () => {
   };
 
   const handleConfirm = async () => {
-    // 1. Tutup dialog konfirmasi dulu
     setShowConfirmDialog(false);
     setIsSubmitting(true);
     try {
@@ -215,7 +342,6 @@ const KritikSaran = () => {
       ]);
       if (error) throw error;
 
-      // Reset form
       setFormData({
         nama: "",
         no_hp: "",
@@ -225,7 +351,6 @@ const KritikSaran = () => {
         is_anonymus: false,
       });
 
-      // 2. Tampilkan dialog sukses setelah exit animation selesai (~320ms)
       setTimeout(() => setShowSuccessDialog(true), 320);
     } catch (e) {
       console.error(e);
@@ -252,7 +377,7 @@ const KritikSaran = () => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-9998 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowConfirmDialog(false)}
           >
             <motion.div
@@ -265,7 +390,7 @@ const KritikSaran = () => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="px-6 pt-5 pb-4 flex items-center justify-between">
+              <div className="px-5 sm:px-6 pt-5 pb-4 flex items-center justify-between">
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -305,9 +430,8 @@ const KritikSaran = () => {
                 variants={dialogRowVariants}
                 initial="hidden"
                 animate="visible"
-                className="px-6 pb-4 space-y-3"
+                className="px-5 sm:px-6 pb-4 space-y-3"
               >
-                {/* Identitas */}
                 {!formData.is_anonymus ? (
                   <motion.div variants={dialogItemVariants}>
                     <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-2 flex items-center gap-1.5">
@@ -346,7 +470,6 @@ const KritikSaran = () => {
                   </motion.div>
                 )}
 
-                {/* Detail */}
                 <motion.div variants={dialogItemVariants}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-2 flex items-center gap-1.5">
                     <Building2 className="w-3 h-3" /> Detail Kritik & Saran
@@ -377,7 +500,6 @@ const KritikSaran = () => {
                   </div>
                 </motion.div>
 
-                {/* Pesan */}
                 <motion.div variants={dialogItemVariants}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-2 flex items-center gap-1.5">
                     <MessageSquare className="w-3 h-3" /> Pesan
@@ -404,7 +526,7 @@ const KritikSaran = () => {
                 transition={
                   { delay: 0.45, duration: 0.4, ease } satisfies Transition
                 }
-                className="px-6 pb-5 flex gap-2.5"
+                className="px-5 sm:px-6 pb-5 flex gap-2.5"
               >
                 <motion.button
                   type="button"
@@ -412,7 +534,7 @@ const KritikSaran = () => {
                   whileTap={{ scale: 0.97 }}
                   transition={{ duration: 0.18 } satisfies Transition}
                   onClick={() => setShowConfirmDialog(false)}
-                  className="flex-1 py-4 rounded-full border border-gray-200 text-gray-600 text-xs font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+                  className="flex-1 py-3.5 sm:py-4 rounded-full border border-gray-200 text-gray-600 text-xs font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
                 >
                   Periksa Lagi
                 </motion.button>
@@ -423,7 +545,7 @@ const KritikSaran = () => {
                   transition={{ duration: 0.18 } satisfies Transition}
                   onClick={handleConfirm}
                   disabled={isSubmitting}
-                  className="flex-2 px-5 py-4 rounded-full bg-mariner-500 hover:bg-mariner-600 text-white text-xs font-bold shadow-md shadow-mariner-500/20 flex items-center justify-center gap-1.5 transition-all duration-200 disabled:opacity-60"
+                  className="flex-[2] px-5 py-3.5 sm:py-4 rounded-full bg-mariner-500 hover:bg-mariner-600 text-white text-xs font-bold shadow-md shadow-mariner-500/20 flex items-center justify-center gap-1.5 transition-all duration-200 disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     "Mengirim..."
@@ -450,7 +572,7 @@ const KritikSaran = () => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowSuccessDialog(false)}
           >
             <motion.div
@@ -462,10 +584,8 @@ const KritikSaran = () => {
               className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Decorative gradient top */}
               <div className="h-2 w-full bg-linear-to-r from-greenfresh-400 via-mariner-400 to-greenfresh-500" />
 
-              {/* Close */}
               <motion.button
                 whileHover={{
                   scale: 1.08,
@@ -479,8 +599,7 @@ const KritikSaran = () => {
                 <X className="w-4 h-4" />
               </motion.button>
 
-              <div className="px-8 pt-8 pb-8 flex flex-col items-center text-center">
-                {/* Animated icon */}
+              <div className="px-6 sm:px-8 pt-8 pb-8 flex flex-col items-center text-center">
                 <motion.div
                   initial={{ scale: 0, rotate: -20 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -489,7 +608,7 @@ const KritikSaran = () => {
                   }
                   className="relative mb-6"
                 >
-                  <div className="w-24 h-24 rounded-full bg-greenfresh-50 ring-8 ring-greenfresh-100 flex items-center justify-center">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-greenfresh-50 ring-8 ring-greenfresh-100 flex items-center justify-center">
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
@@ -501,10 +620,9 @@ const KritikSaran = () => {
                         } satisfies Transition
                       }
                     >
-                      <CheckCircle2 className="w-12 h-12 text-greenfresh-500" />
+                      <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12 text-greenfresh-500" />
                     </motion.div>
                   </div>
-                  {/* Heart accent bubble */}
                   <motion.div
                     initial={{ opacity: 0, scale: 0, x: 10, y: -10 }}
                     animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
@@ -517,7 +635,6 @@ const KritikSaran = () => {
                   </motion.div>
                 </motion.div>
 
-                {/* Text */}
                 <motion.div
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -526,7 +643,7 @@ const KritikSaran = () => {
                   }
                   className="space-y-2 mb-6"
                 >
-                  <h2 className="text-2xl font-extrabold text-gray-900">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">
                     Terima Kasih! 🎉
                   </h2>
                   <p className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
@@ -535,7 +652,6 @@ const KritikSaran = () => {
                   </p>
                 </motion.div>
 
-                {/* Divider */}
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
@@ -546,7 +662,6 @@ const KritikSaran = () => {
                   style={{ originX: 0.5 }}
                 />
 
-                {/* Info badge */}
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -562,7 +677,6 @@ const KritikSaran = () => {
                   </p>
                 </motion.div>
 
-                {/* CTA */}
                 <motion.button
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -571,7 +685,10 @@ const KritikSaran = () => {
                   }
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => setShowSuccessDialog(false)}
+                  onClick={() => {
+                    setShowSuccessDialog(false);
+                    setStep("choice");
+                  }}
                   className="w-full py-3.5 rounded-full bg-greenfresh-500 hover:bg-greenfresh-600 text-white text-sm font-bold shadow-lg shadow-greenfresh-500/25 transition-all duration-200"
                 >
                   Selesai
@@ -585,211 +702,516 @@ const KritikSaran = () => {
       {/* ══════════════════════
           MAIN PAGE
       ══════════════════════ */}
-      <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-screen">
+      <div className="bg-gray-50 py-10 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-screen">
         <div className="max-w-7xl mx-auto">
-          <Animate type="fadein" ready={dataReady}>
+          <Animate type="fadein" ready={choiceReady}>
             <Banner
               title="Kritik & Saran"
               subtitle="Suara Anda sangat berarti bagi kami untuk terus meningkatkan kualitas layanan"
             />
           </Animate>
 
-          <div className="mt-12 max-w-2xl mx-auto">
-            <Animate type="slideup" ready={dataReady} delay={0.05}>
-              <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
-                <div className="p-7 sm:p-10">
-                  {/* Loading skeleton */}
-                  {loading && (
-                    <div className="animate-pulse space-y-6">
-                      <div className="h-5 w-20 bg-gray-100 rounded-full mx-auto" />
-                      <div className="h-8 w-56 bg-gray-100 rounded mx-auto" />
-                      {[...Array(4)].map((_, i) => (
-                        <div key={i} className="h-12 bg-gray-100 rounded-xl" />
-                      ))}
-                      <div className="h-28 bg-gray-100 rounded-xl" />
-                      <div className="h-12 bg-gray-100 rounded-xl" />
-                    </div>
-                  )}
+          <AnimatePresence mode="wait">
+            {/* ══════════════════════
+                STEP: CHOICE
+            ══════════════════════ */}
+            {step === "choice" && (
+              <motion.div
+                key="choice-step"
+                variants={pageVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="mt-8 sm:mt-12 max-w-2xl mx-auto"
+              >
+                <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-5 sm:p-7 lg:p-10">
+                    {/* Heading */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={
+                        {
+                          delay: 0.1,
+                          duration: 0.45,
+                          ease,
+                        } satisfies Transition
+                      }
+                      className="text-center mb-7 sm:mb-10"
+                    >
+                      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-mariner-500 mb-2">
+                        Bagaimana Pengalaman Anda?
+                      </p>
+                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 leading-tight">
+                        Ceritakan kepada kami
+                      </h2>
+                      <p className="text-sm text-gray-400 mt-2 leading-relaxed">
+                        Pilih yang sesuai dengan pengalaman Anda
+                      </p>
+                    </motion.div>
 
-                  {/* Form */}
-                  {!loading && (
-                    <>
-                      <Animate
-                        type="stagger"
-                        staggerChildren={0.08}
-                        delayChildren={0.1}
-                        ready={dataReady}
-                        className="space-y-0"
+                    {/* Choice Cards — stacked on mobile, side-by-side on sm+ */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      {/* TIDAK PUAS */}
+                      <motion.button
+                        type="button"
+                        custom={1}
+                        variants={choiceCardVariants}
+                        initial="hidden"
+                        animate="visible"
+                        whileHover="hover"
+                        whileTap={{ scale: 0.97 }}
+                        onHoverStart={() => {
+                          setSadHovered(true);
+                          setSadParticleKey((k) => k + 1);
+                        }}
+                        onHoverEnd={() => setSadHovered(false)}
+                        onClick={() => setStep("form")}
+                        className="group relative flex flex-col items-center justify-center gap-3 sm:gap-4
+                          p-6 sm:p-7 lg:p-9 rounded-2xl border-2 border-transparent
+                          bg-gradient-to-b from-blue-50 to-mariner-50
+                          hover:border-mariner-300 hover:shadow-xl hover:shadow-mariner-100/60
+                          transition-all duration-300 cursor-pointer text-center overflow-hidden"
                       >
-                        <Animate type="fielditem" className="text-center mb-8">
-                          <Title
-                            badge="Formulir"
-                            title="Formulir Kritik & Saran"
-                            badgeVariant="default"
-                            align="center"
+                        {/* Animated glow */}
+                        <motion.div
+                          className="absolute inset-0 rounded-2xl pointer-events-none"
+                          initial={{ opacity: 0 }}
+                          variants={{
+                            hover: {
+                              opacity: 1,
+                              background:
+                                "radial-gradient(ellipse at 50% 40%, rgba(99,130,255,0.12) 0%, transparent 70%)",
+                            },
+                          }}
+                          transition={{ duration: 0.3 }}
+                        />
+
+                        {/* Particles */}
+                        {sadParticles.map((p, i) => (
+                          <FloatingParticle
+                            key={`sad-${sadParticleKey}-${i}`}
+                            emoji={p}
+                            index={i}
+                            isVisible={sadHovered}
                           />
-                        </Animate>
-                      </Animate>
+                        ))}
 
-                      <Animate
-                        type="stagger"
-                        staggerChildren={0.08}
-                        delayChildren={0.15}
-                        ready={dataReady}
-                        className="space-y-5"
+                        {/* Emoji with spring animation */}
+                        <motion.span
+                          className="text-5xl sm:text-6xl lg:text-7xl select-none leading-none relative z-10"
+                          variants={emojiIdleVariants}
+                          transition={{
+                            type: "spring",
+                            stiffness: 200,
+                            damping: 10,
+                          }}
+                          style={{
+                            display: "inline-block",
+                            transformOrigin: "center bottom",
+                          }}
+                        >
+                          😞
+                        </motion.span>
+
+                        <div className="space-y-1 relative z-10">
+                          <p className="text-base sm:text-lg font-extrabold text-gray-900">
+                            Tidak Puas
+                          </p>
+                          <p className="text-[11px] text-gray-400 leading-snug max-w-[160px] mx-auto">
+                            Sampaikan kritik & saran untuk kami perbaiki
+                          </p>
+                        </div>
+
+                        {/* Badge */}
+                        <motion.div
+                          className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 shadow-sm border border-gray-100 relative z-10"
+                          variants={{
+                            hover: {
+                              y: -2,
+                              boxShadow: "0 4px 12px rgba(99,130,255,0.15)",
+                            },
+                          }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <MessageSquare className="w-3 h-3 text-mariner-500" />
+                          <span className="text-[10px] font-semibold text-gray-600">
+                            Isi Formulir
+                          </span>
+                          <ArrowRight className="w-2.5 h-2.5 text-gray-400" />
+                        </motion.div>
+                      </motion.button>
+
+                      {/* PUAS */}
+                      <motion.button
+                        type="button"
+                        custom={0}
+                        variants={choiceCardVariants}
+                        initial="hidden"
+                        animate="visible"
+                        whileHover="hover"
+                        whileTap={{ scale: 0.97 }}
+                        onHoverStart={() => {
+                          setHappyHovered(true);
+                          setHappyParticleKey((k) => k + 1);
+                        }}
+                        onHoverEnd={() => setHappyHovered(false)}
+                        onClick={() => {
+                          window.open(GOOGLE_REVIEW_URL, "_blank");
+                        }}
+                        className="group relative flex flex-col items-center justify-center gap-3 sm:gap-4
+                          p-6 sm:p-7 lg:p-9 rounded-2xl border-2 border-transparent
+                          bg-gradient-to-b from-yellow-50 to-orange-50
+                          hover:border-yellow-300 hover:shadow-xl hover:shadow-yellow-100/60
+                          transition-all duration-300 cursor-pointer text-center overflow-hidden"
                       >
-                        {/* Anonymous toggle */}
-                        <Animate type="fielditem">
-                          <label
-                            htmlFor="is_anonymus"
-                            className="flex items-center gap-3 p-4 bg-mariner-50 rounded-xl cursor-pointer ring-1 ring-mariner-100 hover:ring-mariner-300 transition-all"
+                        {/* Animated glow */}
+                        <motion.div
+                          className="absolute inset-0 rounded-2xl pointer-events-none"
+                          initial={{ opacity: 0 }}
+                          variants={{
+                            hover: {
+                              opacity: 1,
+                              background:
+                                "radial-gradient(ellipse at 50% 40%, rgba(255,200,60,0.18) 0%, transparent 70%)",
+                            },
+                          }}
+                          transition={{ duration: 0.3 }}
+                        />
+
+                        {/* Particles */}
+                        {particles.map((p, i) => (
+                          <FloatingParticle
+                            key={`happy-${happyParticleKey}-${i}`}
+                            emoji={p}
+                            index={i}
+                            isVisible={happyHovered}
+                          />
+                        ))}
+
+                        {/* Emoji */}
+                        <motion.span
+                          className="text-5xl sm:text-6xl lg:text-7xl select-none leading-none relative z-10"
+                          variants={emojiHappyVariants}
+                          transition={{
+                            type: "spring",
+                            stiffness: 200,
+                            damping: 10,
+                          }}
+                          style={{
+                            display: "inline-block",
+                            transformOrigin: "center bottom",
+                          }}
+                        >
+                          😊
+                        </motion.span>
+
+                        <div className="space-y-1 relative z-10">
+                          <p className="text-base sm:text-lg font-extrabold text-gray-900">
+                            Puas
+                          </p>
+                          <p className="text-[11px] text-gray-400 leading-snug max-w-[160px] mx-auto">
+                            Bagikan pengalaman positif Anda di Google
+                          </p>
+                        </div>
+
+                        {/* Google badge */}
+                        <motion.div
+                          className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 shadow-sm border border-gray-100 relative z-10"
+                          variants={{
+                            hover: {
+                              y: -2,
+                              boxShadow: "0 4px 12px rgba(255,180,0,0.18)",
+                            },
+                          }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <svg
+                            className="w-3.5 h-3.5"
+                            viewBox="0 0 24 24"
+                            fill="none"
                           >
-                            <input
-                              type="checkbox"
-                              id="is_anonymus"
-                              name="is_anonymus"
-                              checked={formData.is_anonymus}
-                              onChange={handleInputChange}
-                              disabled={isSubmitting}
-                              className="w-4 h-4 rounded text-mariner-600 focus:ring-mariner-400 shrink-0"
+                            <path
+                              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                              fill="#4285F4"
                             />
-                            <span className="text-sm font-medium text-gray-700">
-                              Kirim sebagai anonim{" "}
-                              <span className="text-gray-400 font-normal">
-                                (nama & nomor HP tidak diperlukan)
-                              </span>
-                            </span>
-                          </label>
-                        </Animate>
+                            <path
+                              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                              fill="#34A853"
+                            />
+                            <path
+                              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                              fill="#FBBC05"
+                            />
+                            <path
+                              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                              fill="#EA4335"
+                            />
+                          </svg>
+                          <span className="text-[10px] font-semibold text-gray-600">
+                            Tulis Ulasan
+                          </span>
+                          <ExternalLink className="w-2.5 h-2.5 text-gray-400" />
+                        </motion.div>
+                      </motion.button>
+                    </div>
 
-                        {/* Name + phone */}
-                        {!formData.is_anonymus && (
-                          <Animate type="fielditem">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <Input
-                                label="Nama Lengkap"
-                                name="nama"
-                                placeholder="Masukkan nama lengkap"
-                                value={formData.nama}
-                                onChange={handleInputChange}
-                                error={errors.nama}
-                                required
-                                disabled={isSubmitting}
-                              />
-                              <Input
-                                label="No HP"
-                                name="no_hp"
-                                type="tel"
-                                placeholder="08123456789"
-                                value={formData.no_hp}
-                                onChange={handleInputChange}
-                                error={errors.no_hp}
-                                required
-                                disabled={isSubmitting}
-                              />
-                            </div>
-                          </Animate>
-                        )}
-
-                        {/* Unit pelayanan */}
-                        <Animate type="fielditem">
-                          <Select
-                            label="Unit Pelayanan"
-                            placeholder="Pilih Unit Pelayanan"
-                            value={formData.unit_pelayanan_id}
-                            onChange={(value) =>
-                              handleSelectChange("unit_pelayanan_id", value)
-                            }
-                            options={unitPelayananList.map((u) => ({
-                              value: u.id,
-                              label: u.title,
-                            }))}
-                            error={errors.unit_pelayanan_id}
-                            required
-                            disabled={isSubmitting}
-                            searchable
-                          />
-                        </Animate>
-
-                        {/* Rating */}
-                        <Animate type="fielditem">
-                          <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-3">
-                              Rating Kepuasan{" "}
-                              <span className="text-gray-400 font-normal">
-                                (opsional)
-                              </span>
-                            </label>
-                            <div className="flex gap-1.5">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                  key={star}
-                                  type="button"
-                                  disabled={isSubmitting}
-                                  onClick={() =>
-                                    setFormData((p) => ({
-                                      ...p,
-                                      rating: p.rating === star ? 0 : star,
-                                    }))
-                                  }
-                                  className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
-                                >
-                                  <Star
-                                    className={`w-9 h-9 transition-colors ${star <= formData.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200 hover:text-yellow-200"}`}
-                                  />
-                                </button>
-                              ))}
-                              {formData.rating > 0 && (
-                                <span className="ml-2 self-center text-sm text-gray-400">
-                                  {ratingLabels[formData.rating]}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </Animate>
-
-                        {/* Message */}
-                        <Animate type="fielditem">
-                          <Textarea
-                            label="Kritik & Saran"
-                            name="pesan"
-                            placeholder="Tuliskan kritik dan saran Anda di sini..."
-                            value={formData.pesan}
-                            onChange={handleInputChange}
-                            error={errors.pesan}
-                            required
-                            rows={5}
-                            disabled={isSubmitting}
-                          />
-                        </Animate>
-
-                        {/* Submit */}
-                        <Animate type="fielditem">
-                          <Button
-                            variant="primary"
-                            size="lg"
-                            className="w-full justify-center bg-mariner-500 hover:bg-mariner-600"
-                            onClick={handleSubmitClick}
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? (
-                              "Mengirim..."
-                            ) : (
-                              <>
-                                {" "}
-                                Kirim Kritik & Saran{" "}
-                                <ArrowRight className="w-5 h-5" />
-                              </>
-                            )}
-                          </Button>
-                        </Animate>
-                      </Animate>
-                    </>
-                  )}
+                    {/* Footer note */}
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.65, duration: 0.5 }}
+                      className="text-center text-[11px] text-gray-400 mt-6 sm:mt-7 leading-relaxed"
+                    >
+                      Masukan Anda membantu kami memberikan pelayanan yang lebih
+                      baik
+                    </motion.p>
+                  </div>
                 </div>
-              </div>
-            </Animate>
-          </div>
+              </motion.div>
+            )}
+
+            {/* ══════════════════════
+                STEP: FORM
+            ══════════════════════ */}
+            {step === "form" && (
+              <motion.div
+                key="form-step"
+                variants={pageVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="mt-8 sm:mt-12 max-w-2xl mx-auto"
+              >
+                <Animate type="slideup" ready={dataReady} delay={0.05}>
+                  <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
+                    <div className="p-5 sm:p-7 lg:p-10">
+                      {/* Back button */}
+                      <motion.button
+                        type="button"
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1, duration: 0.35, ease }}
+                        whileHover={{ x: -2 }}
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => setStep("choice")}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-700 transition-colors mb-6 group"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5 rotate-180 transition-transform group-hover:-translate-x-0.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                        Kembali
+                      </motion.button>
+
+                      {/* Loading skeleton */}
+                      {loading && (
+                        <div className="animate-pulse space-y-6">
+                          <div className="h-5 w-20 bg-gray-100 rounded-full mx-auto" />
+                          <div className="h-8 w-56 bg-gray-100 rounded mx-auto" />
+                          {[...Array(4)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="h-12 bg-gray-100 rounded-xl"
+                            />
+                          ))}
+                          <div className="h-28 bg-gray-100 rounded-xl" />
+                          <div className="h-12 bg-gray-100 rounded-xl" />
+                        </div>
+                      )}
+
+                      {/* Form */}
+                      {!loading && (
+                        <>
+                          <Animate
+                            type="stagger"
+                            staggerChildren={0.08}
+                            delayChildren={0.1}
+                            ready={dataReady}
+                            className="space-y-0"
+                          >
+                            <Animate
+                              type="fielditem"
+                              className="text-center mb-8"
+                            >
+                              <Title
+                                badge="Formulir"
+                                title="Formulir Kritik & Saran"
+                                badgeVariant="default"
+                                align="center"
+                              />
+                            </Animate>
+                          </Animate>
+
+                          <Animate
+                            type="stagger"
+                            staggerChildren={0.08}
+                            delayChildren={0.15}
+                            ready={dataReady}
+                            className="space-y-4 sm:space-y-5"
+                          >
+                            {/* Anonymous toggle */}
+                            <Animate type="fielditem">
+                              <label
+                                htmlFor="is_anonymus"
+                                className="flex items-start sm:items-center gap-3 p-3.5 sm:p-4 bg-mariner-50 rounded-xl cursor-pointer ring-1 ring-mariner-100 hover:ring-mariner-300 transition-all"
+                              >
+                                <input
+                                  type="checkbox"
+                                  id="is_anonymus"
+                                  name="is_anonymus"
+                                  checked={formData.is_anonymus}
+                                  onChange={handleInputChange}
+                                  disabled={isSubmitting}
+                                  className="w-4 h-4 rounded text-mariner-600 focus:ring-mariner-400 shrink-0 mt-0.5 sm:mt-0"
+                                />
+                                <span className="text-sm font-medium text-gray-700 leading-snug">
+                                  Kirim sebagai anonim{" "}
+                                  <span className="text-gray-400 font-normal">
+                                    (nama & nomor HP tidak diperlukan)
+                                  </span>
+                                </span>
+                              </label>
+                            </Animate>
+
+                            {/* Name + phone */}
+                            {!formData.is_anonymus && (
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                  <Input
+                                    label="Nama Lengkap"
+                                    name="nama"
+                                    placeholder="Masukkan nama lengkap"
+                                    value={formData.nama}
+                                    onChange={handleInputChange}
+                                    error={errors.nama}
+                                    required
+                                    disabled={isSubmitting}
+                                  />
+                                  <Input
+                                    label="No HP"
+                                    name="no_hp"
+                                    type="tel"
+                                    placeholder="08123456789"
+                                    value={formData.no_hp}
+                                    onChange={handleInputChange}
+                                    error={errors.no_hp}
+                                    required
+                                    disabled={isSubmitting}
+                                  />
+                                </div>
+                              </Animate>
+                            )}
+
+                            {/* Unit pelayanan */}
+                            <Animate type="fielditem">
+                              <Select
+                                label="Unit Pelayanan"
+                                placeholder="Pilih Unit Pelayanan"
+                                value={formData.unit_pelayanan_id}
+                                onChange={(value) =>
+                                  handleSelectChange("unit_pelayanan_id", value)
+                                }
+                                options={unitPelayananList.map((u) => ({
+                                  value: u.id,
+                                  label: u.title,
+                                }))}
+                                error={errors.unit_pelayanan_id}
+                                required
+                                disabled={isSubmitting}
+                                searchable
+                              />
+                            </Animate>
+
+                            {/* Rating */}
+                            <Animate type="fielditem">
+                              <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                                  Rating Kepuasan{" "}
+                                  <span className="text-gray-400 font-normal">
+                                    (opsional)
+                                  </span>
+                                </label>
+                                <div className="flex flex-wrap gap-1.5 items-center">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      disabled={isSubmitting}
+                                      onClick={() =>
+                                        setFormData((p) => ({
+                                          ...p,
+                                          rating: p.rating === star ? 0 : star,
+                                        }))
+                                      }
+                                      className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
+                                    >
+                                      <Star
+                                        className={`w-8 h-8 sm:w-9 sm:h-9 transition-colors ${star <= formData.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200 hover:text-yellow-200"}`}
+                                      />
+                                    </button>
+                                  ))}
+                                  {formData.rating > 0 && (
+                                    <span className="ml-1 self-center text-xs sm:text-sm text-gray-400">
+                                      {ratingLabels[formData.rating]}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </Animate>
+
+                            {/* Message */}
+                            <Animate type="fielditem">
+                              <Textarea
+                                label="Kritik & Saran"
+                                name="pesan"
+                                placeholder="Tuliskan kritik dan saran Anda di sini..."
+                                value={formData.pesan}
+                                onChange={handleInputChange}
+                                error={errors.pesan}
+                                required
+                                rows={5}
+                                disabled={isSubmitting}
+                              />
+                            </Animate>
+
+                            {/* Submit */}
+                            <Animate type="fielditem">
+                              <Button
+                                variant="primary"
+                                size="lg"
+                                className="w-full justify-center bg-mariner-500 hover:bg-mariner-600"
+                                onClick={handleSubmitClick}
+                                disabled={isSubmitting}
+                              >
+                                {isSubmitting ? (
+                                  "Mengirim..."
+                                ) : (
+                                  <>
+                                    Kirim Kritik & Saran{" "}
+                                    <ArrowRight className="w-5 h-5" />
+                                  </>
+                                )}
+                              </Button>
+                            </Animate>
+                          </Animate>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Animate>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </>
