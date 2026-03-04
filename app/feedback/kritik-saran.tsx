@@ -121,39 +121,10 @@ const choiceCardVariants: Variants = {
 };
 
 /* ─────────────────────────────────────────
-   EMOJI ANIMATION VARIANTS
+   PARTICLE DATA
 ───────────────────────────────────────── */
-const emojiIdleVariants: Variants = {
-  idle: { rotate: 0, scale: 1, y: 0 },
-  hover: {
-    rotate: [0, -15, 15, -10, 10, -5, 5, 0],
-    scale: [1, 1.25, 1.15, 1.22, 1.18, 1.2],
-    y: [0, -8, -4, -10, -6, -8],
-    transition: {
-      duration: 0.7,
-      ease: "easeInOut",
-      times: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1],
-    },
-  },
-};
-
-const emojiHappyVariants: Variants = {
-  idle: { rotate: 0, scale: 1, y: 0 },
-  hover: {
-    rotate: [0, 12, -12, 8, -8, 4, 0],
-    scale: [1, 1.3, 1.15, 1.28, 1.2, 1.25],
-    y: [0, -12, -5, -14, -8, -10],
-    transition: {
-      duration: 0.65,
-      ease: "easeInOut",
-      times: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1],
-    },
-  },
-};
-
-/* Floating particle that pops out on hover */
-const particles = ["✨", "⭐", "💫", "🌟"];
-const sadParticles = ["💬", "📝", "✍️", "💡"];
+const happyParticleEmojis = ["🎉", "⭐", "✨", "🎊", "💛", "🌟", "🎈", "💥"];
+const sadParticleEmojis = ["💧", "😢", "💧", "🥺", "💔", "😓"];
 
 /* ─────────────────────────────────────────
    TYPES
@@ -172,42 +143,157 @@ const GOOGLE_REVIEW_URL =
   "https://search.google.com/local/writereview?placeid=ChIJcf3PP4nk1y0RBSul7-dymak";
 
 /* ─────────────────────────────────────────
-   FLOATING PARTICLE COMPONENT
+   CANVAS CONFETTI COMPONENT
 ───────────────────────────────────────── */
-const FloatingParticle = ({
+const ConfettiCanvas = ({ active }: { active: boolean }) => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const rafRef = React.useRef<number>(0);
+  const activeRef = React.useRef(active);
+  activeRef.current = active;
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight;
+    canvas.width = W;
+    canvas.height = H;
+
+    type Piece = {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      color: string;
+      size: number;
+      rot: number;
+      rotV: number;
+      shape: "rect" | "circle";
+      life: number;
+      maxLife: number;
+    };
+
+    const COLORS = [
+      "#FF6B6B",
+      "#FFD93D",
+      "#6BCB77",
+      "#4D96FF",
+      "#FF922B",
+      "#CC5DE8",
+      "#F06595",
+      "#74C0FC",
+    ];
+    let pieces: Piece[] = [];
+
+    const spawn = () => {
+      // Burst from center-top of card
+      for (let i = 0; i < 32; i++) {
+        const angle = -Math.PI * 0.9 + Math.random() * Math.PI * 0.8; // mostly upward fan
+        const speed = 1.8 + Math.random() * 3.5;
+        pieces.push({
+          x: W * 0.5 + (Math.random() - 0.5) * 40,
+          y: H * 0.35,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: COLORS[Math.floor(Math.random() * COLORS.length)],
+          size: 4 + Math.random() * 7,
+          rot: Math.random() * Math.PI * 2,
+          rotV: (Math.random() - 0.5) * 0.25,
+          shape: Math.random() > 0.4 ? "rect" : "circle",
+          life: 0,
+          maxLife: 55 + Math.floor(Math.random() * 35),
+        });
+      }
+    };
+
+    let frame = 0;
+    const tick = () => {
+      ctx.clearRect(0, 0, W, H);
+      // Respawn wave every 22 frames while hovered
+      if (activeRef.current && frame % 22 === 0) spawn();
+      frame++;
+
+      pieces = pieces.filter((p) => p.life < p.maxLife);
+      for (const p of pieces) {
+        p.life++;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.09; // gravity
+        p.vx *= 0.99;
+        p.rot += p.rotV;
+        const alpha = 1 - p.life / p.maxLife;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        if (p.shape === "rect") {
+          ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    if (active) spawn();
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      ctx.clearRect(0, 0, W, H);
+    };
+  }, [active]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none z-20 rounded-2xl"
+    />
+  );
+};
+
+/* ─────────────────────────────────────────
+   TEARDROP PARTICLE COMPONENT
+───────────────────────────────────────── */
+const SadParticle = ({
   emoji,
   index,
+  particleKey,
   isVisible,
 }: {
   emoji: string;
   index: number;
+  particleKey: number;
   isVisible: boolean;
 }) => {
-  const angle = (index / 4) * Math.PI * 2 - Math.PI / 2;
-  const radius = 52 + (index % 2) * 14;
-  const x = Math.cos(angle) * radius;
-  const y = Math.sin(angle) * radius - 16;
-
+  const spreadX = (index - (sadParticleEmojis.length - 1) / 2) * 22;
+  const dropY = 60 + (index % 2) * 24;
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.span
-          key={`particle-${index}`}
-          initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+          key={`sp-${particleKey}-${index}`}
+          initial={{ opacity: 0, scale: 0.5, x: spreadX * 0.2, y: -6 }}
           animate={{
-            opacity: [0, 1, 1, 0],
-            scale: [0, 1.2, 1, 0.6],
-            x: [0, x * 0.5, x],
-            y: [0, y * 0.5, y],
+            opacity: [0, 0.95, 0.8, 0],
+            scale: [0.5, 1.1, 0.95, 0.6],
+            x: [spreadX * 0.2, spreadX * 0.6, spreadX * 0.85, spreadX],
+            y: [-6, dropY * 0.3, dropY * 0.65, dropY],
           }}
-          exit={{ opacity: 0, scale: 0 }}
+          exit={{ opacity: 0 }}
           transition={{
-            duration: 0.75,
-            delay: index * 0.07,
-            ease: "easeOut",
+            duration: 1.2,
+            delay: index * 0.1,
+            ease: [0.3, 0, 0.5, 1],
           }}
-          className="absolute text-base pointer-events-none select-none"
-          style={{ left: "50%", top: "38%", marginLeft: -10, marginTop: -10 }}
+          className="absolute text-sm pointer-events-none select-none z-20"
+          style={{ left: "50%", top: "42%", marginLeft: -10, marginTop: -10 }}
         >
           {emoji}
         </motion.span>
@@ -377,7 +463,7 @@ const KritikSaran = () => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-9998 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowConfirmDialog(false)}
           >
             <motion.div
@@ -545,7 +631,7 @@ const KritikSaran = () => {
                   transition={{ duration: 0.18 } satisfies Transition}
                   onClick={handleConfirm}
                   disabled={isSubmitting}
-                  className="flex-[2] px-5 py-3.5 sm:py-4 rounded-full bg-mariner-500 hover:bg-mariner-600 text-white text-xs font-bold shadow-md shadow-mariner-500/20 flex items-center justify-center gap-1.5 transition-all duration-200 disabled:opacity-60"
+                  className="flex-2 px-5 py-3.5 sm:py-4 rounded-full bg-mariner-500 hover:bg-mariner-600 text-white text-xs font-bold shadow-md shadow-mariner-500/20 flex items-center justify-center gap-1.5 transition-all duration-200 disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     "Mengirim..."
@@ -572,7 +658,7 @@ const KritikSaran = () => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowSuccessDialog(false)}
           >
             <motion.div
@@ -752,14 +838,13 @@ const KritikSaran = () => {
 
                     {/* Choice Cards — stacked on mobile, side-by-side on sm+ */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      {/* TIDAK PUAS */}
+                      {/* ── TIDAK PUAS ── */}
                       <motion.button
                         type="button"
                         custom={1}
                         variants={choiceCardVariants}
                         initial="hidden"
                         animate="visible"
-                        whileHover="hover"
                         whileTap={{ scale: 0.97 }}
                         onHoverStart={() => {
                           setSadHovered(true);
@@ -768,73 +853,143 @@ const KritikSaran = () => {
                         onHoverEnd={() => setSadHovered(false)}
                         onClick={() => setStep("form")}
                         className="group relative flex flex-col items-center justify-center gap-3 sm:gap-4
-                          p-6 sm:p-7 lg:p-9 rounded-2xl border-2 border-transparent
-                          bg-gradient-to-b from-blue-50 to-mariner-50
-                          hover:border-mariner-300 hover:shadow-xl hover:shadow-mariner-100/60
-                          transition-all duration-300 cursor-pointer text-center overflow-hidden"
+                          p-6 sm:p-7 lg:p-9 rounded-2xl border-2 cursor-pointer text-center overflow-hidden
+                          transition-colors duration-500"
+                        style={{
+                          background:
+                            "linear-gradient(to bottom, #f8fafc, #eff6ff)",
+                        }}
                       >
-                        {/* Animated glow */}
+                        {/* Border & shadow animated via motion */}
                         <motion.div
-                          className="absolute inset-0 rounded-2xl pointer-events-none"
-                          initial={{ opacity: 0 }}
-                          variants={{
-                            hover: {
-                              opacity: 1,
-                              background:
-                                "radial-gradient(ellipse at 50% 40%, rgba(99,130,255,0.12) 0%, transparent 70%)",
-                            },
-                          }}
-                          transition={{ duration: 0.3 }}
+                          className="absolute inset-0 rounded-2xl pointer-events-none border-2"
+                          animate={
+                            sadHovered
+                              ? {
+                                  borderColor: "rgba(100,116,139,0.5)",
+                                  boxShadow:
+                                    "0 16px 40px rgba(100,116,139,0.18)",
+                                }
+                              : {
+                                  borderColor: "rgba(0,0,0,0)",
+                                  boxShadow: "0 0px 0px rgba(0,0,0,0)",
+                                }
+                          }
+                          transition={{ duration: 0.45 }}
                         />
 
-                        {/* Particles */}
-                        {sadParticles.map((p, i) => (
-                          <FloatingParticle
+                        {/* Grayscale + dark overlay */}
+                        <motion.div
+                          className="absolute inset-0 rounded-2xl pointer-events-none"
+                          animate={
+                            sadHovered
+                              ? {
+                                  opacity: 1,
+                                  background:
+                                    "linear-gradient(160deg, rgba(71,85,105,0.07) 0%, rgba(51,65,85,0.12) 100%)",
+                                }
+                              : {
+                                  opacity: 0,
+                                  background:
+                                    "linear-gradient(160deg, rgba(71,85,105,0) 0%, rgba(51,65,85,0) 100%)",
+                                }
+                          }
+                          transition={{ duration: 0.5 }}
+                        />
+
+                        {/* Teardrop particles */}
+                        {sadParticleEmojis.map((p, i) => (
+                          <SadParticle
                             key={`sad-${sadParticleKey}-${i}`}
                             emoji={p}
                             index={i}
+                            particleKey={sadParticleKey}
                             isVisible={sadHovered}
                           />
                         ))}
 
-                        {/* Emoji with spring animation */}
+                        {/* Emoji: droops down + dims */}
                         <motion.span
-                          className="text-5xl sm:text-6xl lg:text-7xl select-none leading-none relative z-10"
-                          variants={emojiIdleVariants}
-                          transition={{
-                            type: "spring",
-                            stiffness: 200,
-                            damping: 10,
-                          }}
+                          className="select-none leading-none relative z-10"
+                          animate={
+                            sadHovered
+                              ? {
+                                  y: 10,
+                                  scale: 0.9,
+                                  rotate: [0, -3, 2, -2, 1, 0],
+                                  filter: "grayscale(0.6) brightness(0.85)",
+                                }
+                              : {
+                                  y: 0,
+                                  scale: 1,
+                                  rotate: 0,
+                                  filter: "grayscale(0) brightness(1)",
+                                }
+                          }
+                          transition={
+                            sadHovered
+                              ? { duration: 1.0, ease: [0.25, 0.1, 0.25, 1] }
+                              : { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }
+                          }
                           style={{
+                            fontSize: "clamp(2.8rem,8vw,4.5rem)",
                             display: "inline-block",
-                            transformOrigin: "center bottom",
                           }}
                         >
                           😞
                         </motion.span>
 
+                        {/* Text — greyscale on hover */}
                         <div className="space-y-1 relative z-10">
-                          <p className="text-base sm:text-lg font-extrabold text-gray-900">
+                          <motion.p
+                            className="text-base sm:text-lg font-extrabold"
+                            animate={
+                              sadHovered
+                                ? { color: "#64748b", filter: "grayscale(1)" }
+                                : { color: "#111827", filter: "grayscale(0)" }
+                            }
+                            transition={{ duration: 0.45 }}
+                          >
                             Tidak Puas
-                          </p>
-                          <p className="text-[11px] text-gray-400 leading-snug max-w-[160px] mx-auto">
+                          </motion.p>
+                          <motion.p
+                            className="text-[11px] leading-snug max-w-40 mx-auto"
+                            animate={
+                              sadHovered
+                                ? { color: "#94a3b8" }
+                                : { color: "#9ca3af" }
+                            }
+                            transition={{ duration: 0.45 }}
+                          >
                             Sampaikan kritik & saran untuk kami perbaiki
-                          </p>
+                          </motion.p>
                         </div>
 
-                        {/* Badge */}
+                        {/* Badge — droops + greyscale */}
                         <motion.div
-                          className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 shadow-sm border border-gray-100 relative z-10"
-                          variants={{
-                            hover: {
-                              y: -2,
-                              boxShadow: "0 4px 12px rgba(99,130,255,0.15)",
-                            },
-                          }}
-                          transition={{ duration: 0.2 }}
+                          className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 shadow-sm border relative z-10"
+                          animate={
+                            sadHovered
+                              ? {
+                                  y: 4,
+                                  scale: 0.96,
+                                  borderColor: "rgba(148,163,184,0.5)",
+                                  boxShadow: "0 1px 3px rgba(100,116,139,0.10)",
+                                  filter: "grayscale(1)",
+                                  opacity: 0.75,
+                                }
+                              : {
+                                  y: 0,
+                                  scale: 1,
+                                  borderColor: "rgba(243,244,246,1)",
+                                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                                  filter: "grayscale(0)",
+                                  opacity: 1,
+                                }
+                          }
+                          transition={{ duration: 0.5, ease: "easeOut" }}
                         >
-                          <MessageSquare className="w-3 h-3 text-mariner-500" />
+                          <MessageSquare className="w-3 h-3 text-slate-400" />
                           <span className="text-[10px] font-semibold text-gray-600">
                             Isi Formulir
                           </span>
@@ -842,63 +997,123 @@ const KritikSaran = () => {
                         </motion.div>
                       </motion.button>
 
-                      {/* PUAS */}
+                      {/* ── PUAS ── */}
                       <motion.button
                         type="button"
                         custom={0}
                         variants={choiceCardVariants}
                         initial="hidden"
                         animate="visible"
-                        whileHover="hover"
                         whileTap={{ scale: 0.97 }}
                         onHoverStart={() => {
                           setHappyHovered(true);
                           setHappyParticleKey((k) => k + 1);
                         }}
                         onHoverEnd={() => setHappyHovered(false)}
-                        onClick={() => {
-                          window.open(GOOGLE_REVIEW_URL, "_blank");
-                        }}
+                        onClick={() => window.open(GOOGLE_REVIEW_URL, "_blank")}
                         className="group relative flex flex-col items-center justify-center gap-3 sm:gap-4
-                          p-6 sm:p-7 lg:p-9 rounded-2xl border-2 border-transparent
-                          bg-gradient-to-b from-yellow-50 to-orange-50
-                          hover:border-yellow-300 hover:shadow-xl hover:shadow-yellow-100/60
-                          transition-all duration-300 cursor-pointer text-center overflow-hidden"
+                          p-6 sm:p-7 lg:p-9 rounded-2xl border-2 cursor-pointer text-center overflow-hidden"
+                        style={{
+                          background:
+                            "linear-gradient(to bottom, #fefce8, #fff7ed)",
+                        }}
                       >
-                        {/* Animated glow */}
+                        {/* Canvas confetti */}
+                        <ConfettiCanvas active={happyHovered} />
+
+                        {/* Border + glow */}
                         <motion.div
-                          className="absolute inset-0 rounded-2xl pointer-events-none"
-                          initial={{ opacity: 0 }}
-                          variants={{
-                            hover: {
-                              opacity: 1,
-                              background:
-                                "radial-gradient(ellipse at 50% 40%, rgba(255,200,60,0.18) 0%, transparent 70%)",
-                            },
-                          }}
-                          transition={{ duration: 0.3 }}
+                          className="absolute inset-0 rounded-2xl pointer-events-none border-2"
+                          animate={
+                            happyHovered
+                              ? {
+                                  borderColor: "rgba(251,191,36,0.7)",
+                                  boxShadow:
+                                    "0 0 0 4px rgba(251,191,36,0.12), 0 20px 50px rgba(251,146,60,0.25)",
+                                }
+                              : {
+                                  borderColor: "rgba(0,0,0,0)",
+                                  boxShadow: "0 0px 0px rgba(0,0,0,0)",
+                                }
+                          }
+                          transition={{ duration: 0.35 }}
                         />
 
-                        {/* Particles */}
-                        {particles.map((p, i) => (
-                          <FloatingParticle
-                            key={`happy-${happyParticleKey}-${i}`}
-                            emoji={p}
-                            index={i}
-                            isVisible={happyHovered}
-                          />
-                        ))}
-
-                        {/* Emoji */}
-                        <motion.span
-                          className="text-5xl sm:text-6xl lg:text-7xl select-none leading-none relative z-10"
-                          variants={emojiHappyVariants}
-                          transition={{
-                            type: "spring",
-                            stiffness: 200,
-                            damping: 10,
-                          }}
+                        {/* Rainbow shimmer sweep */}
+                        <motion.div
+                          className="absolute inset-0 rounded-2xl pointer-events-none"
+                          animate={
+                            happyHovered
+                              ? {
+                                  opacity: [0, 0.55, 0],
+                                  x: ["-100%", "100%"],
+                                }
+                              : { opacity: 0, x: "-100%" }
+                          }
+                          transition={
+                            happyHovered
+                              ? {
+                                  duration: 0.7,
+                                  ease: "easeInOut",
+                                  repeat: Infinity,
+                                  repeatDelay: 0.4,
+                                }
+                              : { duration: 0.2 }
+                          }
                           style={{
+                            background:
+                              "linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.55) 50%, transparent 80%)",
+                          }}
+                        />
+
+                        {/* Warm radial glow */}
+                        <motion.div
+                          className="absolute inset-0 rounded-2xl pointer-events-none"
+                          animate={
+                            happyHovered
+                              ? {
+                                  opacity: 1,
+                                  background:
+                                    "radial-gradient(ellipse at 50% 25%, rgba(255,210,50,0.35) 0%, rgba(255,160,30,0.12) 55%, transparent 80%)",
+                                }
+                              : {
+                                  opacity: 0,
+                                  background:
+                                    "radial-gradient(ellipse at 50% 25%, rgba(255,210,50,0) 0%, transparent 80%)",
+                                }
+                          }
+                          transition={{ duration: 0.4 }}
+                        />
+
+                        {/* Emoji: explosive jump + spin */}
+                        <motion.span
+                          className="select-none leading-none relative z-10"
+                          animate={
+                            happyHovered
+                              ? {
+                                  y: [-2, -26, -18, -24, -20, -22],
+                                  scale: [1, 1.45, 1.2, 1.38, 1.28, 1.32],
+                                  rotate: [0, -20, 22, -14, 18, -10],
+                                  filter: "brightness(1.15) saturate(1.3)",
+                                }
+                              : {
+                                  y: 0,
+                                  scale: 1,
+                                  rotate: 0,
+                                  filter: "brightness(1) saturate(1)",
+                                }
+                          }
+                          transition={
+                            happyHovered
+                              ? {
+                                  duration: 0.7,
+                                  ease: "easeInOut",
+                                  times: [0, 0.18, 0.35, 0.52, 0.72, 1],
+                                }
+                              : { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }
+                          }
+                          style={{
+                            fontSize: "clamp(2.8rem,8vw,4.5rem)",
                             display: "inline-block",
                             transformOrigin: "center bottom",
                           }}
@@ -906,25 +1121,109 @@ const KritikSaran = () => {
                           😊
                         </motion.span>
 
+                        {/* Emoji emoji emoji — burst of tiny emojis from center */}
+                        <AnimatePresence>
+                          {happyHovered &&
+                            happyParticleEmojis.map((emoji, i) => {
+                              const angle =
+                                (-130 +
+                                  (i / (happyParticleEmojis.length - 1)) *
+                                    100) *
+                                (Math.PI / 180);
+                              const r = 52 + (i % 3) * 16;
+                              return (
+                                <motion.span
+                                  key={`ep-${happyParticleKey}-${i}`}
+                                  initial={{
+                                    opacity: 0,
+                                    scale: 0,
+                                    x: 0,
+                                    y: 0,
+                                    rotate: 0,
+                                  }}
+                                  animate={{
+                                    opacity: [0, 1, 1, 0],
+                                    scale: [0, 1.5, 1.2, 0.4],
+                                    x: [
+                                      0,
+                                      Math.cos(angle) * r * 0.5,
+                                      Math.cos(angle) * r,
+                                    ],
+                                    y: [
+                                      0,
+                                      Math.sin(angle) * r * 0.5,
+                                      Math.sin(angle) * r + 10,
+                                    ],
+                                    rotate: [0, i % 2 === 0 ? 30 : -30],
+                                  }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{
+                                    duration: 0.9,
+                                    delay: i * 0.055,
+                                    ease: [0.2, 0, 0.3, 1],
+                                  }}
+                                  className="absolute text-base pointer-events-none select-none z-20"
+                                  style={{
+                                    left: "50%",
+                                    top: "38%",
+                                    marginLeft: -12,
+                                    marginTop: -12,
+                                  }}
+                                >
+                                  {emoji}
+                                </motion.span>
+                              );
+                            })}
+                        </AnimatePresence>
+
+                        {/* Text — vibrant on hover */}
                         <div className="space-y-1 relative z-10">
-                          <p className="text-base sm:text-lg font-extrabold text-gray-900">
+                          <motion.p
+                            className="text-base sm:text-lg font-extrabold"
+                            animate={
+                              happyHovered
+                                ? { color: "#b45309", scale: 1.04 }
+                                : { color: "#111827", scale: 1 }
+                            }
+                            transition={{ duration: 0.3 }}
+                          >
                             Puas
-                          </p>
-                          <p className="text-[11px] text-gray-400 leading-snug max-w-[160px] mx-auto">
+                          </motion.p>
+                          <motion.p
+                            className="text-[11px] leading-snug max-w-40 mx-auto"
+                            animate={
+                              happyHovered
+                                ? { color: "#d97706" }
+                                : { color: "#9ca3af" }
+                            }
+                            transition={{ duration: 0.3 }}
+                          >
                             Bagikan pengalaman positif Anda di Google
-                          </p>
+                          </motion.p>
                         </div>
 
-                        {/* Google badge */}
+                        {/* Google badge — leaps + pops */}
                         <motion.div
                           className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 shadow-sm border border-gray-100 relative z-10"
-                          variants={{
-                            hover: {
-                              y: -2,
-                              boxShadow: "0 4px 12px rgba(255,180,0,0.18)",
-                            },
+                          animate={
+                            happyHovered
+                              ? {
+                                  y: -6,
+                                  scale: 1.08,
+                                  boxShadow: "0 8px 20px rgba(251,191,36,0.3)",
+                                  borderColor: "rgba(251,191,36,0.4)",
+                                }
+                              : {
+                                  y: 0,
+                                  scale: 1,
+                                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                                  borderColor: "rgba(243,244,246,1)",
+                                }
+                          }
+                          transition={{
+                            duration: 0.3,
+                            ease: [0.34, 1.56, 0.64, 1],
                           }}
-                          transition={{ duration: 0.2 }}
                         >
                           <svg
                             className="w-3.5 h-3.5"
