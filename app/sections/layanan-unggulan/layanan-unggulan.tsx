@@ -14,6 +14,7 @@ import {
   Brain,
   Calendar,
   Clock,
+  ExternalLink,
   Eye,
   FileText,
   Heart,
@@ -21,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
@@ -47,6 +49,7 @@ interface DokterItem {
   dokter: {
     nama: string;
     profile: string | null;
+    status: string; // ← ditambahkan
     poli_id: string;
     poli: { nama_poli: string } | null;
   } | null;
@@ -74,6 +77,29 @@ interface LayananUnggulan {
   layanan_unggulan_teknologi: TeknologiMedis[];
   layanan_unggulan_dokter: DokterItem[];
 }
+
+// ── Status config ──────────────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  active: {
+    label: "Aktif",
+    className: "bg-emerald-500 text-white",
+  },
+  inactive: {
+    label: "Tidak Aktif",
+    className: "bg-gray-400 text-white",
+  },
+  cuti: {
+    label: "Cuti",
+    className: "bg-amber-500 text-white",
+  },
+};
+
+const getStatusConfig = (status: string) =>
+  STATUS_CONFIG[status] ?? {
+    label: status,
+    className: "bg-gray-400 text-white",
+  };
 
 // ── Icon resolver ──────────────────────────────────────────────────────────
 
@@ -160,6 +186,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
   poliNama,
   onClose,
 }) => {
+  const router = useRouter();
   const [jadwalList, setJadwalList] = useState<JadwalDokter[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendaftaranPrefill, setPendaftaranPrefill] =
@@ -198,6 +225,11 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
       document.body.style.overflow = "";
     };
   }, []);
+
+  const handleNavigateToDetail = () => {
+    onClose();
+    router.push(`/detail-dokter/${dokter.id}`);
+  };
 
   const HARI_ORDER = [
     "Senin",
@@ -340,6 +372,27 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         >
           {/* Hero foto */}
           <div className="relative shrink-0 overflow-hidden">
+            {/* ── Tombol Lihat Profil — kiri atas ── */}
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={
+                { delay: 0.3, duration: 0.4, ease } satisfies Transition
+              }
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "rgba(255,255,255,0.28)",
+              }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleNavigateToDetail}
+              aria-label="Lihat profil lengkap"
+              className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Lihat Profil
+            </motion.button>
+
+            {/* ── Tombol tutup — kanan atas ── */}
             <button
               onClick={onClose}
               aria-label="Tutup"
@@ -347,6 +400,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
             >
               <X className="w-5 h-5 text-white" />
             </button>
+
             <motion.div
               initial={{ scale: 1.06, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -386,11 +440,19 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
               <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
                 {dokter.nama}
               </h3>
-              {dokter.poli?.nama_poli && (
-                <span className="inline-block mt-1 text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
-                  {dokter.poli.nama_poli}
+              {/* ── Poli + Status badges ── */}
+              <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
+                {dokter.poli?.nama_poli && (
+                  <span className="inline-block text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
+                    {dokter.poli.nama_poli}
+                  </span>
+                )}
+                <span
+                  className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status ?? "active").className}`}
+                >
+                  {getStatusConfig(dokter.status ?? "active").label}
                 </span>
-              )}
+              </div>
             </motion.div>
           </div>
 
@@ -513,11 +575,19 @@ const DokterCard: React.FC<DokterCardProps> = ({ item, poliId, poliNama }) => {
           <h4 className="font-semibold text-mariner-600 text-sm truncate">
             {item.dokter.nama}
           </h4>
-          {item.dokter.poli?.nama_poli && (
-            <p className="text-gray-500 text-xs truncate">
-              {item.dokter.poli.nama_poli}
-            </p>
-          )}
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            {item.dokter.poli?.nama_poli && (
+              <p className="text-gray-500 text-xs truncate">
+                {item.dokter.poli.nama_poli}
+              </p>
+            )}
+            {/* Status badge */}
+            <span
+              className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full leading-none ${getStatusConfig(item.dokter.status ?? "active").className}`}
+            >
+              {getStatusConfig(item.dokter.status ?? "active").label}
+            </span>
+          </div>
         </div>
 
         <motion.button
@@ -580,7 +650,7 @@ export default function LayananUnggulanSection() {
           layanan_unggulan_teknologi(id, title, description, urutan),
           layanan_unggulan_dokter(
             dokter_id,
-            dokter:dokter_id(nama, profile, poli_id, poli:poli_id(nama_poli))
+            dokter:dokter_id(nama, profile, status, poli_id, poli:poli_id(nama_poli))
           )
         `,
         )
@@ -741,10 +811,9 @@ export default function LayananUnggulanSection() {
                         Klinik rawat jalan{" "}
                         {current.poli?.nama_poli
                           ? `Layanan ${current.poli.nama_poli}`
-                          : "Layanan"}{" "}
-                        buka Senin – Sabtu mulai pukul 07.00–20.00, memberikan
-                        fleksibilitas bagi Anda untuk membuat janji temu sesuai
-                        dengan waktu yang tersedia.
+                          : "Layanan"}
+                        , memberikan fleksibilitas bagi Anda untuk membuat janji
+                        temu sesuai dengan waktu yang tersedia.
                       </p>
 
                       {/* Tab buttons */}

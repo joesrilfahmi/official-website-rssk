@@ -1,6 +1,7 @@
 // app/detail-dokter/[id]/detaildokter.tsx
 "use client";
 
+import Animate from "@/components/animations/animate";
 import DialogPendaftaran, {
   type PendaftaranPrefill,
 } from "@/components/ui/custom/dialog-pendaftaran";
@@ -181,8 +182,6 @@ const ImageLightbox: React.FC<{
 
 /* ─────────────────────────────────────────
    SECTION CARD
-   — clean white card, border-b divider header
-   — ikon dalam kotak abu netral
 ───────────────────────────────────────── */
 const SectionCard: React.FC<{
   title: string;
@@ -190,7 +189,6 @@ const SectionCard: React.FC<{
   children: React.ReactNode;
 }> = ({ title, icon, children }) => (
   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-    {/* Header */}
     <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
       <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0">
         {icon}
@@ -199,7 +197,6 @@ const SectionCard: React.FC<{
         {title}
       </h3>
     </div>
-    {/* Body */}
     <div className="px-6 py-5">{children}</div>
   </div>
 );
@@ -230,9 +227,14 @@ const JadwalTable: React.FC<JadwalTableProps> = ({
   onDaftar,
 }) => {
   if (groups.length === 0) return null;
+
+  // Flatten all rows for stagger indexing
+  const allRows = groups.flatMap((group) =>
+    group.slots.map((slot) => ({ group, slot })),
+  );
+
   return (
     <div>
-      {/* Tipe label */}
       <div className="flex items-center gap-2 mb-3">
         <span
           className={`text-[11px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-md ${
@@ -252,7 +254,6 @@ const JadwalTable: React.FC<JadwalTableProps> = ({
         )}
       </div>
 
-      {/* Column headers */}
       <div
         className={`grid text-[11px] font-semibold uppercase tracking-widest text-gray-400 pb-2 border-b border-gray-100 mb-1 ${
           type === "eksekutif" ? "grid-cols-3" : "grid-cols-2"
@@ -263,12 +264,15 @@ const JadwalTable: React.FC<JadwalTableProps> = ({
         {type === "eksekutif" && <span>Buat Janji</span>}
       </div>
 
-      {/* Rows */}
       <div className="divide-y divide-gray-50">
-        {groups.map((group) =>
-          group.slots.map((slot) => (
+        {allRows.map(({ group, slot }, idx) => (
+          <Animate
+            key={slot.id}
+            type="fielditem"
+            delay={idx * 0.06}
+            margin="-20px"
+          >
             <div
-              key={slot.id}
               className={`grid items-center py-2.5 text-sm ${
                 type === "eksekutif" ? "grid-cols-3" : "grid-cols-2"
               }`}
@@ -280,7 +284,9 @@ const JadwalTable: React.FC<JadwalTableProps> = ({
               </span>
               {type === "eksekutif" && (
                 <div>
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() =>
                       onDaftar?.({
                         hari: group.hari,
@@ -292,12 +298,12 @@ const JadwalTable: React.FC<JadwalTableProps> = ({
                   >
                     Daftar
                     <ArrowRight className="w-3 h-3" />
-                  </button>
+                  </motion.button>
                 </div>
               )}
             </div>
-          )),
-        )}
+          </Animate>
+        ))}
       </div>
     </div>
   );
@@ -305,52 +311,49 @@ const JadwalTable: React.FC<JadwalTableProps> = ({
 
 /* ─────────────────────────────────────────
    TIMELINE ITEM
-   ● [2010]  Universitas Airlangga
-   |         ini adalah deskripsi
-   ● ...
 ───────────────────────────────────────── */
 const TimelineItem: React.FC<{
   tahun: string;
   title: string;
   subtitle?: string | null;
   isLast: boolean;
-}> = ({ tahun, title, subtitle, isLast }) => (
-  <div className="flex gap-4">
-    {/* Track */}
-    <div
-      className="flex flex-col items-center"
-      style={{ width: "14px", minWidth: "14px" }}
-    >
-      <div className="w-2.5 h-2.5 rounded-full bg-gray-300 ring-2 ring-white shadow-sm mt-[5px] shrink-0" />
+  index: number;
+}> = ({ tahun, title, subtitle, isLast, index }) => (
+  <Animate type="slideleftitem" delay={index * 0.07} margin="-20px">
+    <div className="flex gap-4">
       <div
-        className={`w-0 flex-1 mt-1.5 border-l-2 border-dashed border-gray-200 ${
-          isLast ? "opacity-0" : "opacity-100"
-        }`}
-        style={{ minHeight: "20px" }}
-      />
-    </div>
-
-    {/* Content */}
-    <div className="pb-5 min-w-0 flex-1">
-      <div className="flex items-baseline gap-2 flex-wrap">
-        <span className="text-[11px] font-semibold tabular-nums text-gray-500 shrink-0">
-          {tahun}
-        </span>
-        <span className="text-sm font-medium text-gray-800 leading-snug">
-          {title}
-        </span>
+        className="flex flex-col items-center"
+        style={{ width: "14px", minWidth: "14px" }}
+      >
+        <div className="w-2.5 h-2.5 rounded-full bg-gray-300 ring-2 ring-white shadow-sm mt-[5px] shrink-0" />
+        <div
+          className={`w-0 flex-1 mt-1.5 border-l-2 border-dashed border-gray-200 ${
+            isLast ? "opacity-0" : "opacity-100"
+          }`}
+          style={{ minHeight: "20px" }}
+        />
       </div>
-      {subtitle && (
-        <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
-          {subtitle}
-        </p>
-      )}
+      <div className="pb-5 min-w-0 flex-1">
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-[11px] font-semibold tabular-nums text-gray-500 shrink-0">
+            {tahun}
+          </span>
+          <span className="text-sm font-medium text-gray-800 leading-snug">
+            {title}
+          </span>
+        </div>
+        {subtitle && (
+          <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+            {subtitle}
+          </p>
+        )}
+      </div>
     </div>
-  </div>
+  </Animate>
 );
 
 /* ─────────────────────────────────────────
-   STICKY LEFT PANEL (foto + nama + poli)
+   STICKY LEFT PANEL
 ───────────────────────────────────────── */
 const DokterProfile: React.FC<{
   dokter: DokterDetail;
@@ -358,57 +361,59 @@ const DokterProfile: React.FC<{
 }> = ({ dokter, onZoom }) => (
   <div className="lg:sticky lg:top-28 flex flex-col gap-4">
     {/* Foto */}
-    <div
-      className={`relative w-full aspect-3/4 rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm group ${
-        dokter.profile ? "cursor-zoom-in" : "cursor-default"
-      }`}
-      onClick={() => dokter.profile && onZoom()}
-    >
-      {dokter.profile ? (
-        <>
-          <Image
-            src={dokter.profile}
-            alt={dokter.nama}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            style={{ objectPosition: "center 20%" }}
-            sizes="(max-width: 1024px) 80vw, 320px"
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300 flex items-center justify-center">
-            <div className="opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-300 w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-              <ZoomIn className="w-5 h-5 text-white" />
+    <Animate type="popin" delay={0.1}>
+      <div
+        className={`relative w-full aspect-3/4 rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm group ${
+          dokter.profile ? "cursor-zoom-in" : "cursor-default"
+        }`}
+        onClick={() => dokter.profile && onZoom()}
+      >
+        {dokter.profile ? (
+          <>
+            <Image
+              src={dokter.profile}
+              alt={dokter.nama}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              style={{ objectPosition: "center 20%" }}
+              sizes="(max-width: 1024px) 80vw, 320px"
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300 flex items-center justify-center">
+              <div className="opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-300 w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                <ZoomIn className="w-5 h-5 text-white" />
+              </div>
             </div>
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <UserRound className="w-20 h-20 text-gray-300" />
           </div>
-        </>
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <UserRound className="w-20 h-20 text-gray-300" />
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </Animate>
 
     {/* Info box */}
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 space-y-1.5">
-      <h2 className="text-base font-bold text-gray-800 leading-snug">
-        {dokter.nama}
-      </h2>
-      <p className="text-xs text-gray-500">
-        Klinik {dokter.poli?.nama_poli || "–"}
-      </p>
-
-      {/* Status pill */}
-      <div className="pt-1">
-        <span
-          className={`inline-block text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full ${
-            dokter.status === "active"
-              ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
-              : "text-gray-500 bg-gray-50 border border-gray-200"
-          }`}
-        >
-          {dokter.status === "active" ? "Aktif Praktik" : dokter.status}
-        </span>
+    <Animate type="fadein" delay={0.22}>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 space-y-1.5">
+        <h2 className="text-base font-bold text-gray-800 leading-snug">
+          {dokter.nama}
+        </h2>
+        <p className="text-xs text-gray-500">
+          Klinik {dokter.poli?.nama_poli || "–"}
+        </p>
+        <div className="pt-1">
+          <span
+            className={`inline-block text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full ${
+              dokter.status === "active"
+                ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                : "text-gray-500 bg-gray-50 border border-gray-200"
+            }`}
+          >
+            {dokter.status === "active" ? "Aktif Praktik" : dokter.status}
+          </span>
+        </div>
       </div>
-    </div>
+    </Animate>
   </div>
 );
 
@@ -552,25 +557,31 @@ export default function DetailDokter() {
       <div className="bg-gray-50 min-h-screen py-10 pt-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           {/* Back */}
-          <button
-            onClick={() => router.back()}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors duration-150 mb-7 group"
-          >
-            <span className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:border-gray-300 transition-all duration-150 shadow-sm">
-              <ArrowLeft className="w-4 h-4" />
-            </span>
-            Kembali
-          </button>
+          <Animate type="fadein" delay={0}>
+            <motion.button
+              onClick={() => router.back()}
+              whileHover={{ x: -2 }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors duration-150 mb-7 group"
+            >
+              <span className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:border-gray-300 transition-all duration-150 shadow-sm">
+                <ArrowLeft className="w-4 h-4" />
+              </span>
+              Kembali
+            </motion.button>
+          </Animate>
 
           {/* Title */}
-          <div className="mb-8">
-            <Title
-              badge="Dokter"
-              title="Profil Dokter"
-              subtitle="Informasi lengkap jadwal dan profil dokter spesialis"
-              badgeVariant="primary"
-            />
-          </div>
+          <Animate type="fadein" delay={0.08}>
+            <div className="mb-8">
+              <Title
+                badge="Dokter"
+                title="Profil Dokter"
+                subtitle="Informasi lengkap jadwal dan profil dokter spesialis"
+                badgeVariant="primary"
+              />
+            </div>
+          </Animate>
 
           {/* Main grid */}
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
@@ -583,94 +594,107 @@ export default function DetailDokter() {
             {/* ── Right column ── */}
             <div className="space-y-4">
               {/* Jadwal */}
-              <SectionCard
-                title="Jadwal Praktik"
-                icon={<Calendar className="w-4 h-4 text-gray-500" />}
-              >
-                {dokter.jadwal_dokter.length === 0 ? (
-                  <div className="flex items-center gap-2.5 py-5 justify-center text-gray-400">
-                    <Calendar className="w-5 h-5 shrink-0" />
-                    <span className="text-sm">Belum ada jadwal tersedia</span>
-                  </div>
-                ) : (
-                  <div className="space-y-5">
-                    <JadwalTable groups={groupedReguler} type="reguler" />
-                    {groupedReguler.length > 0 &&
-                      groupedEksekutif.length > 0 && (
-                        <hr className="border-gray-100" />
-                      )}
-                    <JadwalTable
-                      groups={groupedEksekutif}
-                      type="eksekutif"
-                      onDaftar={handleDaftar}
-                    />
-                  </div>
-                )}
-              </SectionCard>
+              <Animate type="slideup" delay={0.15}>
+                <SectionCard
+                  title="Jadwal Praktik"
+                  icon={<Calendar className="w-4 h-4 text-gray-500" />}
+                >
+                  {dokter.jadwal_dokter.length === 0 ? (
+                    <div className="flex items-center gap-2.5 py-5 justify-center text-gray-400">
+                      <Calendar className="w-5 h-5 shrink-0" />
+                      <span className="text-sm">Belum ada jadwal tersedia</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      <JadwalTable groups={groupedReguler} type="reguler" />
+                      {groupedReguler.length > 0 &&
+                        groupedEksekutif.length > 0 && (
+                          <Animate type="growx" delay={0.1}>
+                            <hr className="border-gray-100" />
+                          </Animate>
+                        )}
+                      <JadwalTable
+                        groups={groupedEksekutif}
+                        type="eksekutif"
+                        onDaftar={handleDaftar}
+                      />
+                    </div>
+                  )}
+                </SectionCard>
+              </Animate>
 
               {/* Pendidikan */}
-              <SectionCard
-                title="Pendidikan"
-                icon={<GraduationCap className="w-4 h-4 text-gray-500" />}
-              >
-                {sortedPendidikan.length === 0 ? (
-                  <EmptyState label="Belum ada data pendidikan" />
-                ) : (
-                  <div className="pt-1">
-                    {sortedPendidikan.map((p, i) => (
-                      <TimelineItem
-                        key={p.id}
-                        tahun={p.tahun}
-                        title={p.institusi}
-                        subtitle={p.deskripsi}
-                        isLast={i === sortedPendidikan.length - 1}
-                      />
-                    ))}
-                  </div>
-                )}
-              </SectionCard>
+              <Animate type="slideup" delay={0.22}>
+                <SectionCard
+                  title="Pendidikan"
+                  icon={<GraduationCap className="w-4 h-4 text-gray-500" />}
+                >
+                  {sortedPendidikan.length === 0 ? (
+                    <EmptyState label="Belum ada data pendidikan" />
+                  ) : (
+                    <div className="pt-1">
+                      {sortedPendidikan.map((p, i) => (
+                        <TimelineItem
+                          key={p.id}
+                          tahun={p.tahun}
+                          title={p.institusi}
+                          subtitle={p.deskripsi}
+                          isLast={i === sortedPendidikan.length - 1}
+                          index={i}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </SectionCard>
+              </Animate>
 
               {/* Organisasi */}
-              <SectionCard
-                title="Organisasi"
-                icon={<Briefcase className="w-4 h-4 text-gray-500" />}
-              >
-                {sortedOrganisasi.length === 0 ? (
-                  <EmptyState label="Belum ada data organisasi" />
-                ) : (
-                  <div className="pt-1">
-                    {sortedOrganisasi.map((o, i) => (
-                      <TimelineItem
-                        key={o.id}
-                        tahun={o.tahun}
-                        title={o.title}
-                        isLast={i === sortedOrganisasi.length - 1}
-                      />
-                    ))}
-                  </div>
-                )}
-              </SectionCard>
+              <Animate type="slideup" delay={0.29}>
+                <SectionCard
+                  title="Organisasi"
+                  icon={<Briefcase className="w-4 h-4 text-gray-500" />}
+                >
+                  {sortedOrganisasi.length === 0 ? (
+                    <EmptyState label="Belum ada data organisasi" />
+                  ) : (
+                    <div className="pt-1">
+                      {sortedOrganisasi.map((o, i) => (
+                        <TimelineItem
+                          key={o.id}
+                          tahun={o.tahun}
+                          title={o.title}
+                          isLast={i === sortedOrganisasi.length - 1}
+                          index={i}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </SectionCard>
+              </Animate>
 
               {/* Publikasi */}
-              <SectionCard
-                title="Publikasi"
-                icon={<BookOpen className="w-4 h-4 text-gray-500" />}
-              >
-                {sortedPublikasi.length === 0 ? (
-                  <EmptyState label="Belum ada data publikasi" />
-                ) : (
-                  <div className="pt-1">
-                    {sortedPublikasi.map((p, i) => (
-                      <TimelineItem
-                        key={p.id}
-                        tahun={p.tahun}
-                        title={p.title}
-                        isLast={i === sortedPublikasi.length - 1}
-                      />
-                    ))}
-                  </div>
-                )}
-              </SectionCard>
+              <Animate type="slideup" delay={0.36}>
+                <SectionCard
+                  title="Publikasi"
+                  icon={<BookOpen className="w-4 h-4 text-gray-500" />}
+                >
+                  {sortedPublikasi.length === 0 ? (
+                    <EmptyState label="Belum ada data publikasi" />
+                  ) : (
+                    <div className="pt-1">
+                      {sortedPublikasi.map((p, i) => (
+                        <TimelineItem
+                          key={p.id}
+                          tahun={p.tahun}
+                          title={p.title}
+                          isLast={i === sortedPublikasi.length - 1}
+                          index={i}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </SectionCard>
+              </Animate>
             </div>
           </div>
         </div>

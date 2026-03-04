@@ -45,18 +45,13 @@ const SkeletonCard = () => (
     <div className="h-3.5 w-36 bg-gray-100 rounded mb-3" />
     <div className="h-5 w-full bg-gray-100 rounded mb-1" />
     <div className="h-5 w-4/5 bg-gray-100 rounded mb-4" />
-    <div
-      className="w-full bg-gray-100 rounded-2xl"
-      style={{ aspectRatio: "4/3" }}
-    />
+    {/* Skeleton image menggunakan aspect ratio yang sama: 16/10 */}
+    <div className="w-full bg-gray-100 rounded-xl aspect-4/3 sm:aspect-video lg:aspect-16/10" />
   </div>
 );
 
 /* ─────────────────────────────────────────
-   ANIMASI BARU:
-   cardWrapVariants — dipakai sebagai child stagger
-   Card muncul fade satu per satu, lalu konten di dalam
-   muncul berurutan dengan delay setelah card.
+   ANIMASI
 ───────────────────────────────────────── */
 const cardWrapVariants: Variants = {
   hidden: { opacity: 0, y: 24, scale: 0.95 },
@@ -93,7 +88,7 @@ const BeritaCard: React.FC<BeritaCardProps> = ({ berita, index }) => {
         className="block h-full group"
       >
         <div className="h-full flex flex-col">
-          {/* Number watermark — muncul setelah card */}
+          {/* Number watermark */}
           <motion.div
             variants={{
               hidden: { opacity: 0 },
@@ -106,7 +101,7 @@ const BeritaCard: React.FC<BeritaCardProps> = ({ berita, index }) => {
                 } satisfies Transition,
               },
             }}
-            className="text-7xl sm:text-8xl font-black text-gray-100 leading-none mb-3 select-none"
+            className="text-4xl sm:text-5xl lg:text-8xl font-black text-gray-100 leading-none mb-1 sm:mb-2 select-none"
           >
             {String(index + 1).padStart(2, "0")}
           </motion.div>
@@ -125,7 +120,7 @@ const BeritaCard: React.FC<BeritaCardProps> = ({ berita, index }) => {
                 } satisfies Transition,
               },
             }}
-            className="flex items-center gap-2 mb-3"
+            className="flex flex-wrap items-center gap-1.5 mb-2 sm:mb-3"
           >
             <span className="text-bittersweet-500 text-xs font-semibold">
               {formatDate(berita.created_at)}
@@ -150,12 +145,20 @@ const BeritaCard: React.FC<BeritaCardProps> = ({ berita, index }) => {
                 } satisfies Transition,
               },
             }}
-            className="text-base sm:text-lg font-bold text-gray-800 mb-4 line-clamp-2 leading-snug grow"
+            className="text-xs sm:text-sm lg:text-base font-bold text-gray-800 mb-2 sm:mb-3 line-clamp-2 leading-snug grow"
           >
             {berita.title}
           </motion.h3>
 
-          {/* Thumbnail image — muncul terakhir */}
+          {/* ─────────────────────────────────────────
+              THUMBNAIL IMAGE — perbaikan utama
+              • Hapus minHeight hardcoded (tidak responsif)
+              • Ganti aspectRatio dari "4/3" → "16/10"
+                16/10 lebih lebar & proporsional untuk
+                thumbnail berita di semua ukuran layar.
+              • w-full memastikan gambar selalu mengisi
+                lebar kolom carousel sepenuhnya.
+          ───────────────────────────────────────── */}
           <motion.div
             variants={{
               hidden: { opacity: 0, scale: 0.97 },
@@ -169,15 +172,14 @@ const BeritaCard: React.FC<BeritaCardProps> = ({ berita, index }) => {
                 } satisfies Transition,
               },
             }}
-            className="relative rounded-2xl overflow-hidden bg-gray-100"
-            style={{ minHeight: "180px", aspectRatio: "4/3" }}
+            className="relative w-full rounded-xl overflow-hidden bg-gray-100 aspect-4/3 sm:aspect-video lg:aspect-16/10"
           >
             {berita.thumbnail ? (
               <Image
                 src={berita.thumbnail}
                 alt={berita.title}
                 fill
-                sizes="(max-width: 768px) 85vw, (max-width: 1024px) 45vw, 30vw"
+                sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, 30vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                 unoptimized
               />
@@ -188,7 +190,7 @@ const BeritaCard: React.FC<BeritaCardProps> = ({ berita, index }) => {
             )}
             <div className="absolute inset-0 bg-mariner-900/0 group-hover:bg-mariner-900/20 transition-all duration-300" />
             <div className="absolute bottom-3 left-3">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md group-hover:bg-mariner-500 transition-colors duration-300">
+              <div className="w-7 h-7 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center shadow-md group-hover:bg-mariner-500 transition-colors duration-300">
                 <ArrowUpRight className="w-4 h-4 text-mariner-500 group-hover:text-white transition-colors duration-300" />
               </div>
             </div>
@@ -384,7 +386,7 @@ export default function BeritaSection() {
                     {[...Array(3)].map((_, i) => (
                       <div
                         key={i}
-                        className="flex-[0_0_85%] md:flex-[0_0_45%] lg:flex-[0_0_31%] shrink-0"
+                        className="flex-[0_0_48%] sm:flex-[0_0_44%] md:flex-[0_0_40%] lg:flex-[0_0_31%] shrink-0"
                       >
                         <SkeletonCard />
                       </div>
@@ -416,10 +418,6 @@ export default function BeritaSection() {
             {/* Carousel */}
             {!loading && beritaList.length > 0 && (
               <>
-                {/*
-                 * Stagger container — BeritaCard menggunakan cardWrapVariants
-                 * Card muncul satu per satu, konten di dalam muncul setelah card (INNER_DELAY)
-                 */}
                 <Animate
                   type="stagger"
                   staggerChildren={0.14}
@@ -433,7 +431,7 @@ export default function BeritaSection() {
                       {beritaList.map((berita, index) => (
                         <div
                           key={berita.id}
-                          className="flex-[0_0_85%] md:flex-[0_0_45%] lg:flex-[0_0_31%] min-w-0"
+                          className="flex-[0_0_48%] sm:flex-[0_0_44%] md:flex-[0_0_40%] lg:flex-[0_0_31%] min-w-0"
                         >
                           <BeritaCard berita={berita} index={index} />
                         </div>

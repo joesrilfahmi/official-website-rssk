@@ -1,23 +1,14 @@
+// app/components/animations/animate.tsx
 "use client";
 
 import { motion, type Transition, type Variants } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 
-/* ─────────────────────────────────────────
-   EASING
-   Typed as [number, number, number, number] = BezierDefinition
-   so framer-motion accepts it without casting anywhere.
-───────────────────────────────────────── */
 export type BezierEase = [number, number, number, number];
 
 export const ease: BezierEase = [0.16, 1, 0.3, 1];
 export const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
 
-/* ─────────────────────────────────────────
-   useInViewManual
-   Replaces framer's useInView so we control the margin ourselves
-   without fighting its MarginType branded string.
-───────────────────────────────────────── */
 function useInViewManual(
   ref: React.RefObject<HTMLDivElement | null>,
   options: { once?: boolean; rootMargin?: string } = {},
@@ -51,11 +42,6 @@ function useInViewManual(
 
   return inView;
 }
-
-/* ─────────────────────────────────────────
-   ANIMATION VARIANTS
-   ease is typed as BezierEase so Transition accepts it directly.
-───────────────────────────────────────── */
 
 /** fadein — opacity + lift + blur */
 const fadeinVariants = (duration: number, delay: number): Variants => ({
@@ -133,11 +119,6 @@ const slideleftitemVariants = (duration: number, delay: number): Variants => ({
   },
 });
 
-/**
- * fielditem — subtle upward lift + blur (form fields, small content items)
- * Used in: Pendaftaran (form fields staggered entrance)
- * Smaller movement than fadein (y:12 vs y:22) for dense form layouts.
- */
 const fielditemVariants = (duration: number, delay: number): Variants => ({
   hidden: { opacity: 0, y: 12, filter: "blur(3px)" },
   visible: {
@@ -148,10 +129,6 @@ const fielditemVariants = (duration: number, delay: number): Variants => ({
   },
 });
 
-/**
- * stagger — orchestrates children in sequence.
- * Apply to the parent; use any animation type on each child.
- */
 const staggerVariants = (
   staggerChildren: number,
   delayChildren: number,
@@ -162,9 +139,6 @@ const staggerVariants = (
   },
 });
 
-/* ─────────────────────────────────────────
-   TYPES
-───────────────────────────────────────── */
 export type AnimateType =
   | "fadein"
   | "slideright"
@@ -177,33 +151,17 @@ export type AnimateType =
   | "stagger";
 
 export interface AnimateProps {
-  /** Animation type */
   type: AnimateType;
-  /** Duration in seconds */
   duration?: number;
-  /** Delay in seconds (default: 0) */
   delay?: number;
-  /** Trigger animation only once (default: true) */
   once?: boolean;
-  /**
-   * IntersectionObserver rootMargin before triggering.
-   * Standard CSS margin syntax e.g. "-60px" or "-40px 0px"
-   * (default: "-60px")
-   */
+
   margin?: string;
-  /** Stagger interval between children — type="stagger" only (default: 0.11s) */
   staggerChildren?: number;
-  /** Delay before first staggered child — type="stagger" only (default: 0.08s) */
   delayChildren?: number;
-  /** Transform origin X for growx (default: 0 = left edge) */
   originX?: number;
-  /**
-   * Gate that holds the animation until data/images are ready.
-   * Element stays in "hidden" state even if in viewport while ready=false.
-   * (default: true)
-   */
+
   ready?: boolean;
-  /** Content to animate. Optional so bare elements like dividers can use it. */
   children?: React.ReactNode;
   className?: string;
 }

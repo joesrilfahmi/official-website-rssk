@@ -43,8 +43,8 @@ export const Profile: Profile = {
   address:
     "Jl. Raya Bebekan, RT.02/ RW.01, Bebekan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257",
   phone: "0317883980",
-  whatsapp: "08113087119",
-  ambulance: "08113330988",
+  whatsapp: "08113015001",
+  ambulance: "08113087119",
   pusatPanggilan: "0317881130",
   email: "humas@sitikhodijah.com",
 };

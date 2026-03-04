@@ -77,6 +77,12 @@ const menuItems = [
     access: ["administrator", "user"] as UserRole[],
   },
   {
+    title: "Daftar Partner",
+    icon: ShieldCheck,
+    url: "/daftar-partner",
+    access: ["administrator", "user"] as UserRole[],
+  },
+  {
     title: "Jadwal Dokter",
     icon: Calendar,
     url: "/jadwal-dokter",
@@ -129,12 +135,6 @@ const menuItems = [
         title: "Daftar Poli Spesialis",
         icon: Stethoscope,
         url: "/daftar-poli",
-        access: ["administrator", "user"] as UserRole[],
-      },
-      {
-        title: "Daftar Penjamin",
-        icon: ShieldCheck,
-        url: "/daftar-penjamin",
         access: ["administrator", "user"] as UserRole[],
       },
       {

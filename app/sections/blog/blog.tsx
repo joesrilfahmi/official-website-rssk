@@ -121,8 +121,6 @@ const Blog = () => {
     }
   };
 
-  // ── Filter: search diaplikasikan dulu, lalu category & tag di atasnya ──
-  // Pola seperti dokter.tsx: searchFilter dihitung terpisah untuk count pills
   const searchFilteredBerita = useMemo(
     () =>
       beritaList.filter((b) => {
@@ -136,7 +134,6 @@ const Blog = () => {
     [beritaList, debouncedSearch],
   );
 
-  // Kategori yang relevan terhadap hasil pencarian
   const relevantCategories = useMemo(() => {
     if (!debouncedSearch) return categories;
     return categories.filter((c) =>
@@ -172,7 +169,6 @@ const Blog = () => {
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    // Reset category & tag ketika search diubah, agar tidak terjadi filter kosong
     if (value) {
       setSelectedCategory("all");
       setSelectedTag("");
@@ -210,23 +206,19 @@ const Blog = () => {
     });
 
   /* ── Article card ── */
-  const renderBeritaCard = (berita: BeritaWithAuthor, featured = false) => (
+  const renderBeritaCard = (berita: BeritaWithAuthor) => (
     <article
       onClick={() => handleBeritaClick(berita)}
-      className={`group bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden cursor-pointer flex
-        ${featured ? "flex-col" : "flex-col sm:flex-row"}`}
+      className="group bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col"
     >
-      <div
-        className={`relative shrink-0 overflow-hidden bg-gray-100
-        ${featured ? "h-56 w-full" : "h-44 sm:h-auto w-full sm:w-48"}`}
-      >
+      <div className="relative shrink-0 overflow-hidden bg-gray-100 h-56 w-full">
         {berita.thumbnail ? (
           <Image
             src={berita.thumbnail}
             alt={berita.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-500"
-            sizes={featured ? "100vw" : "(max-width:640px) 100vw, 192px"}
+            sizes="100vw"
           />
         ) : (
           <div className="w-full h-full bg-linear-to-br from-mariner-200 to-mariner-400 flex items-center justify-center">
@@ -253,7 +245,7 @@ const Blog = () => {
 
         <h3
           className={`font-bold text-mariner-500 mb-2 line-clamp-2 group-hover:text-mariner-600 transition-colors leading-snug
-          ${featured ? "text-xl sm:text-2xl" : "text-base sm:text-lg"}`}
+          text-xl sm:text-2xl`}
         >
           {berita.title}
         </h3>
@@ -321,9 +313,10 @@ const Blog = () => {
           />
         </Animate>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-10">
-          {/* ── Main content (2/3) ── */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
+        {/* ── Grid: 3 col main + 2 col sidebar on xl ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-8 mt-10">
+          {/* ── Main content (3/5) ── */}
+          <div className="xl:col-span-3 flex flex-col gap-6">
             {/* Search input */}
             <Animate
               type="slideright"
@@ -354,7 +347,7 @@ const Blog = () => {
               </div>
             </Animate>
 
-            {/* Category pills carousel — hanya tampil setelah data ready */}
+            {/* Category pills carousel */}
             {!loading && categories.length > 0 && (
               <Animate type="fadein" ready={dataReady} delay={0.08}>
                 <div className="relative -mx-4 px-4 space-y-2">
@@ -438,18 +431,19 @@ const Blog = () => {
                   initial={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="space-y-4"
+                  className="space-y-6"
                 >
                   {[...Array(3)].map((_, i) => (
                     <div
                       key={i}
-                      className="bg-white rounded-2xl ring-1 ring-gray-100 animate-pulse overflow-hidden flex"
+                      className="bg-white rounded-2xl ring-1 ring-gray-100 animate-pulse overflow-hidden flex flex-col"
                     >
-                      <div className="w-48 h-36 bg-gray-100 shrink-0" />
-                      <div className="flex-1 p-5 space-y-3">
-                        <div className="h-3 w-24 bg-gray-100 rounded-full" />
-                        <div className="h-5 w-full bg-gray-100 rounded" />
+                      <div className="w-full h-56 bg-gray-100" />
+                      <div className="p-5 space-y-3">
+                        <div className="h-3 w-32 bg-gray-100 rounded-full" />
+                        <div className="h-6 w-full bg-gray-100 rounded" />
                         <div className="h-4 w-4/5 bg-gray-100 rounded" />
+                        <div className="h-4 w-2/3 bg-gray-100 rounded" />
                       </div>
                     </div>
                   ))}
@@ -479,19 +473,7 @@ const Blog = () => {
             {/* Articles */}
             {!loading && paginatedBerita.length > 0 && (
               <>
-                {/* Featured first article */}
-                {currentPage === 1 && paginatedBerita[0] && (
-                  <Animate
-                    type="fadein"
-                    duration={0.75}
-                    ready={dataReady}
-                    once={false}
-                  >
-                    {renderBeritaCard(paginatedBerita[0], true)}
-                  </Animate>
-                )}
-
-                {/* Stagger remaining */}
+                {/* Stagger all cards uniformly */}
                 <Animate
                   type="stagger"
                   staggerChildren={0.1}
@@ -499,19 +481,18 @@ const Blog = () => {
                   ready={dataReady}
                   once={false}
                 >
-                  {(currentPage === 1
-                    ? paginatedBerita.slice(1)
-                    : paginatedBerita
-                  ).map((b) => (
-                    <Animate
-                      key={b.id}
-                      type="slideup"
-                      duration={0.55}
-                      ready={dataReady}
-                    >
-                      {renderBeritaCard(b, false)}
-                    </Animate>
-                  ))}
+                  <div className="flex flex-col gap-6">
+                    {paginatedBerita.map((b) => (
+                      <Animate
+                        key={b.id}
+                        type="slideup"
+                        duration={0.55}
+                        ready={dataReady}
+                      >
+                        {renderBeritaCard(b)}
+                      </Animate>
+                    ))}
+                  </div>
                 </Animate>
 
                 {/* Pagination */}
@@ -549,8 +530,8 @@ const Blog = () => {
             )}
           </div>
 
-          {/* ── Sidebar (1/3) ── */}
-          <div className="space-y-5 lg:sticky lg:top-8 lg:self-start">
+          {/* ── Sidebar (2/5) ── */}
+          <div className="xl:col-span-2 space-y-5 xl:sticky xl:top-8 xl:self-start">
             {/* Popular Posts */}
             <Animate
               type="slideleft"
@@ -576,29 +557,24 @@ const Blog = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {popularPosts.map((post, i) => (
+                    {popularPosts.map((post) => (
                       <div
                         key={post.id}
                         onClick={() => handleBeritaClick(post)}
                         className="flex gap-3 cursor-pointer group items-start"
                       >
-                        <div className="relative shrink-0">
-                          <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100">
-                            {post.thumbnail ? (
-                              <Image
-                                src={post.thumbnail}
-                                alt={post.title}
-                                fill
-                                className="object-cover group-hover:scale-110 transition-transform duration-300"
-                                sizes="56px"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-linear-to-br from-mariner-200 to-mariner-400" />
-                            )}
-                          </div>
-                          <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-mariner-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">
-                            {i + 1}
-                          </span>
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                          {post.thumbnail ? (
+                            <Image
+                              src={post.thumbnail}
+                              alt={post.title}
+                              fill
+                              className="object-cover group-hover:scale-110 transition-transform duration-300"
+                              sizes="56px"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-linear-to-br from-mariner-200 to-mariner-400" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-semibold text-gray-800 line-clamp-2 group-hover:text-mariner-500 transition-colors leading-snug mb-1">
@@ -611,19 +587,6 @@ const Blog = () => {
                       </div>
                     ))}
                   </div>
-                )}
-                {!loading && popularPosts.length > 0 && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSelectedCategory("all");
-                      setSelectedTag("");
-                      setCurrentPage(1);
-                    }}
-                    className="mt-5 w-full flex items-center justify-center gap-1.5 text-xs font-bold text-mariner-500 hover:text-mariner-700 transition-colors uppercase tracking-wider"
-                  >
-                    Lihat Semua <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
                 )}
               </Widget>
             </Animate>

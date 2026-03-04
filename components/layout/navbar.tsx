@@ -1,26 +1,74 @@
 // app/components/layout/navbar.tsx
 "use client";
 import { Profile } from "@/config/profile";
-import { LogIn, Menu, X } from "lucide-react";
+import { ChevronDown, LogIn, Menu, X } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "../ui/custom/button";
 
+/* ─────────────────────────────────────────
+   TYPE DEFINITIONS
+───────────────────────────────────────── */
+interface NavItem {
+  label: string;
+  href?: string;
+  dropdown?: { label: string; href: string }[];
+}
+
+/* ─────────────────────────────────────────
+   DROPDOWN COMPONENT
+───────────────────────────────────────── */
+interface DropdownMenuProps {
+  items: { label: string; href: string }[];
+  isScrolled: boolean;
+  onNavigate: (href: string) => void;
+}
+
+const DropdownMenu: React.FC<DropdownMenuProps> = ({ items, onNavigate }) => (
+  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-80">
+    <div className="bg-white rounded-xl shadow-lg ring-1 ring-gray-100 overflow-hidden min-w-[180px] py-1">
+      {items.map((item) => (
+        <button
+          key={item.href}
+          onClick={() => onNavigate(item.href)}
+          className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-orange-500 transition-colors"
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+/* ─────────────────────────────────────────
+   MAIN NAVBAR
+───────────────────────────────────────── */
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [openMobileDropdown, setOpenMobileDropdown] = useState<string | null>(
+    null,
+  );
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const navItems = useMemo(
+  const navItems: NavItem[] = useMemo(
     () => [
       { label: "Beranda", href: "/" },
       { label: "Rumah Sakit", href: "/sections/rumah-sakit" },
       { label: "Dokter", href: "/sections/dokter" },
       { label: "Blog", href: "/sections/blog" },
       { label: "Layanan Unggulan", href: "/sections/layanan-unggulan" },
-      { label: "Informasi", href: "/sections/home/kamar-inap/informasi" },
+      {
+        label: "Informasi",
+        dropdown: [
+          { label: "Klinik Spesialis", href: "/sections/klinik-spesialis" },
+          { label: "Kamar Inap", href: "/sections/home/kamar-inap/informasi" },
+        ],
+      },
       { label: "Formulir", href: "/sections/formulir" },
       { label: "Kritik & Saran", href: "/feedback" },
       { label: "Kontak", href: "/sections/kontak" },
@@ -31,8 +79,15 @@ export default function Navbar() {
   const hasHeroSection = pathname === "/";
 
   const activePage = useMemo(() => {
-    const currentItem = navItems.find((item) => item.href === pathname);
-    return currentItem ? currentItem.label : "Beranda";
+    for (const item of navItems) {
+      if (item.href && item.href === pathname) return item.label;
+      if (item.dropdown) {
+        for (const sub of item.dropdown) {
+          if (sub.href === pathname) return item.label;
+        }
+      }
+    }
+    return "Beranda";
   }, [pathname, navItems]);
 
   useEffect(() => {
@@ -60,15 +115,39 @@ export default function Navbar() {
     };
   }, [isMenuOpen]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const shouldUseDarkText = isScrolled || isMenuOpen;
 
   const handleNavClick = (href: string) => {
     router.push(href);
     setIsMenuOpen(false);
+    setOpenDropdown(null);
   };
+
   const handleLoginClick = () => {
     router.push("/login");
     setIsMenuOpen(false);
+  };
+
+  const toggleDropdown = (label: string) => {
+    setOpenDropdown((prev) => (prev === label ? null : label));
+  };
+
+  const toggleMobileDropdown = (label: string) => {
+    setOpenMobileDropdown((prev) => (prev === label ? null : label));
   };
 
   return (
@@ -81,7 +160,7 @@ export default function Navbar() {
             : "bg-transparent"
         }`}
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto" ref={dropdownRef}>
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <button
@@ -111,23 +190,60 @@ export default function Navbar() {
 
             {/* Desktop nav */}
             <div className="hidden lg:flex items-center gap-1">
-              {navItems.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleNavClick(item.href)}
-                  className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer
-                    ${
-                      shouldUseDarkText
-                        ? "text-gray-800 hover:text-gray-600"
-                        : "text-white hover:text-white/80"
-                    }`}
-                >
-                  {item.label}
-                  {activePage === item.label && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                  )}
-                </button>
-              ))}
+              {navItems.map((item, index) => {
+                if (item.dropdown) {
+                  const isOpen = openDropdown === item.label;
+                  return (
+                    <div key={index} className="relative">
+                      <button
+                        onClick={() => toggleDropdown(item.label)}
+                        className={`relative inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer
+                          ${
+                            shouldUseDarkText
+                              ? "text-gray-800 hover:text-gray-600"
+                              : "text-white hover:text-white/80"
+                          }
+                          ${activePage === item.label ? "font-semibold" : ""}
+                        `}
+                      >
+                        {item.label}
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                        />
+                        {activePage === item.label && (
+                          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                        )}
+                      </button>
+
+                      {isOpen && (
+                        <DropdownMenu
+                          items={item.dropdown}
+                          isScrolled={shouldUseDarkText}
+                          onNavigate={handleNavClick}
+                        />
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleNavClick(item.href!)}
+                    className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer
+                      ${
+                        shouldUseDarkText
+                          ? "text-gray-800 hover:text-gray-600"
+                          : "text-white hover:text-white/80"
+                      }`}
+                  >
+                    {item.label}
+                    {activePage === item.label && (
+                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                    )}
+                  </button>
+                );
+              })}
 
               <div className="ml-3 pl-3 border-l border-gray-200/40">
                 <Button
@@ -195,23 +311,67 @@ export default function Navbar() {
 
           {/* Nav items */}
           <div className="px-4 sm:px-6 py-6 space-y-1">
-            {navItems.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => handleNavClick(item.href)}
-                className={`w-full text-left px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 flex items-center justify-between
-                  ${
-                    activePage === item.label
-                      ? "text-orange-500 bg-orange-50 font-semibold"
-                      : "text-gray-800 hover:text-orange-500"
-                  }`}
-              >
-                {item.label}
-                {activePage === item.label && (
-                  <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
-                )}
-              </button>
-            ))}
+            {navItems.map((item, index) => {
+              if (item.dropdown) {
+                const isOpen = openMobileDropdown === item.label;
+                return (
+                  <div key={index}>
+                    <button
+                      onClick={() => toggleMobileDropdown(item.label)}
+                      className={`w-full text-left px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 flex items-center justify-between
+                        ${
+                          activePage === item.label
+                            ? "text-orange-500 bg-orange-50 font-semibold"
+                            : "text-gray-800 hover:text-orange-500"
+                        }`}
+                    >
+                      <span>{item.label}</span>
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    {/* Mobile sub-items */}
+                    {isOpen && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {item.dropdown.map((sub) => (
+                          <button
+                            key={sub.href}
+                            onClick={() => handleNavClick(sub.href)}
+                            className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                              ${
+                                pathname === sub.href
+                                  ? "text-orange-500 bg-orange-50 font-semibold"
+                                  : "text-gray-600 hover:text-orange-500 hover:bg-gray-50"
+                              }`}
+                          >
+                            {sub.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleNavClick(item.href!)}
+                  className={`w-full text-left px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 flex items-center justify-between
+                    ${
+                      activePage === item.label
+                        ? "text-orange-500 bg-orange-50 font-semibold"
+                        : "text-gray-800 hover:text-orange-500"
+                    }`}
+                >
+                  {item.label}
+                  {activePage === item.label && (
+                    <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <div className="px-4 sm:px-6 pt-2 pb-8">

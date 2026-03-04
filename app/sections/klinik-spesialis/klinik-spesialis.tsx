@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  ExternalLink,
   Search,
   Stethoscope,
   User,
@@ -38,6 +39,30 @@ import React, {
 } from "react";
 
 const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
+
+/* ─────────────────────────────────────────
+   STATUS CONFIG
+───────────────────────────────────────── */
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  active: {
+    label: "Aktif",
+    className: "bg-emerald-500 text-white",
+  },
+  inactive: {
+    label: "Tidak Aktif",
+    className: "bg-gray-400 text-white",
+  },
+  cuti: {
+    label: "Cuti",
+    className: "bg-amber-500 text-white",
+  },
+};
+
+const getStatusConfig = (status: string) =>
+  STATUS_CONFIG[status] ?? {
+    label: status,
+    className: "bg-gray-400 text-white",
+  };
 
 /* ─────────────────────────────────────────
    INTERFACES
@@ -240,6 +265,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
   loading,
   onClose,
 }) => {
+  const router = useRouter();
   const [pendaftaranPrefill, setPendaftaranPrefill] =
     useState<PendaftaranPrefill | null>(null);
 
@@ -276,6 +302,11 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
       jamMulai,
       jamSelesai,
     });
+  };
+
+  const handleNavigateToDetail = () => {
+    onClose();
+    router.push(`/detail-dokter/${dokter.id}`);
   };
 
   const renderGrouped = (
@@ -354,6 +385,25 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         >
           {/* Hero foto */}
           <div className="relative shrink-0 overflow-hidden">
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={
+                { delay: 0.3, duration: 0.4, ease } satisfies Transition
+              }
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "rgba(255,255,255,0.28)",
+              }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleNavigateToDetail}
+              aria-label="Lihat profil lengkap"
+              className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Lihat Profil
+            </motion.button>
+
             <button
               onClick={onClose}
               aria-label="Tutup"
@@ -361,6 +411,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
             >
               <X className="w-5 h-5 text-white" />
             </button>
+
             <motion.div
               initial={{ scale: 1.06, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -400,6 +451,16 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
               <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
                 {dokter.nama}
               </h3>
+              <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
+                <span className="inline-block text-xs font-medium text-bittersweet-200 bg-bittersweet-900/40 px-3 py-0.5 rounded-full">
+                  {poliNama}
+                </span>
+                <span
+                  className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status).className}`}
+                >
+                  {getStatusConfig(dokter.status).label}
+                </span>
+              </div>
             </motion.div>
           </div>
 
@@ -461,7 +522,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         </motion.div>
       </motion.div>
 
-      {/* DialogPendaftaran — terpisah di atas dialog jadwal */}
       {pendaftaranPrefill && (
         <DialogPendaftaran
           open={!!pendaftaranPrefill}
@@ -503,6 +563,11 @@ const DokterRow: React.FC<{
       <p className="text-gray-800 font-semibold text-sm truncate">
         {dokter.nama}
       </p>
+      <span
+        className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${getStatusConfig(dokter.status).className}`}
+      >
+        {getStatusConfig(dokter.status).label}
+      </span>
     </div>
     <Button
       variant="primary"
@@ -924,14 +989,17 @@ const LayananUnggulan = () => {
         )}
       </AnimatePresence>
 
-      <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* pt-24 = 96px → memberi ruang agar tombol Kembali tidak tertutup navbar (h-20 = 80px) */}
+      <div className="bg-gray-50 pt-24 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <Animate type="fadein" duration={0.5} ready={!loading}>
             <button
               onClick={() => router.back()}
-              className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-mariner-600 transition-colors mb-8 group"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors duration-150 group"
             >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:border-gray-300 transition-all duration-150 shadow-sm">
+                <ArrowLeft className="w-4 h-4" />
+              </span>
               Kembali
             </button>
           </Animate>

@@ -20,15 +20,41 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  ExternalLink,
   Stethoscope,
   User,
   X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 
 const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
+
+/* ─────────────────────────────────────────
+   STATUS CONFIG
+───────────────────────────────────────── */
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  active: {
+    label: "Aktif",
+    className: "bg-emerald-500 text-white",
+  },
+  inactive: {
+    label: "Tidak Aktif",
+    className: "bg-gray-400 text-white",
+  },
+  cuti: {
+    label: "Cuti",
+    className: "bg-amber-500 text-white",
+  },
+};
+
+const getStatusConfig = (status: string) =>
+  STATUS_CONFIG[status] ?? {
+    label: status,
+    className: "bg-gray-400 text-white",
+  };
 
 /* ─────────────────────────────────────────
    useScrollIndicator
@@ -157,7 +183,7 @@ interface Dokter {
   nama: string;
   poli_id: string;
   profile: string | null;
-  status: string;
+  status: string; // ← ditambahkan
 }
 
 interface JadwalDokter {
@@ -244,6 +270,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
   loading,
   onClose,
 }) => {
+  const router = useRouter();
   const [pendaftaranPrefill, setPendaftaranPrefill] =
     useState<PendaftaranPrefill | null>(null);
 
@@ -280,6 +307,11 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
       jamMulai,
       jamSelesai,
     });
+  };
+
+  const handleNavigateToDetail = () => {
+    onClose();
+    router.push(`/detail-dokter/${dokter.id}`);
   };
 
   const renderGrouped = (
@@ -358,6 +390,27 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         >
           {/* Hero foto */}
           <div className="relative shrink-0 overflow-hidden">
+            {/* ── Tombol Lihat Profil — kiri atas ── */}
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={
+                { delay: 0.3, duration: 0.4, ease } satisfies Transition
+              }
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "rgba(255,255,255,0.28)",
+              }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleNavigateToDetail}
+              aria-label="Lihat profil lengkap"
+              className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Lihat Profil
+            </motion.button>
+
+            {/* ── Tombol tutup — kanan atas ── */}
             <button
               onClick={onClose}
               aria-label="Tutup"
@@ -365,6 +418,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
             >
               <X className="w-5 h-5 text-white" />
             </button>
+
             <motion.div
               initial={{ scale: 1.06, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -404,6 +458,17 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
               <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
                 {dokter.nama}
               </h3>
+              {/* ── Status badge + poli ── */}
+              <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
+                <span className="inline-block text-xs font-medium text-bittersweet-200 bg-bittersweet-900/40 px-3 py-0.5 rounded-full">
+                  {poliNama}
+                </span>
+                <span
+                  className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status).className}`}
+                >
+                  {getStatusConfig(dokter.status).label}
+                </span>
+              </div>
             </motion.div>
           </div>
 
@@ -508,6 +573,12 @@ const DokterRow: React.FC<{
       <p className="text-gray-800 font-semibold text-sm truncate">
         {dokter.nama}
       </p>
+      {/* Status badge di DokterRow */}
+      <span
+        className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${getStatusConfig(dokter.status).className}`}
+      >
+        {getStatusConfig(dokter.status).label}
+      </span>
     </div>
     <Button
       variant="primary"

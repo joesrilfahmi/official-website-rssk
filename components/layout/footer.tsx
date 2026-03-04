@@ -171,8 +171,8 @@ const Footer = () => {
       content: [
         { text: `IGD : ${Profile.phone}`, href: `tel:${Profile.phone}` },
         {
-          text: `Whatsapp IGD : ${Profile.whatsapp}`,
-          href: `https://wa.me/${Profile.whatsapp.replace(/\D/g, "")}`,
+          text: `Whatsapp IGD : ${Profile.ambulance}`,
+          href: `https://wa.me/${Profile.ambulance.replace(/\D/g, "")}`,
         },
         {
           text: `Ambulance : ${Profile.ambulance}`,

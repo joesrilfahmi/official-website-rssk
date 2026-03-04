@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  ExternalLink,
   Search,
   UserRound,
   X,
@@ -210,6 +211,30 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): JadwalGroup[] {
   return Array.from(map.values());
 }
 
+/* ─────────────────────────────────────────
+   STATUS BADGE HELPER
+───────────────────────────────────────── */
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  active: {
+    label: "Aktif",
+    className: "bg-emerald-500 text-white",
+  },
+  inactive: {
+    label: "Tidak Aktif",
+    className: "bg-gray-400 text-white",
+  },
+  cuti: {
+    label: "Cuti",
+    className: "bg-amber-500 text-white",
+  },
+};
+
+const getStatusConfig = (status: string) =>
+  STATUS_CONFIG[status] ?? {
+    label: status,
+    className: "bg-gray-400 text-white",
+  };
+
 const HARI_OPTIONS = [
   { value: "all", label: "Semua" },
   { value: "Senin", label: "Senin" },
@@ -352,7 +377,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
           className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Jadwal view */}
           <motion.div
             key="jadwal"
             initial={{ opacity: 0, y: 12 }}
@@ -362,6 +386,27 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
           >
             {/* Hero image */}
             <div className="relative shrink-0 overflow-hidden">
+              {/* ── Tombol Lihat Profil — kiri atas, gaya pill transparan ── */}
+              <motion.button
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={
+                  { delay: 0.3, duration: 0.4, ease } satisfies Transition
+                }
+                whileHover={{
+                  scale: 1.05,
+                  backgroundColor: "rgba(255,255,255,0.28)",
+                }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleNavigateToDetail}
+                aria-label="Lihat profil lengkap"
+                className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Lihat Profil
+              </motion.button>
+
+              {/* ── Tombol tutup — kanan atas ── */}
               <button
                 onClick={onClose}
                 aria-label="Tutup"
@@ -369,6 +414,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
               >
                 <X className="w-5 h-5 text-white" />
               </button>
+
               <motion.div
                 initial={{ scale: 1.06, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -394,6 +440,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                   <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
                 </div>
               </motion.div>
+
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -405,23 +452,24 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                 <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
                   Jadwal Praktek
                 </p>
-                {/* ── Nama dokter — klik untuk ke halaman detail ── */}
-                <button
-                  onClick={handleNavigateToDetail}
-                  className="text-white font-bold text-xl leading-snug drop-shadow-sm hover:underline underline-offset-2 cursor-pointer transition-all group inline-flex items-center gap-1.5 justify-center"
-                >
+                {/* Nama dokter — plain text, tidak bisa diklik */}
+                <p className="text-white font-bold text-xl leading-snug drop-shadow-sm">
                   {dokter.nama}
-                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all duration-200" />
-                </button>
-                <div className="mt-1">
+                </p>
+                <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
                   <span className="inline-block text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
                     {dokter.poli?.nama_poli || "–"}
+                  </span>
+                  <span
+                    className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status).className}`}
+                  >
+                    {getStatusConfig(dokter.status).label}
                   </span>
                 </div>
               </motion.div>
             </div>
 
-            {/* Jadwal content */}
+            {/* Jadwal content — tombol "Lihat Profil Lengkap" di bawah dihilangkan */}
             <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
               {dokter.jadwal_dokter.length === 0 ? (
                 <div className="text-center py-10">
@@ -465,18 +513,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                       </div>
                     </div>
                   )}
-
-                  {/* ── Link ke halaman detail ── */}
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={{ duration: 0.16 } satisfies Transition}
-                    onClick={handleNavigateToDetail}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl ring-1 ring-mariner-200 text-mariner-600 text-sm font-semibold hover:bg-mariner-50 transition-colors duration-150"
-                  >
-                    Lihat Profil Lengkap
-                    <ChevronRight className="w-4 h-4" />
-                  </motion.button>
                 </>
               )}
             </ScrollFadeWrapper>
@@ -484,7 +520,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
         </motion.div>
       </motion.div>
 
-      {/* ── DialogPendaftaran — terpisah, muncul di atas dialog jadwal ── */}
+      {/* ── DialogPendaftaran ── */}
       {pendaftaranPrefill && (
         <DialogPendaftaran
           open={!!pendaftaranPrefill}
@@ -497,7 +533,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
 };
 
 /* ─────────────────────────────────────────
-   DOKTER CARD (stagger variants)
+   DOKTER CARD — Professional large-image layout
 ───────────────────────────────────────── */
 const cardWrapVariants = {
   hidden: { opacity: 0, y: 28, scale: 0.96 },
@@ -513,106 +549,92 @@ const DokterCard: React.FC<{
   dokter: Dokter;
   onClick: (d: Dokter) => void;
 }> = ({ dokter, onClick }) => {
-  const cardAppearDuration = 0.6;
-  const innerBaseDelay = cardAppearDuration * 0.55;
+  const hariList = [...new Set(dokter.jadwal_dokter.map((j) => j.hari))].sort(
+    (a, b) => (HARI_ORDER[a] ?? 99) - (HARI_ORDER[b] ?? 99),
+  );
 
   return (
     <motion.div
       variants={cardWrapVariants}
       whileHover={{
-        y: -3,
-        scale: 1.02,
-        transition: { duration: 0.25, ease } satisfies Transition,
+        y: -4,
+        transition: { duration: 0.22, ease } satisfies Transition,
       }}
       onClick={() => onClick(dokter)}
-      className="group bg-white rounded-2xl p-6 shadow-sm ring-1 ring-gray-100 hover:shadow-lg transition-shadow duration-300 cursor-pointer flex flex-col items-center text-center h-full overflow-hidden relative"
+      className="group bg-white rounded-3xl overflow-hidden shadow-sm ring-1 ring-gray-100 hover:shadow-xl hover:ring-mariner-100 transition-all duration-300 cursor-pointer flex flex-col"
     >
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-mariner-400 to-mariner-300 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-t-2xl" />
-
-      <motion.div
-        variants={{
-          hidden: { opacity: 0, scale: 0.7, y: 8 },
-          visible: {
-            opacity: 1,
-            scale: 1,
-            y: 0,
-            transition: {
-              duration: 0.45,
-              ease,
-              delay: innerBaseDelay,
-            } satisfies Transition,
-          },
-        }}
-        className="relative w-36 h-36 mb-4 shrink-0"
+      {/* ── Foto dokter — square aspect ratio ── */}
+      <div
+        className="relative w-full overflow-hidden"
+        style={{ paddingBottom: "115%" }}
       >
-        {dokter.profile ? (
-          <Image
-            src={dokter.profile}
-            alt={dokter.nama}
-            fill
-            className="object-cover rounded-full ring-4 ring-mariner-50"
-            sizes="144px"
-          />
-        ) : (
-          <div className="w-full h-full rounded-full bg-linear-to-br from-mariner-400 to-mariner-600 flex items-center justify-center ring-4 ring-mariner-50">
-            <UserRound className="w-16 h-16 text-white" />
+        <div className="absolute inset-0 bg-linear-to-br from-mariner-100 to-mariner-200">
+          {dokter.profile ? (
+            <Image
+              src={dokter.profile}
+              alt={dokter.nama}
+              fill
+              className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <UserRound className="w-16 h-16 text-mariner-400" />
+            </div>
+          )}
+
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/10 to-transparent" />
+
+          {/* Top badges */}
+          <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2">
+            <span
+              className={`inline-block text-[10px] font-bold px-2.5 py-1 rounded-full leading-none ${getStatusConfig(dokter.status).className}`}
+            >
+              {getStatusConfig(dokter.status).label}
+            </span>
+            <span className="inline-block text-[10px] font-bold text-white bg-mariner-600/75 px-2.5 py-1 rounded-full leading-none text-right">
+              {dokter.poli?.nama_poli || "–"}
+            </span>
           </div>
-        )}
-      </motion.div>
 
-      <motion.h3
-        variants={{
-          hidden: { opacity: 0, y: 10 },
-          visible: {
-            opacity: 1,
-            y: 0,
-            transition: {
-              duration: 0.38,
-              ease,
-              delay: innerBaseDelay + 0.08,
-            } satisfies Transition,
-          },
-        }}
-        className="text-base font-bold text-mariner-500 mb-1 group-hover:text-mariner-600 transition-colors line-clamp-2 leading-snug"
-      >
-        {dokter.nama}
-      </motion.h3>
+          {/* Hover overlay: "Lihat Jadwal" CTA */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20">
+            <div className="bg-white text-mariner-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shadow-lg">
+              Lihat Jadwal
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
+          </div>
 
-      <motion.span
-        variants={{
-          hidden: { opacity: 0, y: 6 },
-          visible: {
-            opacity: 1,
-            y: 0,
-            transition: {
-              duration: 0.35,
-              ease,
-              delay: innerBaseDelay + 0.15,
-            } satisfies Transition,
-          },
-        }}
-        className="text-xs font-medium text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full mt-1"
-      >
-        {dokter.poli?.nama_poli || "–"}
-      </motion.span>
+          {/* Bottom: nama dokter */}
+          <div className="absolute bottom-0 inset-x-0 px-3 pb-3">
+            <h3 className="text-white font-bold text-sm leading-snug drop-shadow-sm line-clamp-2 group-hover:text-mariner-100 transition-colors duration-200">
+              {dokter.nama}
+            </h3>
+          </div>
+        </div>
+      </div>
 
-      <motion.div
-        variants={{
-          hidden: { opacity: 0 },
-          visible: {
-            opacity: 0,
-            transition: {
-              duration: 0.3,
-              ease,
-              delay: innerBaseDelay + 0.22,
-            } satisfies Transition,
-          },
-        }}
-        className="mt-3 flex items-center gap-1 text-mariner-500 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-      >
-        <span>Lihat Jadwal</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-      </motion.div>
+      {/* ── Info bawah: hari praktek ── */}
+      <div className="px-3 py-3 flex items-center justify-between gap-2 min-h-11">
+        <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+          {hariList.length === 0 ? (
+            <span className="text-[10px] text-gray-400 italic">
+              Belum ada jadwal
+            </span>
+          ) : (
+            hariList.map((hari) => (
+              <span
+                key={hari}
+                className="text-[10px] font-semibold text-mariner-600 bg-mariner-50 px-2 py-0.5 rounded-full leading-none whitespace-nowrap"
+              >
+                {hari.slice(0, 3)}
+              </span>
+            ))
+          )}
+        </div>
+        <ChevronRight className="w-4 h-4 text-mariner-400 shrink-0 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200" />
+      </div>
     </motion.div>
   );
 };
@@ -621,10 +643,13 @@ const DokterCard: React.FC<{
    SKELETON CARD
 ───────────────────────────────────────── */
 const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl p-6 ring-1 ring-gray-100 animate-pulse flex flex-col items-center">
-    <div className="w-36 h-36 bg-gray-100 rounded-full mb-4" />
-    <div className="h-4 w-32 bg-gray-100 rounded mb-2" />
-    <div className="h-3 w-20 bg-gray-100 rounded" />
+  <div className="bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100 animate-pulse">
+    <div className="w-full bg-gray-100" style={{ paddingBottom: "115%" }} />
+    <div className="px-3 py-3 flex items-center gap-1.5">
+      <div className="h-4 w-8 bg-gray-100 rounded-full" />
+      <div className="h-4 w-8 bg-gray-100 rounded-full" />
+      <div className="h-4 w-8 bg-gray-100 rounded-full" />
+    </div>
   </div>
 );
 
@@ -698,14 +723,9 @@ const DokterSpesialis = () => {
         .select(
           `*, poli:poli_id (id, nama_poli), jadwal_dokter (id, hari, jam_mulai, jam_selesai, tipe_jadwal)`,
         )
-        .eq("status", "active");
+        .order("nama", { ascending: true });
       if (error) throw error;
-      const sorted = (dokterData || []).sort((a, b) =>
-        (a.nama?.toLowerCase() || "").localeCompare(
-          b.nama?.toLowerCase() || "",
-          "id",
-        ),
-      );
+      const sorted = dokterData || [];
       setDokterList(sorted);
       const seen = new Set<string>();
       const uniquePoli: Poli[] = [];
@@ -930,8 +950,8 @@ const DokterSpesialis = () => {
                   { duration: 0.45, ease: easeOut } satisfies Transition
                 }
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {[...Array(6)].map((_, i) => (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+                  {[...Array(8)].map((_, i) => (
                     <SkeletonCard key={i} />
                   ))}
                 </div>
@@ -958,16 +978,16 @@ const DokterSpesialis = () => {
             </Animate>
           )}
 
-          {/* Grid stagger */}
+          {/* Grid — 2 cols mobile, 3 cols tablet, 4 cols desktop */}
           {!loading && filteredDokter.length > 0 && (
             <Animate
               key={`${selectedPoli}-${selectedHari}-${searchQuery}`}
               type="stagger"
-              staggerChildren={0.08}
+              staggerChildren={0.06}
               delayChildren={0.02}
               ready={true}
               margin="-60px"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 mb-12"
             >
               {filteredDokter.map((dokter) => (
                 <DokterCard

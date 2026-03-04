@@ -7,6 +7,7 @@ import Berita from "./berita";
 import Hero from "./hero";
 import KamarInap from "./kamar-inap";
 import LayananUnggulan from "./klinik-spesialis";
+import Partner from "./partner-list";
 import Pendaftaran from "./pendaftaran";
 import Review from "./review";
 // import BackToTop from "@/components/layout/back-to-top"
@@ -24,6 +25,7 @@ export default function App() {
       <KamarInap />
       <Berita />
       <Review />
+      <Partner />
       <Pendaftaran />
       <Footer />
     </>
