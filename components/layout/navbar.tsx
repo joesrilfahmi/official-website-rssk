@@ -22,7 +22,7 @@ export default function Navbar() {
       { label: "Layanan Unggulan", href: "/sections/layanan-unggulan" },
       { label: "Informasi", href: "/sections/home/kamar-inap/informasi" },
       { label: "Formulir", href: "/sections/formulir" },
-      { label: "Kritik & Saran", href: "/sections/kritik-saran" },
+      { label: "Kritik & Saran", href: "/feedback" },
       { label: "Kontak", href: "/sections/kontak" },
     ],
     [],
