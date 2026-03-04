@@ -244,9 +244,46 @@ export interface JadwalDokter {
   updated_by?: string | null;
 }
 
+export interface PendidikanDokter {
+  id?: string;
+  dokter_id?: string;
+  tahun: string;
+  institusi: string;
+  deskripsi?: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+}
+
+export interface OrganisasiDokter {
+  id?: string;
+  dokter_id?: string;
+  tahun: string;
+  title: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+}
+
+export interface PublikasiDokter {
+  id?: string;
+  dokter_id?: string;
+  tahun: string;
+  title: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+}
+
 export interface DokterWithRelations extends Dokter {
   poli_detail?: Poli;
   jadwal?: JadwalDokter[];
+  pendidikan?: PendidikanDokter[];
+  organisasi?: OrganisasiDokter[];
+  publikasi?: PublikasiDokter[];
   created_by_user?: User;
   updated_by_user?: User;
 }
@@ -260,7 +297,28 @@ export interface JadwalFormData {
   _temp_id: string;
 }
 
-// ✅ gelar_depan dan gelar_belakang dihapus
+export interface PendidikanFormData {
+  id?: string;
+  tahun: string;
+  institusi: string;
+  deskripsi: string;
+  _temp_id: string;
+}
+
+export interface OrganisasiFormData {
+  id?: string;
+  tahun: string;
+  title: string;
+  _temp_id: string;
+}
+
+export interface PublikasiFormData {
+  id?: string;
+  tahun: string;
+  title: string;
+  _temp_id: string;
+}
+
 export interface DokterFormData {
   nama: string;
   poli_id: string;
@@ -269,12 +327,18 @@ export interface DokterFormData {
   profileFile: File | null;
   profileDeleted: boolean;
   jadwal: JadwalFormData[];
+  pendidikan: PendidikanFormData[];
+  organisasi: OrganisasiFormData[];
+  publikasi: PublikasiFormData[];
 }
 
 export interface DokterFormErrors {
   nama: string;
   poli_id: string;
   jadwal: string;
+  pendidikan: string;
+  organisasi: string;
+  publikasi: string;
 }
 
 // ============================================

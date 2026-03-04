@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import React, {
   useCallback,
   useEffect,
@@ -178,7 +179,7 @@ interface JadwalGroup {
 }
 
 /* ─────────────────────────────────────────
-   HELPERS (lokal untuk render jadwal)
+   HELPERS
 ───────────────────────────────────────── */
 const formatTime = (t: string) => (t.includes(".") ? t.replace(".", ":") : t);
 
@@ -229,6 +230,7 @@ interface JadwalDialogProps {
 }
 
 const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
+  const router = useRouter();
   const [pendaftaranPrefill, setPendaftaranPrefill] =
     useState<PendaftaranPrefill | null>(null);
 
@@ -267,6 +269,11 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
       jamMulai,
       jamSelesai,
     });
+  };
+
+  const handleNavigateToDetail = () => {
+    onClose();
+    router.push(`/detail-dokter/${dokter.id}`);
   };
 
   const renderGrouped = (
@@ -398,12 +405,19 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                 <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
                   Jadwal Praktek
                 </p>
-                <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
+                {/* ── Nama dokter — klik untuk ke halaman detail ── */}
+                <button
+                  onClick={handleNavigateToDetail}
+                  className="text-white font-bold text-xl leading-snug drop-shadow-sm hover:underline underline-offset-2 cursor-pointer transition-all group inline-flex items-center gap-1.5 justify-center"
+                >
                   {dokter.nama}
-                </h3>
-                <span className="inline-block mt-1 text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
-                  {dokter.poli?.nama_poli || "–"}
-                </span>
+                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all duration-200" />
+                </button>
+                <div className="mt-1">
+                  <span className="inline-block text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
+                    {dokter.poli?.nama_poli || "–"}
+                  </span>
+                </div>
               </motion.div>
             </div>
 
@@ -451,6 +465,18 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                       </div>
                     </div>
                   )}
+
+                  {/* ── Link ke halaman detail ── */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ duration: 0.16 } satisfies Transition}
+                    onClick={handleNavigateToDetail}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl ring-1 ring-mariner-200 text-mariner-600 text-sm font-semibold hover:bg-mariner-50 transition-colors duration-150"
+                  >
+                    Lihat Profil Lengkap
+                    <ChevronRight className="w-4 h-4" />
+                  </motion.button>
                 </>
               )}
             </ScrollFadeWrapper>

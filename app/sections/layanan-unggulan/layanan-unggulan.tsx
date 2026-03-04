@@ -235,7 +235,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
       });
     }
     return Array.from(map.values());
-  }, [jadwalList]);
+  }, [HARI_ORDER, jadwalList]);
 
   const groupedReguler = grouped
     .filter((g) => g.slots.some((s) => s.tipe_jadwal === "reguler"))

@@ -659,7 +659,7 @@ const PoliDialog: React.FC<{ poli: Poli; onClose: () => void }> = ({
                   }
                   className="text-bittersweet-500 text-xl font-bold leading-snug"
                 >
-                  {poli.nama_poli}
+                  {"Klinik "} {poli.nama_poli}
                 </motion.h2>
               </div>
             </div>
@@ -805,6 +805,7 @@ const LayananCard: React.FC<LayananCardProps> = ({
           }}
           className="text-xl sm:text-2xl font-bold text-bittersweet-500 mb-3 sm:mb-4 line-clamp-2 min-h-14"
         >
+          {"Klinik "}
           {layanan.nama_poli}
         </motion.h3>
         <motion.p
