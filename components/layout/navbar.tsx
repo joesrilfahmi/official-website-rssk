@@ -70,7 +70,7 @@ export default function Navbar() {
         ],
       },
       { label: "Formulir", href: "/sections/formulir" },
-      { label: "Kritik & Saran", href: "/feedback" },
+      { label: "Kritik & Saran", href: "/feedback-qr-code" },
       { label: "Kontak", href: "/sections/kontak" },
     ],
     [],
