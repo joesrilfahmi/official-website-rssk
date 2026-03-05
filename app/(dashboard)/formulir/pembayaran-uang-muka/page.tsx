@@ -57,14 +57,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Profile } from "@/config/profile";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase/client";
 import {
   ArrowUpDown,
-  Eye,
+  Download,
   Loader2,
-  Pencil,
-  Printer,
   Search,
   Trash2,
   X,
@@ -155,13 +154,8 @@ const formatTanggal = (dateStr: string) => {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
 
-/* ─────────────────────────────────────────
-   PRINT HELPER
-───────────────────────────────────────── */
-function handlePrint(item: Fmo1) {
-  const penjaminLabel = getPenjaminLabel(item.jenis_penjamin);
-  const kelasLabel = getKelasLabel(item.rencana_kelas);
-
+const formatTanggalLong = (dateStr: string) => {
+  if (!dateStr) return "—";
   const months = [
     "Januari",
     "Februari",
@@ -176,134 +170,389 @@ function handlePrint(item: Fmo1) {
     "November",
     "Desember",
   ];
-  const d = new Date(item.tanggal);
-  const tanggalFormatted = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  const d = new Date(dateStr);
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+};
 
-  const printWindow = window.open("", "_blank", "width=860,height=900");
-  if (!printWindow) return;
+/* ─────────────────────────────────────────
+   FILENAME HELPER
+───────────────────────────────────────── */
+function buildFileName(item: Fmo1): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const sanitize = (s: string) =>
+    s
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9\-_]/g, "");
+  const noRm = item.no_rm ? sanitize(item.no_rm) : "NoRM";
+  const nama = sanitize(item.nama_pasien);
+  const stamp = `${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  return `${noRm}-${nama}-${stamp}`;
+}
 
-  printWindow.document.write(`<!DOCTYPE html>
+/* ─────────────────────────────────────────
+   BUILD DOCUMENT HTML
+   All units in px, calibrated for 794px iframe width.
+   794px wide = A4 at 96dpi. Padding 75px ≈ 20mm each side.
+   This ensures html2canvas renders identically to the view.
+───────────────────────────────────────── */
+function buildDocumentHTML(item: Fmo1, logoBase64?: string): string {
+  const penjaminLabel = getPenjaminLabel(item.jenis_penjamin);
+  const kelasLabel = getKelasLabel(item.rencana_kelas);
+  const tanggalFormatted = formatTanggalLong(item.tanggal);
+  const logoSrc = logoBase64 ?? Profile.logo;
+
+  return `<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8"/>
-  <title>Formulir DP Persalinan – ${item.nama_pasien}</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Times New Roman', serif; font-size: 12pt; color: #111; background: #fff; padding: 24mm 20mm; }
-    .letterhead { display: flex; align-items: flex-start; gap: 16px; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 12px; }
-    .lh-text h1 { font-size: 14pt; font-weight: bold; margin-bottom: 2px; }
-    .lh-text p { font-size: 9pt; color: #444; }
-    .doc-title { text-align: center; margin: 16px 0 12px; }
-    .doc-title h2 { font-size: 14pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-    .doc-title p { font-size: 9pt; color: #555; margin-top: 4px; }
-    .section { margin-bottom: 14px; }
-    .section-title { font-size: 10pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 8px; letter-spacing: 0.4px; }
-    .field-table { width: 100%; border-collapse: collapse; }
-    .field-table tr td { padding: 4px 6px; font-size: 11pt; }
-    .field-table tr td:first-child { width: 38%; color: #444; vertical-align: top; }
-    .field-table tr td:nth-child(2) { width: 2%; color: #444; }
-    .dp-box { border: 2px solid #111; padding: 10px 16px; display: inline-block; margin: 6px 0; }
-    .dp-box .amount { font-size: 18pt; font-weight: bold; }
-    .dp-box .terbilang { font-size: 9pt; color: #444; margin-top: 2px; }
-    .bullet-list { padding-left: 20px; }
-    .bullet-list li { margin-bottom: 4px; font-size: 11pt; line-height: 1.6; }
-    .sign-section { display: flex; gap: 40px; margin-top: 6px; align-items: flex-start; }
-    .sign-date { min-width: 120px; }
-    .sign-date p { font-size: 10pt; color: #555; }
-    .sign-date strong { font-size: 11pt; }
-    .sign-pad { flex: 1; text-align: center; }
-    .sign-pad p { font-size: 10pt; color: #555; margin-bottom: 4px; }
-    .sign-pad img { max-height: 80px; max-width: 260px; border-bottom: 1.5px solid #111; padding-bottom: 4px; }
-    .sign-pad .no-sig { height: 72px; border-bottom: 1.5px solid #111; display: block; }
-    .sign-name { font-size: 11pt; font-weight: bold; margin-top: 4px; }
-    .doc-footer { border-top: 1px solid #ccc; margin-top: 28px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9pt; color: #888; }
-    @media print { body { padding: 12mm 16mm; } }
-  </style>
+<meta charset="UTF-8"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: #fff; }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 13px;
+    color: #000;
+    background: #fff;
+    width: 794px;
+    padding: 60px 72px 60px 72px;
+    line-height: 1.65;
+  }
+
+  /* ── Letterhead ── */
+  .letterhead {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 8px;
+    border-bottom: 3px double #000;
+    margin-bottom: 16px;
+  }
+  .lh-logo { width: 58px; height: 58px; object-fit: contain; flex-shrink: 0; }
+  .lh-info { flex: 1; text-align: center; }
+  .lh-name { font-size: 15px; font-weight: 700; text-transform: uppercase; line-height: 1.3; }
+  .lh-sub  { font-size: 11px; margin-top: 2px; }
+  .lh-addr { font-size: 10px; margin-top: 2px; }
+
+  /* ── Title ── */
+  .doc-title {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-decoration: underline;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  /* ── Body text ── */
+  p { margin-bottom: 5px; font-size: 13px; }
+
+  /* ── Field rows ── */
+  .field-block { margin-bottom: 12px; }
+  .field-row {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 3px;
+    font-size: 13px;
+  }
+  .field-label { width: 195px; flex-shrink: 0; }
+  .field-colon { width: 14px; flex-shrink: 0; }
+.field-value {
+  flex: 1;
+  padding-bottom: 1px;
+  padding-left: 4px;
+}
+
+  /* ── List ── */
+  ol { margin: 3px 0 8px 20px; padding: 0; }
+  ol li { font-size: 13px; margin-bottom: 2px; line-height: 1.55; }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: underline;
+    margin-top: 10px;
+    margin-bottom: 4px;
+  }
+
+  /* ── Signature ── */
+  .sign-block { margin-top: 16px; display: flex; justify-content: flex-end; }
+  .sign-inner { text-align: center; width: 220px; }
+  .sign-inner p { font-size: 13px; margin-bottom: 3px; }
+  .sign-gap { height: 64px; display: flex; align-items: center; justify-content: center; margin: 4px 0; }
+  .sign-gap img { max-height: 60px; max-width: 190px; object-fit: contain; }
+  .sign-name {
+    font-size: 13px;
+    border-top: 1px solid #000;
+    padding-top: 4px;
+    display: inline-block;
+    min-width: 175px;
+    text-align: center;
+  }
+</style>
 </head>
 <body>
+
   <div class="letterhead">
-    <div class="lh-text">
-      <h1>Rumah Sakit</h1>
-      <p>Formulir Administrasi · FM-ADM-001</p>
+    <img class="lh-logo" src="${logoSrc}" alt="Logo" />
+    <div class="lh-info">
+      <div class="lh-name">${Profile.institusi} ${Profile.name}</div>
+      <div class="lh-sub">${Profile.subtitle}</div>
+      <div class="lh-addr">${Profile.address}</div>
+      <div class="lh-addr">Telp: ${Profile.phone} &nbsp;|&nbsp; Email: ${Profile.email} &nbsp;|&nbsp; WhatsApp: ${Profile.whatsapp}</div>
     </div>
   </div>
 
   <div class="doc-title">
-    <h2>Formulir Persetujuan Pembayaran Uang Muka (DP) Persalinan</h2>
-    <p>Tindakan Persalinan &nbsp;·&nbsp; ${tanggalFormatted}</p>
+    Formulir Persetujuan Pembayaran Uang Muka (DP)<br/>
+    Tindakan Persalinan di ${Profile.institusi} ${Profile.name}
   </div>
 
-  <div class="section">
-    <div class="section-title">Data Identitas</div>
-    <p style="margin-bottom:6px;font-size:11pt;">Yang bertanda tangan di bawah ini:</p>
-    <table class="field-table">
-      <tr><td>Nama Pasien</td><td>:</td><td><strong>${item.nama_pasien}</strong></td></tr>
-      <tr><td>No. Rekam Medis</td><td>:</td><td>${item.no_rm ?? "—"}</td></tr>
-      <tr><td>Nama Penanggung Jawab</td><td>:</td><td>${item.nama_penanggung_jawab}</td></tr>
-      <tr><td>No. KTP / Identitas</td><td>:</td><td>${item.no_ktp ?? "—"}</td></tr>
-      <tr><td>No. HP</td><td>:</td><td>${item.no_hp ?? "—"}</td></tr>
-      <tr><td>Alamat</td><td>:</td><td>${item.alamat ?? "—"}</td></tr>
-    </table>
-  </div>
+  <p>Yang bertanda tangan di bawah ini:</p>
 
-  <div class="section">
-    <div class="section-title">Pernyataan Persetujuan</div>
-    <p style="font-size:11pt;line-height:1.7;margin-bottom:8px;">Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan mengenai rencana tindakan persalinan yang akan dilakukan, termasuk estimasi biaya pelayanan medis, fasilitas perawatan, serta ketentuan administrasi yang berlaku. Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka (DP) persalinan sebesar:</p>
-    <div class="dp-box">
-      <div class="amount">Rp 1.000.000,–</div>
-      <div class="terbilang">Satu Juta Rupiah</div>
+  <div class="field-block">
+    <div class="field-row">
+      <span class="field-label">Nama Pasien</span>
+      <span class="field-colon">:</span>
+      <span class="field-value">${item.nama_pasien}</span>
     </div>
-    <p style="font-size:11pt;font-weight:bold;margin:10px 0 6px;">Saya memahami dan menyetujui bahwa:</p>
-    <ul class="bullet-list">
-      <li>Uang muka (DP) merupakan bagian dari total biaya persalinan.</li>
-      <li>Pembayaran DP dilakukan sebagai bentuk konfirmasi dan komitmen pelayanan persalinan.</li>
-      <li>Uang muka yang telah dibayarkan <strong>tidak dapat dikembalikan (non-refundable)</strong> dengan alasan apa pun, termasuk apabila terjadi pembatalan dari pihak pasien.</li>
-    </ul>
+    <div class="field-row">
+      <span class="field-label">No. RM</span>
+      <span class="field-colon">:</span>
+      <span class="field-value">${item.no_rm ?? ""}</span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">Nama Penanggung Jawab</span>
+      <span class="field-colon">:</span>
+      <span class="field-value">${item.nama_penanggung_jawab}</span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">No. KTP/Identitas</span>
+      <span class="field-colon">:</span>
+      <span class="field-value">${item.no_ktp ?? ""}</span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">Alamat</span>
+      <span class="field-colon">:</span>
+      <span class="field-value">${item.alamat ?? ""}</span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">No. HP</span>
+      <span class="field-colon">:</span>
+      <span class="field-value">${item.no_hp ?? ""}</span>
+    </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Rencana Penjamin &amp; Kelas Perawatan</div>
-    <table class="field-table">
-      <tr><td>Jenis Penjamin</td><td>:</td><td>${penjaminLabel}</td></tr>
-      <tr><td>Rencana Kelas / Kamar</td><td>:</td><td>${kelasLabel}</td></tr>
-    </table>
-    ${item.deskripsi ? `<p style="margin-top:8px;font-size:10pt;color:#555;">Keterangan: ${item.deskripsi}</p>` : ""}
+  <p style="text-align:justify;">
+    Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan mengenai rencana tindakan
+    persalinan yang akan dilakukan di ${Profile.institusi} ${Profile.name}, termasuk estimasi
+    biaya pelayanan medis, fasilitas perawatan, serta ketentuan administrasi yang berlaku.
+  </p>
+  <p>
+    Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka
+    (DP) persalinan sebesar: <strong>Rp1.000.000,- (Satu Juta Rupiah)</strong>
+  </p>
+  <p>Saya memahami dan menyetujui bahwa:</p>
+  <ol>
+    <li>Uang muka (DP) merupakan bagian dari total biaya persalinan.</li>
+    <li>Pembayaran DP dilakukan sebagai bentuk konfirmasi dan komitmen pelayanan persalinan.</li>
+    <li>Uang muka (DP) yang telah dibayarkan tidak dapat dikembalikan (non-refundable)
+        dengan alasan apa pun, termasuk apabila terjadi pembatalan dari pihak pasien.</li>
+  </ol>
+
+  <p class="section-label">Rencana Penjamin dan Kelas Perawatan</p>
+  <div class="field-block">
+    <div class="field-row">
+      <span class="field-label">Jenis Penjamin</span>
+      <span class="field-colon">:</span>
+      <span class="field-value">${penjaminLabel}</span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">Rencana Kelas / Kamar</span>
+      <span class="field-colon">:</span>
+      <span class="field-value">${kelasLabel}</span>
+    </div>
   </div>
 
-  <p style="font-size:11pt;line-height:1.8;margin-bottom:16px;">Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.</p>
+  <p><strong>Keterangan:</strong></p>
+  <p style="text-align:justify;">
+    Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung
+    jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.
+  </p>
+  ${item.deskripsi ? `<p>${item.deskripsi}</p>` : ""}
 
-  <div class="section">
-    <div class="section-title">Tanda Tangan</div>
-    <div class="sign-section">
-      <div class="sign-date">
-        <p>Sepanjang,</p>
-        <strong>${tanggalFormatted}</strong>
-      </div>
-      <div class="sign-pad">
-        <p>Pasien / Penanggung Jawab</p>
+  <p style="text-align:justify; margin-top:8px;">
+    Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun,
+    dan dapat dipergunakan sebagaimana mestinya.
+  </p>
+
+  <div class="sign-block">
+    <div class="sign-inner">
+      <p>Sepanjang, ${tanggalFormatted}</p>
+      <p>Pasien / Penanggung Jawab,</p>
+      <div class="sign-gap">
         ${
           item.ttd
             ? `<img src="${item.ttd}" alt="Tanda tangan" />`
-            : `<span class="no-sig"></span>`
+            : `<span style="display:block;height:60px;"></span>`
         }
-        <div class="sign-name">( ${item.nama_pasien} )</div>
       </div>
+      <span class="sign-name">( ${item.nama_pasien} )</span>
     </div>
   </div>
 
-  <div class="doc-footer">
-    <span>Halaman 1 dari 1</span>
-    <span>FM-ADM-001 · Rev.01</span>
-  </div>
-
-  <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }</script>
 </body>
-</html>`);
-  printWindow.document.close();
+</html>`;
+}
+
+/* ─────────────────────────────────────────
+   SCRIPT LOADER
+───────────────────────────────────────── */
+function loadScript(src: string, id: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById(id)) {
+      resolve();
+      return;
+    }
+    const s = document.createElement("script");
+    s.id = id;
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load: ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+/* ─────────────────────────────────────────
+   DOWNLOAD PDF
+───────────────────────────────────────── */
+async function handleDownloadPDF(item: Fmo1): Promise<void> {
+  const toastId = toast.loading("Membuat PDF...");
+  try {
+    await loadScript(
+      "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+      "html2canvas-script",
+    );
+    await loadScript(
+      "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+      "jspdf-script",
+    );
+
+    let logoBase64: string | undefined;
+    try {
+      const resp = await fetch(Profile.logo);
+      const blob = await resp.blob();
+      logoBase64 = await new Promise((res) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result as string);
+        r.readAsDataURL(blob);
+      });
+    } catch {
+      /* fallback to path */
+    }
+
+    const htmlContent = buildDocumentHTML(item, logoBase64);
+    const fileName = buildFileName(item);
+
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText =
+      "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;visibility:hidden;";
+    document.body.appendChild(iframe);
+
+    await new Promise<void>((resolve) => {
+      iframe.onload = () => resolve();
+      iframe.srcdoc = htmlContent;
+    });
+
+    await new Promise((r) => setTimeout(r, 1000));
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) throw new Error("Tidak dapat mengakses iframe document");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const html2canvas = (window as any).html2canvas;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { jsPDF } = (window as any).jspdf;
+
+    const iframeBody = iframeDoc.body;
+    const fullHeight = iframeBody.scrollHeight;
+
+    const canvas = await html2canvas(iframeBody, {
+      scale: 2.5,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      width: 794,
+      height: fullHeight,
+      windowWidth: 794,
+      windowHeight: fullHeight,
+      scrollX: 0,
+      scrollY: 0,
+      logging: false,
+    });
+
+    document.body.removeChild(iframe);
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.97);
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgHeight = pageWidth * (canvas.height / canvas.width);
+
+    if (imgHeight <= pageHeight) {
+      pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeight);
+    } else {
+      let rendered = 0;
+      const sliceH = Math.floor((canvas.width * pageHeight) / pageWidth);
+      let page = 0;
+      while (rendered < canvas.height) {
+        if (page > 0) pdf.addPage();
+        const tmp = document.createElement("canvas");
+        tmp.width = canvas.width;
+        tmp.height = Math.min(sliceH, canvas.height - rendered);
+        const ctx = tmp.getContext("2d")!;
+        ctx.drawImage(
+          canvas,
+          0,
+          rendered,
+          canvas.width,
+          tmp.height,
+          0,
+          0,
+          canvas.width,
+          tmp.height,
+        );
+        pdf.addImage(
+          tmp.toDataURL("image/jpeg", 0.97),
+          "JPEG",
+          0,
+          0,
+          pageWidth,
+          (tmp.height / canvas.width) * pageWidth,
+        );
+        rendered += tmp.height;
+        page++;
+      }
+    }
+
+    pdf.save(`${fileName}.pdf`);
+    toast.success("PDF berhasil diunduh", { id: toastId });
+  } catch (err) {
+    console.error(err);
+    toast.error("Gagal membuat PDF", { id: toastId });
+  }
 }
 
 /* ─────────────────────────────────────────
    VIEW DIALOG
+   Plain white document preview, no Download button
 ───────────────────────────────────────── */
 const ViewDialog: React.FC<{
   open: boolean;
@@ -312,73 +561,237 @@ const ViewDialog: React.FC<{
 }> = ({ open, item, onClose }) => {
   if (!open || !item) return null;
 
-  const rows: [string, string][] = [
-    ["Nama Pasien", item.nama_pasien],
-    ["No. Rekam Medis", item.no_rm ?? "—"],
-    ["Penanggung Jawab", item.nama_penanggung_jawab],
-    ["No. KTP / Identitas", item.no_ktp ?? "—"],
-    ["No. HP", item.no_hp ?? "—"],
-    ["Alamat", item.alamat ?? "—"],
-    ["Jenis Penjamin", getPenjaminLabel(item.jenis_penjamin)],
-    ["Rencana Kelas/Kamar", getKelasLabel(item.rencana_kelas)],
-    ["Tanggal", formatTanggal(item.tanggal)],
-    ["Keterangan", item.deskripsi ?? "—"],
-  ];
+  const tanggalLong = formatTanggalLong(item.tanggal);
+  const penjaminLabel = getPenjaminLabel(item.jenis_penjamin);
+  const kelasLabel = getKelasLabel(item.rencana_kelas);
+
+  const FieldRow = ({ label, value }: { label: string; value: string }) => (
+    <div
+      className="flex mb-1 items-end text-[13px]"
+      style={{ fontFamily: '"Times New Roman", Times, serif' }}
+    >
+      <span className="shrink-0 text-black" style={{ width: 210 }}>
+        {label}
+      </span>
+      <span className="shrink-0 text-black" style={{ width: 16 }}>
+        :
+      </span>
+      <span className="flex-1 border-b border-black pb-0.5 text-black">
+        &nbsp;{value}
+      </span>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Detail Formulir DP</DialogTitle>
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto p-0 bg-white">
+        <div className="sr-only">
+          <DialogTitle>Formulir DP Persalinan</DialogTitle>
           <DialogDescription>
-            Data formulir persetujuan pembayaran DP persalinan
+            Preview dokumen formulir DP persalinan
           </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-5 py-2">
-          {/* Info rows */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            {rows.map(([label, value]) => (
-              <div
-                key={label}
-                className="flex border-b border-gray-100 last:border-b-0"
-              >
-                <div className="text-xs font-medium text-muted-foreground bg-muted/40 px-4 py-2.5 w-44 shrink-0 border-r border-gray-100">
-                  {label}
-                </div>
-                <div className="px-4 py-2.5 text-sm text-foreground flex-1">
-                  {value}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Signature */}
-          {item.ttd && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                Tanda Tangan
-              </p>
-              <div className="border border-gray-200 rounded-lg bg-gray-50 p-4 flex justify-center">
-                <Image
-                  src={item.ttd}
-                  alt="Tanda tangan"
-                  width={320}
-                  height={120}
-                  className="max-h-28 object-contain"
-                />
-              </div>
-            </div>
-          )}
         </div>
 
-        <DialogFooter className="gap-2">
+        {/* Document content */}
+        <div
+          className="bg-white text-black px-10 py-8"
+          style={{
+            fontFamily: '"Times New Roman", Times, serif',
+            fontSize: 13,
+            lineHeight: 1.65,
+          }}
+        >
+          {/* Letterhead */}
+          <div
+            className="flex items-center gap-3 pb-3 mb-5"
+            style={{ borderBottom: "3px double #000" }}
+          >
+            <div
+              className="relative shrink-0"
+              style={{ width: 56, height: 56 }}
+            >
+              <Image
+                src={Profile.logo}
+                alt={Profile.shortName}
+                fill
+                className="object-contain"
+              />
+            </div>
+            <div className="flex-1 text-center">
+              <p
+                className="font-bold text-black leading-tight"
+                style={{ fontSize: 15, textTransform: "uppercase" }}
+              >
+                {Profile.institusi} {Profile.name}
+              </p>
+              <p className="text-black" style={{ fontSize: 11 }}>
+                {Profile.subtitle}
+              </p>
+              <p className="text-black" style={{ fontSize: 10 }}>
+                {Profile.address}
+              </p>
+              <p className="text-black" style={{ fontSize: 10 }}>
+                Telp: {Profile.phone} &nbsp;|&nbsp; Email: {Profile.email}
+              </p>
+            </div>
+          </div>
+
+          {/* Title */}
+          <div
+            className="text-center font-bold text-black mb-5 leading-snug"
+            style={{
+              fontSize: 13,
+              textTransform: "uppercase",
+              textDecoration: "underline",
+            }}
+          >
+            Formulir Persetujuan Pembayaran Uang Muka (DP)
+            <br />
+            Tindakan Persalinan di {Profile.institusi} {Profile.name}
+          </div>
+
+          {/* Intro */}
+          <p className="text-black mb-3" style={{ fontSize: 13 }}>
+            Yang bertanda tangan di bawah ini:
+          </p>
+
+          {/* Identity */}
+          <div className="mb-4">
+            <FieldRow label="Nama Pasien" value={item.nama_pasien} />
+            <FieldRow label="No. RM" value={item.no_rm ?? ""} />
+            <FieldRow
+              label="Nama Penanggung Jawab"
+              value={item.nama_penanggung_jawab}
+            />
+            <FieldRow label="No. KTP/Identitas" value={item.no_ktp ?? ""} />
+            <FieldRow label="Alamat" value={item.alamat ?? ""} />
+            <FieldRow label="No. HP" value={item.no_hp ?? ""} />
+          </div>
+
+          {/* Statement */}
+          <p
+            className="text-black mb-2"
+            style={{ fontSize: 13, textAlign: "justify" }}
+          >
+            Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan
+            mengenai rencana tindakan persalinan yang akan dilakukan di{" "}
+            {Profile.institusi} {Profile.name}, termasuk estimasi biaya
+            pelayanan medis, fasilitas perawatan, serta ketentuan administrasi
+            yang berlaku.
+          </p>
+          <p className="text-black mb-2" style={{ fontSize: 13 }}>
+            Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan
+            pembayaran uang muka (DP) persalinan sebesar:{" "}
+            <strong className="text-black">
+              Rp1.000.000,- (Satu Juta Rupiah)
+            </strong>
+          </p>
+          <p className="text-black mb-1" style={{ fontSize: 13 }}>
+            Saya memahami dan menyetujui bahwa:
+          </p>
+          <ol
+            className="list-decimal list-outside text-black mb-3 space-y-0.5"
+            style={{ fontSize: 13, paddingLeft: 22 }}
+          >
+            <li>
+              Uang muka (DP) merupakan bagian dari total biaya persalinan.
+            </li>
+            <li>
+              Pembayaran DP dilakukan sebagai bentuk konfirmasi dan komitmen
+              pelayanan persalinan.
+            </li>
+            <li>
+              Uang muka (DP) yang telah dibayarkan tidak dapat dikembalikan
+              (non-refundable) dengan alasan apa pun, termasuk apabila terjadi
+              pembatalan dari pihak pasien.
+            </li>
+          </ol>
+
+          {/* Penjamin & Kelas */}
+          <p
+            className="font-bold text-black mt-3 mb-2"
+            style={{ fontSize: 13, textDecoration: "underline" }}
+          >
+            Rencana Penjamin dan Kelas Perawatan
+          </p>
+          <div className="mb-3">
+            <FieldRow label="Jenis Penjamin" value={penjaminLabel} />
+            <FieldRow label="Rencana Kelas / Kamar" value={kelasLabel} />
+          </div>
+
+          {/* Keterangan */}
+          <p className="font-bold text-black" style={{ fontSize: 13 }}>
+            Keterangan:
+          </p>
+          <p
+            className="text-black mb-1"
+            style={{ fontSize: 13, textAlign: "justify" }}
+          >
+            Apabila terjadi perubahan kelas perawatan selama masa rawat inap,
+            maka pasien/penanggung jawab bersedia mengikuti ketentuan biaya
+            sesuai kelas yang ditempati.
+          </p>
+          {item.deskripsi && (
+            <p className="text-black mb-1" style={{ fontSize: 13 }}>
+              {item.deskripsi}
+            </p>
+          )}
+
+          {/* Closing */}
+          <p
+            className="text-black mt-2"
+            style={{ fontSize: 13, textAlign: "justify" }}
+          >
+            Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari
+            pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.
+          </p>
+
+          {/* Signature */}
+          <div className="flex justify-end mt-5">
+            <div className="text-center" style={{ minWidth: 220 }}>
+              <p className="text-black mb-1" style={{ fontSize: 13 }}>
+                Sepanjang, {tanggalLong}
+              </p>
+              <p className="text-black mb-3" style={{ fontSize: 13 }}>
+                Pasien / Penanggung Jawab,
+              </p>
+              <div
+                className="flex items-center justify-center"
+                style={{ height: 64, marginBottom: 4 }}
+              >
+                {item.ttd ? (
+                  <Image
+                    src={item.ttd}
+                    alt="Tanda tangan"
+                    width={200}
+                    height={64}
+                    className="object-contain"
+                    style={{ maxHeight: 64 }}
+                  />
+                ) : (
+                  <span style={{ display: "block", height: 64 }} />
+                )}
+              </div>
+              <p
+                className="text-black inline-block"
+                style={{
+                  fontSize: 13,
+                  borderTop: "1px solid #000",
+                  paddingTop: 4,
+                  minWidth: 180,
+                  textAlign: "center",
+                }}
+              >
+                ( {item.nama_pasien} )
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer — close only, no download */}
+        <DialogFooter className="px-6 pb-5 pt-3 border-t border-gray-200 bg-white">
           <Button variant="outline" onClick={onClose}>
             Tutup
-          </Button>
-          <Button onClick={() => handlePrint(item)}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -456,7 +869,6 @@ const EditDialog: React.FC<{
           deskripsi: form.deskripsi.trim() || null,
         })
         .eq("id", item.id);
-
       if (error) throw error;
       toast.success("Data berhasil diperbarui");
       onSaved();
@@ -493,10 +905,8 @@ const EditDialog: React.FC<{
             Perbarui data formulir persetujuan DP persalinan
           </DialogDescription>
         </DialogHeader>
-
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
-            {/* Nama Pasien */}
             <div className="space-y-1.5">
               <Label htmlFor="nama_pasien">
                 Nama Pasien <span className="text-red-500">*</span>
@@ -514,8 +924,6 @@ const EditDialog: React.FC<{
                 <p className="text-xs text-red-500">{errors.nama_pasien}</p>
               )}
             </div>
-
-            {/* Grid: No RM + No KTP */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="no_rm">No. Rekam Medis</Label>
@@ -538,8 +946,6 @@ const EditDialog: React.FC<{
                 />
               </div>
             </div>
-
-            {/* Nama PJ */}
             <div className="space-y-1.5">
               <Label htmlFor="nama_penanggung_jawab">
                 Nama Penanggung Jawab <span className="text-red-500">*</span>
@@ -559,8 +965,6 @@ const EditDialog: React.FC<{
                 </p>
               )}
             </div>
-
-            {/* No HP */}
             <div className="space-y-1.5">
               <Label htmlFor="no_hp">No. HP</Label>
               <Input
@@ -571,8 +975,6 @@ const EditDialog: React.FC<{
                 disabled={submitting}
               />
             </div>
-
-            {/* Alamat */}
             <div className="space-y-1.5">
               <Label htmlFor="alamat">Alamat</Label>
               <Textarea
@@ -584,8 +986,6 @@ const EditDialog: React.FC<{
                 disabled={submitting}
               />
             </div>
-
-            {/* Grid: Penjamin + Kelas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>
@@ -656,21 +1056,7 @@ const EditDialog: React.FC<{
                 )}
               </div>
             </div>
-
-            {/* Deskripsi */}
-            <div className="space-y-1.5">
-              <Label htmlFor="deskripsi">Keterangan</Label>
-              <Textarea
-                id="deskripsi"
-                value={form.deskripsi}
-                onChange={setInputF("deskripsi")}
-                placeholder="Keterangan tambahan (opsional)"
-                rows={3}
-                disabled={submitting}
-              />
-            </div>
           </div>
-
           <DialogFooter>
             <Button
               type="button"
@@ -700,17 +1086,13 @@ export default function FormulirDPPage() {
   const [loading, setLoading] = useState(true);
   const [showAccessDenied, setShowAccessDenied] = useState(false);
 
-  // Action states
   const [viewItem, setViewItem] = useState<Fmo1 | null>(null);
   const [editItem, setEditItem] = useState<Fmo1 | null>(null);
   const [deleteItem, setDeleteItem] = useState<Fmo1 | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // Pagination & filter
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -718,7 +1100,6 @@ export default function FormulirDPPage() {
   const [sortField, setSortField] = useState<SortField>("tanggal");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-  // Debounce
   useEffect(() => {
     const t = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -729,7 +1110,6 @@ export default function FormulirDPPage() {
 
   const applyFilters = useCallback(() => {
     let f = [...data];
-
     if (debouncedSearch.trim()) {
       const q = debouncedSearch.toLowerCase();
       f = f.filter(
@@ -740,20 +1120,17 @@ export default function FormulirDPPage() {
           (r.no_hp ?? "").toLowerCase().includes(q),
       );
     }
-
     f.sort((a, b) => {
       let cmp = 0;
-      if (sortField === "nama_pasien") {
+      if (sortField === "nama_pasien")
         cmp = a.nama_pasien.localeCompare(b.nama_pasien, "id");
-      } else if (sortField === "tanggal") {
+      else if (sortField === "tanggal")
         cmp = new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime();
-      } else if (sortField === "created_at") {
+      else if (sortField === "created_at")
         cmp =
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      }
       return sortOrder === "asc" ? cmp : -cmp;
     });
-
     setFiltered(f);
     setCurrentPage(1);
     setSelectedIds(new Set());
@@ -792,7 +1169,6 @@ export default function FormulirDPPage() {
       }
     };
     init();
-
     const channel = supabase
       .channel("fmo_1_changes")
       .on(
@@ -801,13 +1177,11 @@ export default function FormulirDPPage() {
         () => fetchData(),
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
   }, [fetchData]);
 
-  // Pagination calc
   const totalItems = filtered.length;
   const totalPages =
     itemsPerPage === "all" ? 1 : Math.ceil(totalItems / itemsPerPage);
@@ -817,22 +1191,18 @@ export default function FormulirDPPage() {
     itemsPerPage === "all" ? totalItems : startIndex + (itemsPerPage as number);
   const currentRows = filtered.slice(startIndex, endIndex);
 
-  // Checkbox
   const isAllSelected =
     currentRows.length > 0 && currentRows.every((r) => selectedIds.has(r.id));
   const isSomeSelected =
     currentRows.some((r) => selectedIds.has(r.id)) && !isAllSelected;
-
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (checked: boolean) =>
     setSelectedIds(checked ? new Set(currentRows.map((r) => r.id)) : new Set());
-  };
   const handleSelectOne = (id: string, checked: boolean) => {
     const n = new Set(selectedIds);
     checked ? n.add(id) : n.delete(id);
     setSelectedIds(n);
   };
 
-  // Delete single
   const handleDelete = async () => {
     if (!deleteItem) return;
     setSubmitting(true);
@@ -852,7 +1222,6 @@ export default function FormulirDPPage() {
     }
   };
 
-  // Bulk delete
   const handleBulkDelete = async () => {
     setSubmitting(true);
     try {
@@ -880,15 +1249,12 @@ export default function FormulirDPPage() {
     { value: "created_at-desc", label: "Dibuat Terbaru" },
     { value: "created_at-asc", label: "Dibuat Terlama" },
   ];
-
   const getSortLabel = () =>
     sortOptions.find((o) => o.value === `${sortField}-${sortOrder}`)?.label ??
     "Urutkan";
-
   const showReset =
     sortField !== "tanggal" || sortOrder !== "desc" || searchQuery !== "";
 
-  /* ── Loading skeleton ── */
   if (loading) {
     return (
       <div className="space-y-6">
@@ -916,7 +1282,6 @@ export default function FormulirDPPage() {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -929,7 +1294,6 @@ export default function FormulirDPPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
@@ -954,7 +1318,6 @@ export default function FormulirDPPage() {
         )}
       </div>
 
-      {/* Table Card */}
       <Card>
         <CardHeader>
           <div className="space-y-4">
@@ -972,7 +1335,6 @@ export default function FormulirDPPage() {
                 </div>
               </div>
             </div>
-
             <div className="flex gap-3">
               <Select
                 value={`${sortField}-${sortOrder}`}
@@ -996,7 +1358,6 @@ export default function FormulirDPPage() {
                   ))}
                 </SelectContent>
               </Select>
-
               {showReset && (
                 <Button
                   variant="outline"
@@ -1043,7 +1404,7 @@ export default function FormulirDPPage() {
                   <TableHead className="hidden sm:table-cell w-[130px]">
                     Tanggal
                   </TableHead>
-                  <TableHead className="text-right w-36">Aksi</TableHead>
+                  <TableHead className="text-right w-32">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1103,7 +1464,6 @@ export default function FormulirDPPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1.5">
-                          {/* Print */}
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -1111,17 +1471,16 @@ export default function FormulirDPPage() {
                                   variant="outline"
                                   size="icon"
                                   className="h-8 w-8"
-                                  onClick={() => handlePrint(row)}
+                                  onClick={() => handleDownloadPDF(row)}
                                 >
-                                  <Printer className="h-3.5 w-3.5" />
+                                  <Download className="h-3.5 w-3.5" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Print</TooltipContent>
+                              <TooltipContent>Download PDF</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
 
-                          {/* View */}
-                          <TooltipProvider>
+                          {/* <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -1135,10 +1494,9 @@ export default function FormulirDPPage() {
                               </TooltipTrigger>
                               <TooltipContent>Lihat Detail</TooltipContent>
                             </Tooltip>
-                          </TooltipProvider>
+                          </TooltipProvider> */}
 
-                          {/* Edit */}
-                          <TooltipProvider>
+                          {/* <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -1153,9 +1511,8 @@ export default function FormulirDPPage() {
                               </TooltipTrigger>
                               <TooltipContent>Edit</TooltipContent>
                             </Tooltip>
-                          </TooltipProvider>
+                          </TooltipProvider> */}
 
-                          {/* Delete */}
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -1194,14 +1551,11 @@ export default function FormulirDPPage() {
         </CardContent>
       </Card>
 
-      {/* View Dialog */}
       <ViewDialog
         open={!!viewItem}
         item={viewItem}
         onClose={() => setViewItem(null)}
       />
-
-      {/* Edit Dialog */}
       <EditDialog
         open={!!editItem}
         item={editItem}
@@ -1209,7 +1563,6 @@ export default function FormulirDPPage() {
         onSaved={fetchData}
       />
 
-      {/* Delete Confirmation */}
       <AlertDialog
         open={!!deleteItem}
         onOpenChange={(o) => !o && setDeleteItem(null)}
@@ -1237,7 +1590,6 @@ export default function FormulirDPPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Confirmation */}
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1263,7 +1615,6 @@ export default function FormulirDPPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Access Denied */}
       <AccessDeniedDialog
         open={showAccessDenied}
         onOpenChange={setShowAccessDenied}
