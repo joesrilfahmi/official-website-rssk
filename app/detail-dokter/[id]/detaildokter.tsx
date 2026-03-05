@@ -11,6 +11,7 @@ import { AnimatePresence, motion, type Transition } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
+  Award,
   BookOpen,
   Briefcase,
   Calendar,
@@ -61,6 +62,13 @@ interface PublikasiDokter {
   title: string;
 }
 
+interface PelatihanDokter {
+  id: string;
+  tahun: string;
+  institusi: string;
+  deskripsi?: string | null;
+}
+
 interface DokterDetail {
   id: string;
   nama: string;
@@ -72,6 +80,7 @@ interface DokterDetail {
   pendidikan_dokter: PendidikanDokter[];
   organisasi_dokter: OrganisasiDokter[];
   publikasi_dokter: PublikasiDokter[];
+  pelatihan_dokter: PelatihanDokter[];
 }
 
 interface JadwalGroup {
@@ -202,13 +211,6 @@ const SectionCard: React.FC<{
 );
 
 /* ─────────────────────────────────────────
-   EMPTY STATE
-───────────────────────────────────────── */
-const EmptyState: React.FC<{ label: string }> = ({ label }) => (
-  <p className="text-sm text-gray-400 py-3 text-center">{label}</p>
-);
-
-/* ─────────────────────────────────────────
    JADWAL TABLE
 ───────────────────────────────────────── */
 interface JadwalTableProps {
@@ -228,7 +230,6 @@ const JadwalTable: React.FC<JadwalTableProps> = ({
 }) => {
   if (groups.length === 0) return null;
 
-  // Flatten all rows for stagger indexing
   const allRows = groups.flatMap((group) =>
     group.slots.map((slot) => ({ group, slot })),
   );
@@ -444,7 +445,8 @@ export default function DetailDokter() {
           jadwal_dokter (id, hari, jam_mulai, jam_selesai, tipe_jadwal),
           pendidikan_dokter (id, tahun, institusi, deskripsi),
           organisasi_dokter (id, tahun, title),
-          publikasi_dokter (id, tahun, title)
+          publikasi_dokter (id, tahun, title),
+          pelatihan_dokter (id, tahun, institusi, deskripsi)
           `,
         )
         .eq("id", id)
@@ -478,6 +480,9 @@ export default function DetailDokter() {
     (a, b) => Number(b.tahun) - Number(a.tahun),
   );
   const sortedPublikasi = [...(dokter?.publikasi_dokter ?? [])].sort(
+    (a, b) => Number(b.tahun) - Number(a.tahun),
+  );
+  const sortedPelatihan = [...(dokter?.pelatihan_dokter ?? [])].sort(
     (a, b) => Number(b.tahun) - Number(a.tahun),
   );
 
@@ -593,7 +598,7 @@ export default function DetailDokter() {
 
             {/* ── Right column ── */}
             <div className="space-y-4">
-              {/* Jadwal */}
+              {/* Jadwal — selalu tampil karena punya empty state sendiri */}
               <Animate type="slideup" delay={0.15}>
                 <SectionCard
                   title="Jadwal Praktik"
@@ -623,15 +628,13 @@ export default function DetailDokter() {
                 </SectionCard>
               </Animate>
 
-              {/* Pendidikan */}
-              <Animate type="slideup" delay={0.22}>
-                <SectionCard
-                  title="Pendidikan"
-                  icon={<GraduationCap className="w-4 h-4 text-gray-500" />}
-                >
-                  {sortedPendidikan.length === 0 ? (
-                    <EmptyState label="Belum ada data pendidikan" />
-                  ) : (
+              {/* Pendidikan — hanya tampil jika ada data */}
+              {sortedPendidikan.length > 0 && (
+                <Animate type="slideup" delay={0.22}>
+                  <SectionCard
+                    title="Pendidikan"
+                    icon={<GraduationCap className="w-4 h-4 text-gray-500" />}
+                  >
                     <div className="pt-1">
                       {sortedPendidikan.map((p, i) => (
                         <TimelineItem
@@ -644,19 +647,17 @@ export default function DetailDokter() {
                         />
                       ))}
                     </div>
-                  )}
-                </SectionCard>
-              </Animate>
+                  </SectionCard>
+                </Animate>
+              )}
 
-              {/* Organisasi */}
-              <Animate type="slideup" delay={0.29}>
-                <SectionCard
-                  title="Organisasi"
-                  icon={<Briefcase className="w-4 h-4 text-gray-500" />}
-                >
-                  {sortedOrganisasi.length === 0 ? (
-                    <EmptyState label="Belum ada data organisasi" />
-                  ) : (
+              {/* Organisasi — hanya tampil jika ada data */}
+              {sortedOrganisasi.length > 0 && (
+                <Animate type="slideup" delay={0.29}>
+                  <SectionCard
+                    title="Organisasi"
+                    icon={<Briefcase className="w-4 h-4 text-gray-500" />}
+                  >
                     <div className="pt-1">
                       {sortedOrganisasi.map((o, i) => (
                         <TimelineItem
@@ -668,19 +669,40 @@ export default function DetailDokter() {
                         />
                       ))}
                     </div>
-                  )}
-                </SectionCard>
-              </Animate>
+                  </SectionCard>
+                </Animate>
+              )}
 
-              {/* Publikasi */}
-              <Animate type="slideup" delay={0.36}>
-                <SectionCard
-                  title="Publikasi"
-                  icon={<BookOpen className="w-4 h-4 text-gray-500" />}
-                >
-                  {sortedPublikasi.length === 0 ? (
-                    <EmptyState label="Belum ada data publikasi" />
-                  ) : (
+              {/* Pelatihan — hanya tampil jika ada data */}
+              {sortedPelatihan.length > 0 && (
+                <Animate type="slideup" delay={0.36}>
+                  <SectionCard
+                    title="Pelatihan"
+                    icon={<Award className="w-4 h-4 text-gray-500" />}
+                  >
+                    <div className="pt-1">
+                      {sortedPelatihan.map((p, i) => (
+                        <TimelineItem
+                          key={p.id}
+                          tahun={p.tahun}
+                          title={p.institusi}
+                          subtitle={p.deskripsi}
+                          isLast={i === sortedPelatihan.length - 1}
+                          index={i}
+                        />
+                      ))}
+                    </div>
+                  </SectionCard>
+                </Animate>
+              )}
+
+              {/* Publikasi — hanya tampil jika ada data */}
+              {sortedPublikasi.length > 0 && (
+                <Animate type="slideup" delay={0.43}>
+                  <SectionCard
+                    title="Publikasi"
+                    icon={<BookOpen className="w-4 h-4 text-gray-500" />}
+                  >
                     <div className="pt-1">
                       {sortedPublikasi.map((p, i) => (
                         <TimelineItem
@@ -692,9 +714,9 @@ export default function DetailDokter() {
                         />
                       ))}
                     </div>
-                  )}
-                </SectionCard>
-              </Animate>
+                  </SectionCard>
+                </Animate>
+              )}
             </div>
           </div>
         </div>

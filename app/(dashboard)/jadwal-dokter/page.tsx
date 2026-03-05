@@ -88,6 +88,7 @@ import type {
   Poli,
 } from "@/types";
 import {
+  Award,
   BookOpen,
   Briefcase,
   Calendar,
@@ -118,6 +119,7 @@ const DEFAULT_FORM_DATA: DokterFormData = {
   pendidikan: [],
   organisasi: [],
   publikasi: [],
+  pelatihan: [],
 };
 
 const DEFAULT_FORM_ERRORS: DokterFormErrors = {
@@ -127,6 +129,7 @@ const DEFAULT_FORM_ERRORS: DokterFormErrors = {
   pendidikan: "",
   organisasi: "",
   publikasi: "",
+  pelatihan: "",
 };
 
 const STATUS_OPTIONS: { value: DokterStatus; label: string; color: string }[] =
@@ -247,6 +250,7 @@ export default function JadwalDokterPage() {
           pendidikan:pendidikan_dokter (id, tahun, institusi, deskripsi),
           organisasi:organisasi_dokter (id, tahun, title),
           publikasi:publikasi_dokter (id, tahun, title),
+          pelatihan:pelatihan_dokter (id, tahun, institusi, deskripsi),
           created_by_user:created_by (id, nama, username, avatar),
           updated_by_user:updated_by (id, nama, username, avatar)
         `,
@@ -419,6 +423,13 @@ export default function JadwalDokterPage() {
           title: p.title,
           _temp_id: p.id!,
         })),
+        pelatihan: (item.pelatihan || []).map((p) => ({
+          id: p.id,
+          tahun: p.tahun,
+          institusi: p.institusi,
+          deskripsi: p.deskripsi || "",
+          _temp_id: p.id!,
+        })),
       });
     } else {
       setSelectedDokter(null);
@@ -578,6 +589,42 @@ export default function JadwalDokterPage() {
     });
   };
 
+  // ── Pelatihan ────────────────────────────────────────────────
+  const handleAddPelatihan = () => {
+    setFormData({
+      ...formData,
+      pelatihan: [
+        ...formData.pelatihan,
+        {
+          tahun: "",
+          institusi: "",
+          deskripsi: "",
+          _temp_id: `temp_${Date.now()}`,
+        },
+      ],
+    });
+  };
+
+  const handleRemovePelatihan = (tempId: string) => {
+    setFormData({
+      ...formData,
+      pelatihan: formData.pelatihan.filter((p) => p._temp_id !== tempId),
+    });
+  };
+
+  const handlePelatihanChange = (
+    tempId: string,
+    field: string,
+    value: string,
+  ) => {
+    setFormData({
+      ...formData,
+      pelatihan: formData.pelatihan.map((p) =>
+        p._temp_id === tempId ? { ...p, [field]: value } : p,
+      ),
+    });
+  };
+
   // ── Profile ──────────────────────────────────────────────────
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -654,6 +701,14 @@ export default function JadwalDokterPage() {
       }
     }
 
+    for (const p of formData.pelatihan) {
+      if (!p.tahun.trim() || !p.institusi.trim()) {
+        errors.pelatihan = "Tahun dan nama institusi pelatihan harus diisi";
+        isValid = false;
+        break;
+      }
+    }
+
     setFormErrors(errors);
     return isValid;
   };
@@ -710,7 +765,7 @@ export default function JadwalDokterPage() {
         if (error) throw error;
         dokterId = data.id;
 
-        // Hapus semua data lama
+        // Hapus semua data relasi lama
         await supabase.from("jadwal_dokter").delete().eq("dokter_id", dokterId);
         await supabase
           .from("pendidikan_dokter")
@@ -722,6 +777,10 @@ export default function JadwalDokterPage() {
           .eq("dokter_id", dokterId);
         await supabase
           .from("publikasi_dokter")
+          .delete()
+          .eq("dokter_id", dokterId);
+        await supabase
+          .from("pelatihan_dokter")
           .delete()
           .eq("dokter_id", dokterId);
       } else {
@@ -783,6 +842,20 @@ export default function JadwalDokterPage() {
             dokter_id: dokterId,
             tahun: p.tahun,
             title: p.title,
+            created_by: currentUserId,
+          })),
+        );
+        if (error) throw error;
+      }
+
+      // Insert pelatihan
+      if (formData.pelatihan.length > 0) {
+        const { error } = await supabase.from("pelatihan_dokter").insert(
+          formData.pelatihan.map((p) => ({
+            dokter_id: dokterId,
+            tahun: p.tahun,
+            institusi: p.institusi,
+            deskripsi: p.deskripsi || null,
             created_by: currentUserId,
           })),
         );
@@ -1942,6 +2015,120 @@ export default function JadwalDokterPage() {
               )}
             </div>
 
+            {/* ── Pelatihan ── */}
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <Award className="h-4 w-4" /> Pelatihan
+                  {formData.pelatihan.length > 0 && (
+                    <span className="rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                      {formData.pelatihan.length}
+                    </span>
+                  )}
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddPelatihan}
+                  disabled={submitting}
+                  className="h-7 text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Tambah
+                </Button>
+              </div>
+              {formErrors.pelatihan && (
+                <p className="text-sm text-red-500">{formErrors.pelatihan}</p>
+              )}
+              {formData.pelatihan.length === 0 ? (
+                <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    Belum ada data pelatihan
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {formData.pelatihan.map((p, index) => (
+                    <div
+                      key={p._temp_id}
+                      className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium">
+                          Pelatihan #{index + 1}
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemovePelatihan(p._temp_id)}
+                          disabled={submitting}
+                          className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">
+                            Tahun <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={p.tahun}
+                            onChange={(e) =>
+                              handlePelatihanChange(
+                                p._temp_id,
+                                "tahun",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="2020"
+                            maxLength={4}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-1">
+                          <Label className="text-xs">
+                            Institusi <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={p.institusi}
+                            onChange={(e) =>
+                              handlePelatihanChange(
+                                p._temp_id,
+                                "institusi",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="Nama institusi / penyelenggara"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Deskripsi</Label>
+                        <Input
+                          value={p.deskripsi}
+                          onChange={(e) =>
+                            handlePelatihanChange(
+                              p._temp_id,
+                              "deskripsi",
+                              e.target.value,
+                            )
+                          }
+                          disabled={submitting}
+                          placeholder="Contoh: Pelatihan ACLS, Sertifikasi BLS, dll"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* ── Publikasi ── */}
             <div className="space-y-3 pt-3 border-t">
               <div className="flex items-center justify-between">
@@ -2134,13 +2321,13 @@ export default function JadwalDokterPage() {
                 </div>
               </div>
 
-              {/* ── Jadwal ── */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <Calendar className="h-4 w-4" /> Jadwal Praktik
-                </Label>
-                {(selectedDokter.jadwal ?? []).length > 0 ? (
-                  (() => {
+              {/* ── Jadwal — hanya tampil jika ada data ── */}
+              {(selectedDokter.jadwal ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Calendar className="h-4 w-4" /> Jadwal Praktik
+                  </Label>
+                  {(() => {
                     const jadwal = selectedDokter.jadwal ?? [];
                     const allRows: {
                       hari: HariType;
@@ -2229,20 +2416,16 @@ export default function JadwalDokterPage() {
                         </table>
                       </div>
                     );
-                  })()
-                ) : (
-                  <p className="text-sm text-muted-foreground py-4 text-center border-2 border-dashed rounded-lg">
-                    Belum ada jadwal praktik
-                  </p>
-                )}
-              </div>
+                  })()}
+                </div>
+              )}
 
-              {/* ── Pendidikan ── */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" /> Pendidikan
-                </Label>
-                {(selectedDokter.pendidikan ?? []).length > 0 ? (
+              {/* ── Pendidikan — hanya tampil jika ada data ── */}
+              {(selectedDokter.pendidikan ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" /> Pendidikan
+                  </Label>
                   <div className="rounded-lg border overflow-hidden text-sm">
                     <table className="w-full">
                       <thead>
@@ -2282,19 +2465,15 @@ export default function JadwalDokterPage() {
                       </tbody>
                     </table>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground py-4 text-center border-2 border-dashed rounded-lg">
-                    Belum ada data pendidikan
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* ── Organisasi ── */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <Briefcase className="h-4 w-4" /> Organisasi
-                </Label>
-                {(selectedDokter.organisasi ?? []).length > 0 ? (
+              {/* ── Organisasi — hanya tampil jika ada data ── */}
+              {(selectedDokter.organisasi ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" /> Organisasi
+                  </Label>
                   <div className="rounded-lg border overflow-hidden text-sm">
                     <table className="w-full">
                       <thead>
@@ -2324,19 +2503,63 @@ export default function JadwalDokterPage() {
                       </tbody>
                     </table>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground py-4 text-center border-2 border-dashed rounded-lg">
-                    Belum ada data organisasi
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* ── Publikasi ── */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" /> Publikasi
-                </Label>
-                {(selectedDokter.publikasi ?? []).length > 0 ? (
+              {/* ── Pelatihan — hanya tampil jika ada data ── */}
+              {(selectedDokter.pelatihan ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Award className="h-4 w-4" /> Pelatihan
+                  </Label>
+                  <div className="rounded-lg border overflow-hidden text-sm">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted/50 border-b">
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground w-20">
+                            Tahun
+                          </th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                            Institusi
+                          </th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                            Deskripsi
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(selectedDokter.pelatihan ?? [])
+                          .slice()
+                          .sort((a, b) => Number(b.tahun) - Number(a.tahun))
+                          .map((p, idx) => (
+                            <tr key={idx} className="border-b last:border-b-0">
+                              <td className="px-4 py-2.5 text-muted-foreground font-medium">
+                                {p.tahun}
+                              </td>
+                              <td className="px-4 py-2.5 text-foreground">
+                                {p.institusi}
+                              </td>
+                              <td className="px-4 py-2.5 text-muted-foreground">
+                                {p.deskripsi || (
+                                  <span className="text-muted-foreground/40">
+                                    -
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Publikasi — hanya tampil jika ada data ── */}
+              {(selectedDokter.publikasi ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" /> Publikasi
+                  </Label>
                   <div className="rounded-lg border overflow-hidden text-sm">
                     <table className="w-full">
                       <thead>
@@ -2366,12 +2589,8 @@ export default function JadwalDokterPage() {
                       </tbody>
                     </table>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground py-4 text-center border-2 border-dashed rounded-lg">
-                    Belum ada data publikasi
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
@@ -2405,8 +2624,8 @@ export default function JadwalDokterPage() {
             <AlertDialogDescription className="text-xs sm:text-sm">
               Apakah Anda yakin ingin menghapus dokter{" "}
               <strong>{selectedDokter?.nama}</strong>? Semua jadwal, pendidikan,
-              organisasi, dan publikasi juga akan terhapus. Tindakan ini tidak
-              dapat dibatalkan.
+              organisasi, pelatihan, dan publikasi juga akan terhapus. Tindakan
+              ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">

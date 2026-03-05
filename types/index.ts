@@ -278,12 +278,26 @@ export interface PublikasiDokter {
   updated_by?: string | null;
 }
 
+// ✅ Tipe data Pelatihan Dokter (sesuai tabel pelatihan_dokter)
+export interface PelatihanDokter {
+  id?: string;
+  dokter_id?: string;
+  tahun: string;
+  institusi: string;
+  deskripsi?: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+}
+
 export interface DokterWithRelations extends Dokter {
   poli_detail?: Poli;
   jadwal?: JadwalDokter[];
   pendidikan?: PendidikanDokter[];
   organisasi?: OrganisasiDokter[];
   publikasi?: PublikasiDokter[];
+  pelatihan?: PelatihanDokter[]; // ✅ BARU
   created_by_user?: User;
   updated_by_user?: User;
 }
@@ -319,6 +333,15 @@ export interface PublikasiFormData {
   _temp_id: string;
 }
 
+// ✅ Form data Pelatihan (sesuai tabel pelatihan_dokter)
+export interface PelatihanFormData {
+  id?: string;
+  tahun: string;
+  institusi: string;
+  deskripsi: string;
+  _temp_id: string;
+}
+
 export interface DokterFormData {
   nama: string;
   poli_id: string;
@@ -330,6 +353,7 @@ export interface DokterFormData {
   pendidikan: PendidikanFormData[];
   organisasi: OrganisasiFormData[];
   publikasi: PublikasiFormData[];
+  pelatihan: PelatihanFormData[]; // ✅ BARU
 }
 
 export interface DokterFormErrors {
@@ -339,6 +363,7 @@ export interface DokterFormErrors {
   pendidikan: string;
   organisasi: string;
   publikasi: string;
+  pelatihan: string; // ✅ BARU
 }
 
 // ============================================
