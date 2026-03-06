@@ -731,7 +731,7 @@ export default function UsersPage() {
             </div>
 
             {/* Filters Row */}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               {/* Sort Filter */}
               <Select
                 value={`${sortField}-${sortOrder}`}
@@ -759,7 +759,7 @@ export default function UsersPage() {
                   setStatusFilter(value)
                 }
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <div className="flex items-center gap-2">
                     <Icons.Filter className="h-4 w-4" />
                     <span>
@@ -785,7 +785,7 @@ export default function UsersPage() {
                   setRoleFilter(value)
                 }
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <div className="flex items-center gap-2">
                     <Icons.Users className="h-4 w-4" />
                     <span>

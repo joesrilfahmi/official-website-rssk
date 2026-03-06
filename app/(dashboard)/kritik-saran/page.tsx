@@ -71,7 +71,6 @@ import {
   Loader2,
   Pencil,
   Plus,
-  RefreshCw,
   Search,
   Star,
   Trash2,
@@ -108,7 +107,6 @@ export default function KritikSaranPage() {
     [],
   );
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -321,20 +319,6 @@ export default function KritikSaranPage() {
     };
   }, [fetchUnitPelayanan, fetchKritikSaran]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    const loadingToast = toast.loading("Memperbarui data...");
-
-    try {
-      await Promise.all([fetchUnitPelayanan(), fetchKritikSaran()]);
-      toast.success("Data berhasil diperbarui!", { id: loadingToast });
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-      toast.error("Gagal memperbarui data", { id: loadingToast });
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   const handleResetFilters = () => {
     setStatusFilter("all");
@@ -675,8 +659,8 @@ export default function KritikSaranPage() {
             {/* Title and Search Row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <CardTitle>Daftar Kritik & Saran</CardTitle>
-              <div className="flex gap-3">
-                <div className="relative w-64">
+          <div className="flex gap-3 w-full sm:w-auto">
+  <div className="relative grow sm:grow-0 sm:w-64">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Cari nama, no hp, pesan..."
@@ -685,28 +669,18 @@ export default function KritikSaranPage() {
                     className="pl-10"
                   />
                 </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-                  />
-                </Button>
               </div>
             </div>
 
             {/* Filters Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="flex flex-wrap gap-3">
               <Select
                 value={statusFilter}
                 onValueChange={(value: "all" | "read" | "unread") =>
                   setStatusFilter(value)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -717,7 +691,7 @@ export default function KritikSaranPage() {
               </Select>
 
               <Select value={unitFilter} onValueChange={setUnitFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Unit Pelayanan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -731,7 +705,7 @@ export default function KritikSaranPage() {
               </Select>
 
               <Select value={ratingFilter} onValueChange={setRatingFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Rating" />
                 </SelectTrigger>
                 <SelectContent>
@@ -743,11 +717,7 @@ export default function KritikSaranPage() {
                   <SelectItem value="1">⭐</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* Date Range and Sort */}
-            <div className="flex flex-wrap gap-3">
-              <Popover>
+                          <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -800,7 +770,7 @@ export default function KritikSaranPage() {
                   setSortOrder(order);
                 }}
               >
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <ArrowUpDown className="mr-2 h-4 w-4" />
                   <SelectValue />
                 </SelectTrigger>
@@ -819,8 +789,7 @@ export default function KritikSaranPage() {
                   <X className="h-4 w-4 mr-2" />
                   Reset Filter
                 </Button>
-              )}
-            </div>
+              )}</div>
           </div>
         </CardHeader>
         <CardContent>
@@ -909,7 +878,7 @@ export default function KritikSaranPage() {
                                   variant="outline"
                                   size="icon"
                                   onClick={() => handleViewDetail(item)}
-                                  className="h-8 w-8 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white dark:text-white hover:text-white"
+                                  className="h-8 w-8 "
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>

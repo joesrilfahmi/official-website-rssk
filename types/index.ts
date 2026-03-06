@@ -148,6 +148,8 @@ export interface Promo {
   title: string;
   description: string;
   status: PromoStatus;
+  start_date: string | null;  // ← tambah
+  end_date: string | null;    // ← tambah
   created_at: string;
   updated_at: string;
   created_by?: string | null;
@@ -168,7 +170,6 @@ export interface PromoWithCreator extends Promo {
     avatar?: string;
   };
 }
-
 // ============================================
 // POLI TYPES
 // ============================================

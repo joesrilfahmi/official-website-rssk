@@ -83,7 +83,6 @@ interface PoliExtended extends Poli {
   description: string;
   urutan: number;
 }
-
 interface FormDataType {
   nama_poli: string;
   description: string;
@@ -168,6 +167,8 @@ export default function DaftarPoliPage() {
           p.icon.toLowerCase().includes(query),
       );
     }
+
+
 
     // Status filter
     if (statusFilter !== "all") {
@@ -660,7 +661,7 @@ export default function DaftarPoliPage() {
             </div>
 
             {/* Filters Row */}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               {/* Sort Filter */}
               <Select
                 value={`${sortField}-${sortOrder}`}
@@ -688,7 +689,7 @@ export default function DaftarPoliPage() {
                   setStatusFilter(value)
                 }
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <div className="flex items-center gap-2">
                     <Icons.Filter className="h-4 w-4" />
                     <span>
