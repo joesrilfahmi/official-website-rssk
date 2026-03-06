@@ -939,11 +939,13 @@ const getStatusBadge = (item: PromoWithCreator) => {
         <CalendarComponent
           mode="single"
           selected={formData.start_date ? new Date(formData.start_date) : undefined}
-          onSelect={(date) => {
-            setFormData({
-              ...formData,
-              start_date: date ? date.toISOString().split("T")[0] : "",
-            });
+onSelect={(date) => {
+  setFormData({
+    ...formData,
+    start_date: date
+      ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+      : "",
+  });
             if (formErrors.start_date) setFormErrors({ ...formErrors, start_date: "" });
           }}
         />
@@ -989,11 +991,13 @@ const getStatusBadge = (item: PromoWithCreator) => {
               ? date < new Date(formData.start_date)
               : false
           }
-          onSelect={(date) => {
-            setFormData({
-              ...formData,
-              end_date: date ? date.toISOString().split("T")[0] : "",
-            });
+onSelect={(date) => {
+  setFormData({
+    ...formData,
+    end_date: date
+      ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+      : "",
+  });
             if (formErrors.end_date) setFormErrors({ ...formErrors, end_date: "" });
           }}
         />
