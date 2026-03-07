@@ -10,15 +10,15 @@ import LayananUnggulan from "./klinik-spesialis";
 import Partner from "./partner-list";
 import Pendaftaran from "./pendaftaran";
 import Review from "./review";
-// import BackToTop from "@/components/layout/back-to-top"
-import Chat from "@/components/layout/chat";
+import BackToTop from "@/components/layout/back-to-top"
+// import Chat from "@/components/layout/chat";
 
 export default function App() {
   return (
     <>
       <Navbar />
-      {/* <BackToTop /> */}
-      <Chat />
+      <BackToTop />
+      {/* <Chat /> */}
       <Hero />
       <About />
       <LayananUnggulan />

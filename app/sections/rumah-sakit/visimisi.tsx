@@ -1,7 +1,6 @@
 "use client";
 import Animate from "@/components/animations/animate";
 import { Profile } from "@/config/profile";
-import { Eye, Target } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -133,15 +132,11 @@ export default function VisiMisi() {
             >
               <div className="bg-white rounded-3xl shadow-md ring-1 ring-gray-100 p-8 flex flex-col gap-6 h-full">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-mariner-50 flex items-center justify-center shrink-0">
-                    <Eye className="w-6 h-6 text-mariner-500" />
-                  </div>
+           
                   <div>
-                    <p className="text-xs font-bold text-mariner-400 uppercase tracking-widest">
-                      Visi
-                    </p>
+              
                     <h3 className="text-xl font-extrabold text-mariner-500">
-                      Pandangan Kami
+                      Visi
                     </h3>
                   </div>
                 </div>
@@ -163,15 +158,11 @@ export default function VisiMisi() {
             >
               <div className="bg-white rounded-3xl shadow-md ring-1 ring-gray-100 p-8 flex flex-col gap-6 h-full">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-mariner-50 flex items-center justify-center shrink-0">
-                    <Target className="w-6 h-6 text-mariner-500" />
-                  </div>
+    
                   <div>
-                    <p className="text-xs font-bold text-mariner-400 uppercase tracking-widest">
-                      Misi
-                    </p>
+                  
                     <h3 className="text-xl font-extrabold text-mariner-500">
-                      Langkah Kami
+                      Misi
                     </h3>
                   </div>
                 </div>

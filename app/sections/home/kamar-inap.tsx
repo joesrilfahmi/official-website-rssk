@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 ───────────────────────────────────────── */
 interface KamarCardProps {
   kamar: KamarInapType;
+  isFeatured?: boolean;
 }
 
 /* ─────────────────────────────────────────
@@ -37,8 +38,6 @@ const SkeletonCard = () => (
 
 /* ─────────────────────────────────────────
    CARD WRAPPER VARIANTS
-   Card muncul fade-in satu persatu via stagger parent.
-   Konten di dalam muncul setelah card selesai muncul.
 ───────────────────────────────────────── */
 const cardWrapVariants = {
   hidden: { opacity: 0, y: 28, scale: 0.96 },
@@ -50,13 +49,12 @@ const cardWrapVariants = {
   },
 };
 
-// Delay base untuk inner content (muncul setelah card)
 const INNER_DELAY = 0.38;
 
 /* ─────────────────────────────────────────
    KAMAR CARD
 ───────────────────────────────────────── */
-const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
+const KamarCard: React.FC<KamarCardProps> = ({ kamar, isFeatured = false }) => {
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -71,7 +69,7 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
     <motion.div
       variants={cardWrapVariants}
       whileHover={
-        !kamar.is_recommended
+        !isFeatured
           ? {
               y: -3,
               scale: 1.02,
@@ -81,15 +79,15 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
       }
       className={`relative bg-white rounded-2xl flex flex-col h-full overflow-hidden transition-shadow duration-300
         ${
-          kamar.is_recommended
+          isFeatured
             ? "ring-2 ring-greenfresh-500 shadow-xl shadow-greenfresh-100"
             : "ring-1 ring-gray-200 shadow-sm hover:shadow-md"
         }`}
     >
-      {kamar.is_recommended && (
+      {isFeatured && (
         <div className="h-1 w-full bg-linear-to-r from-greenfresh-400 to-greenfresh-600" />
       )}
-      {kamar.is_recommended && (
+      {isFeatured && (
         <div className="absolute top-4 right-4 z-10">
           <motion.span
             variants={{
@@ -127,13 +125,13 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
               } satisfies Transition,
             },
           }}
-          className={`text-xl sm:text-2xl font-extrabold mb-1 line-clamp-1 ${kamar.is_recommended ? "text-greenfresh-600" : "text-mariner-500"}`}
+          className={`text-xl sm:text-2xl font-extrabold mb-1 line-clamp-1 ${isFeatured ? "text-greenfresh-600" : "text-mariner-500"}`}
         >
           {kamar.title}
         </motion.h3>
 
         <div className="min-h-5 mb-3">
-          {kamar.is_recommended && (
+          {isFeatured && (
             <motion.p
               variants={{
                 hidden: { opacity: 0 },
@@ -192,7 +190,7 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
             Harga / malam
           </p>
           <p
-            className={`text-3xl sm:text-4xl font-extrabold ${kamar.is_recommended ? "text-greenfresh-600" : "text-mariner-500"}`}
+            className={`text-3xl sm:text-4xl font-extrabold ${isFeatured ? "text-greenfresh-600" : "text-mariner-500"}`}
           >
             {formatPrice(kamar.price)}
           </p>
@@ -215,7 +213,7 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
         >
           <h4 className="text-gray-700 font-semibold text-sm mb-3 flex items-center gap-2">
             <span
-              className={`inline-block w-1 h-4 rounded-full ${kamar.is_recommended ? "bg-greenfresh-500" : "bg-mariner-400"}`}
+              className={`inline-block w-1 h-4 rounded-full ${isFeatured ? "bg-greenfresh-500" : "bg-mariner-400"}`}
             />
             Fasilitas
           </h4>
@@ -238,7 +236,7 @@ const KamarCard: React.FC<KamarCardProps> = ({ kamar }) => {
                 className="flex items-start gap-2"
               >
                 <CheckCircle2
-                  className={`w-4 h-4 shrink-0 mt-0.5 ${kamar.is_recommended ? "text-greenfresh-500" : "text-mariner-400"}`}
+                  className={`w-4 h-4 shrink-0 mt-0.5 ${isFeatured ? "text-greenfresh-500" : "text-mariner-400"}`}
                 />
                 <span className="text-gray-600 text-sm">{facility}</span>
               </motion.div>
@@ -269,15 +267,28 @@ const KamarInap = () => {
 
   const sortedKamarList = useMemo(() => {
     if (kamarList.length === 0) return [];
-    const recommended = kamarList.filter((k) => k.is_recommended);
-    const notRecommended = kamarList.filter((k) => !k.is_recommended);
-    if (recommended.length > 0) {
-      if (notRecommended.length === 0) return recommended;
-      if (notRecommended.length === 1)
-        return [notRecommended[0], ...recommended];
-      return [notRecommended[0], ...recommended, ...notRecommended.slice(1)];
-    }
-    return kamarList;
+
+    // Pick exactly 1 recommended: the most expensive among is_recommended=true.
+    // If none flagged, promote the most expensive card overall.
+    const flagged = kamarList
+      .filter((k) => k.is_recommended)
+      .sort((a, b) => Number(b.price) - Number(a.price));
+
+    const allByPrice = [...kamarList].sort(
+      (a, b) => Number(b.price) - Number(a.price),
+    );
+
+    const featured = flagged.length > 0 ? flagged[0] : allByPrice[0];
+
+    // The rest — everything except the single featured card, sorted price asc
+    const rest = kamarList
+      .filter((k) => k.id !== featured.id)
+      .sort((a, b) => Number(a.price) - Number(b.price));
+
+    // Always place featured in the center: [rest[0], featured, rest[1]]
+    if (rest.length === 0) return [featured];
+    if (rest.length === 1) return [rest[0], featured];
+    return [rest[0], featured, rest[1]];
   }, [kamarList]);
 
   useEffect(() => {
@@ -286,6 +297,7 @@ const KamarInap = () => {
         const { data, error } = await supabase
           .from("kamar_inap")
           .select("*")
+          .order("price", { ascending: false }) // fetch sorted by price desc
           .limit(3);
         if (error) throw error;
         setKamarList(data || []);
@@ -382,11 +394,6 @@ const KamarInap = () => {
         {/* ── Content ── */}
         {!loading && sortedKamarList.length > 0 && (
           <>
-            {/*
-             * Desktop — stagger container
-             * Setiap card muncul fade bergantian (cardWrapVariants)
-             * Konten di dalam card muncul setelah card visible (delay INNER_DELAY)
-             */}
             <Animate
               type="stagger"
               staggerChildren={0.18}
@@ -395,8 +402,8 @@ const KamarInap = () => {
               margin="-60px"
               className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12 items-stretch"
             >
-              {sortedKamarList.slice(0, 3).map((kamar) => (
-                <KamarCard key={kamar.id} kamar={kamar} />
+              {sortedKamarList.slice(0, 3).map((kamar, index) => (
+                <KamarCard key={kamar.id} kamar={kamar} isFeatured={index === 1} />
               ))}
             </Animate>
 
@@ -410,12 +417,12 @@ const KamarInap = () => {
               <div className="-mx-4">
                 <div className="overflow-hidden px-4 py-4" ref={emblaRef}>
                   <div className="flex gap-4 md:gap-6">
-                    {sortedKamarList.slice(0, 3).map((kamar) => (
+                    {sortedKamarList.slice(0, 3).map((kamar, index) => (
                       <div
                         key={kamar.id}
                         className="flex-[0_0_85%] md:flex-[0_0_45%] min-w-0"
                       >
-                        <KamarCard kamar={kamar} />
+                        <KamarCard kamar={kamar} isFeatured={index === 1} />
                       </div>
                     ))}
                   </div>

@@ -9,11 +9,10 @@ import DialogPendaftaran, {
   type PendaftaranPrefill,
 } from "@/components/ui/custom/dialog-pendaftaran";
 import Input from "@/components/ui/custom/input";
-import Pills from "@/components/ui/custom/pills";
+import Pagination from "@/components/ui/custom/pagination";
 import Select from "@/components/ui/custom/select";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
-import useEmblaCarousel from "embla-carousel-react";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
 import {
   ArrowRight,
@@ -23,6 +22,7 @@ import {
   Clock,
   ExternalLink,
   Search,
+  Stethoscope,
   UserRound,
   X,
 } from "lucide-react";
@@ -37,6 +37,11 @@ import React, {
 } from "react";
 
 const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
+
+/* ─────────────────────────────────────────
+   PAGINATION CONFIG
+───────────────────────────────────────── */
+const ITEMS_PER_PAGE = 12;
 
 /* ─────────────────────────────────────────
    useScrollIndicator — vertical scroll tracking
@@ -469,7 +474,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
               </motion.div>
             </div>
 
-            {/* Jadwal content — tombol "Lihat Profil Lengkap" di bawah dihilangkan */}
+            {/* Jadwal content */}
             <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
               {dokter.jadwal_dokter.length === 0 ? (
                 <div className="text-center py-10">
@@ -665,31 +670,10 @@ const DokterSpesialis = () => {
   const [selectedPoli, setSelectedPoli] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedHari, setSelectedHari] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: false,
-    align: "start",
-    skipSnaps: false,
-    slidesToScroll: 1,
-    dragFree: true,
-    containScroll: "trimSnaps",
-  });
-
-  const [pillsCanScroll, setPillsCanScroll] = useState(false);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    const update = () => setPillsCanScroll(emblaApi.canScrollNext());
-    update();
-    emblaApi.on("select", update);
-    emblaApi.on("resize", update);
-    emblaApi.on("reInit", update);
-    return () => {
-      emblaApi.off("select", update);
-      emblaApi.off("resize", update);
-      emblaApi.off("reInit", update);
-    };
-  }, [emblaApi]);
+  // Ref to scroll back to grid top on page change
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
@@ -747,26 +731,6 @@ const DokterSpesialis = () => {
     }
   };
 
-  const searchFilteredDokter = useMemo(
-    () =>
-      dokterList.filter((d) => {
-        if (!searchQuery) return true;
-        const q = searchQuery.toLowerCase();
-        return (
-          d.nama.toLowerCase().includes(q) ||
-          (d.poli?.nama_poli?.toLowerCase() || "").includes(q)
-        );
-      }),
-    [dokterList, searchQuery],
-  );
-
-  const relevantPoliList = useMemo(() => {
-    if (!searchQuery) return poliList;
-    return poliList.filter((p) =>
-      searchFilteredDokter.some((d) => d.poli_id === p.id),
-    );
-  }, [searchQuery, poliList, searchFilteredDokter]);
-
   const filteredDokter = useMemo(
     () =>
       dokterList.filter((d) => {
@@ -788,6 +752,28 @@ const DokterSpesialis = () => {
       }),
     [dokterList, searchQuery, selectedPoli, selectedHari],
   );
+
+  // Reset ke halaman 1 setiap kali filter berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedPoli, selectedHari]);
+
+  const totalPages = Math.ceil(filteredDokter.length / ITEMS_PER_PAGE);
+
+  const paginatedDokter = useMemo(
+    () =>
+      filteredDokter.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE,
+      ),
+    [filteredDokter, currentPage],
+  );
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll halus ke atas grid
+    gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -847,7 +833,8 @@ const DokterSpesialis = () => {
             className="mb-8 space-y-5"
           >
             <div className="flex justify-center">
-              <div className="w-full max-w-3xl flex flex-col sm:flex-row gap-3">
+              <div className="w-full max-w-4xl flex flex-col sm:flex-row gap-3">
+                {/* Search */}
                 <div className="relative flex-1">
                   <Input
                     type="text"
@@ -869,7 +856,30 @@ const DokterSpesialis = () => {
                     </button>
                   )}
                 </div>
-                <div className="w-full sm:w-48 shrink-0">
+
+                {/* Filter Poli — searchable select */}
+                <div className="w-full sm:w-52 shrink-0">
+                  <Select
+                    icon={Stethoscope}
+                    value={selectedPoli}
+                    onChange={(val) => handlePoliChange(val)}
+                    options={[
+                      { value: "all", label: "Semua Poli" },
+                      ...poliList.map((p) => ({
+                        value: p.id,
+                        label: p.nama_poli,
+                      })),
+                    ]}
+                    placeholder="Pilih poli"
+                    rounded="full"
+                    searchable={true}
+                    selectSize="md"
+                    loading={loading}
+                  />
+                </div>
+
+                {/* Filter Hari */}
+                <div className="w-full sm:w-44 shrink-0">
                   <Select
                     icon={Calendar}
                     value={selectedHari}
@@ -884,59 +894,6 @@ const DokterSpesialis = () => {
               </div>
             </div>
 
-            {!loading && poliList.length > 0 && (
-              <div className="relative -mx-4 px-4 space-y-2">
-                <div className="overflow-hidden px-4 py-2" ref={emblaRef}>
-                  <div className="flex gap-2.5">
-                    <Pills
-                      label="Semua"
-                      count={
-                        searchQuery
-                          ? searchFilteredDokter.length
-                          : dokterList.length
-                      }
-                      variant={selectedPoli === "all" ? "active" : "default"}
-                      onClick={() => handlePoliChange("all")}
-                      size="md"
-                    />
-                    {relevantPoliList.map((poli) => (
-                      <Pills
-                        key={poli.id}
-                        label={poli.nama_poli}
-                        count={
-                          searchFilteredDokter.filter(
-                            (d) => d.poli_id === poli.id,
-                          ).length
-                        }
-                        variant={
-                          selectedPoli === poli.id ? "active" : "default"
-                        }
-                        onClick={() => handlePoliChange(poli.id)}
-                        size="md"
-                      />
-                    ))}
-                  </div>
-                </div>
-                <AnimatePresence>
-                  {pillsCanScroll && (
-                    <motion.div
-                      initial={{ opacity: 0, scaleX: 0.6 }}
-                      animate={{ opacity: 1, scaleX: 1 }}
-                      exit={{ opacity: 0, scaleX: 0.6 }}
-                      transition={{ duration: 0.4, ease }}
-                      className="mx-4 flex items-center gap-2"
-                    >
-                      <div className="flex-1 h-0.5 rounded-full bg-gray-200 overflow-hidden">
-                        <div className="h-full w-1/4 rounded-full bg-gray-200" />
-                      </div>
-                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest shrink-0 select-none">
-                        geser
-                      </span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
           </Animate>
 
           {/* Loading skeleton */}
@@ -980,23 +937,38 @@ const DokterSpesialis = () => {
 
           {/* Grid — 2 cols mobile, 3 cols tablet, 4 cols desktop */}
           {!loading && filteredDokter.length > 0 && (
-            <Animate
-              key={`${selectedPoli}-${selectedHari}-${searchQuery}`}
-              type="stagger"
-              staggerChildren={0.06}
-              delayChildren={0.02}
-              ready={true}
-              margin="-60px"
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 mb-12"
-            >
-              {filteredDokter.map((dokter) => (
-                <DokterCard
-                  key={dokter.id}
-                  dokter={dokter}
-                  onClick={handleCardClick}
-                />
-              ))}
-            </Animate>
+            <>
+              {/* Anchor untuk scroll-to-top saat ganti halaman */}
+              <div ref={gridRef} className="-mt-4 pt-4" />
+
+              <Animate
+                key={`${selectedPoli}-${selectedHari}-${searchQuery}-${currentPage}`}
+                type="stagger"
+                staggerChildren={0.06}
+                delayChildren={0.02}
+                ready={true}
+                margin="-60px"
+                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5"
+              >
+                {paginatedDokter.map((dokter) => (
+                  <DokterCard
+                    key={dokter.id}
+                    dokter={dokter}
+                    onClick={handleCardClick}
+                  />
+                ))}
+              </Animate>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                totalItems={filteredDokter.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                itemLabel="dokter"
+                className="mt-10 mb-4"
+              />
+            </>
           )}
         </div>
       </div>

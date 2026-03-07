@@ -508,7 +508,7 @@ export default function DetailDokter() {
   if (loading) {
     return (
       <div className="bg-gray-50 min-h-screen py-10 pt-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6">
           <div className="h-8 w-24 bg-gray-200 rounded-full animate-pulse" />
           <div className="h-10 w-64 bg-gray-200 rounded-lg animate-pulse" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -560,7 +560,7 @@ export default function DetailDokter() {
       </AnimatePresence>
 
       <div className="bg-gray-50 min-h-screen py-10 pt-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Back */}
           <Animate type="fadein" delay={0}>
             <motion.button

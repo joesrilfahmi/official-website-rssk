@@ -3,6 +3,7 @@
 import Animate from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
 import Input from "@/components/ui/custom/input";
+import Pagination from "@/components/ui/custom/pagination";
 import Pills from "@/components/ui/custom/pills";
 import { supabase } from "@/lib/supabase/client";
 import { BeritaWithAuthor } from "@/types/index";
@@ -11,8 +12,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   Calendar,
-  ChevronLeft,
-  ChevronRight,
   Search,
   Tag,
   TrendingUp,
@@ -473,7 +472,6 @@ const Blog = () => {
             {/* Articles */}
             {!loading && paginatedBerita.length > 0 && (
               <>
-                {/* Stagger all cards uniformly */}
                 <Animate
                   type="stagger"
                   staggerChildren={0.1}
@@ -496,36 +494,15 @@ const Blog = () => {
                 </Animate>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                  <Animate
-                    type="fadein"
-                    delay={0.2}
-                    ready={dataReady}
-                    once={false}
-                  >
-                    <div className="flex items-center justify-center gap-3 pt-2">
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all
-                          ${currentPage === 1 ? "border-gray-200 text-gray-300 cursor-not-allowed" : "border-mariner-300 text-mariner-500 hover:bg-mariner-50"}`}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <span className="text-sm font-semibold text-bittersweet-500 min-w-[60px] text-center">
-                        {currentPage} / {totalPages}
-                      </span>
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all
-                          ${currentPage === totalPages ? "border-gray-200 text-gray-300 cursor-not-allowed" : "border-mariner-300 text-mariner-500 hover:bg-mariner-50"}`}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </Animate>
-                )}
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={filteredBerita.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  itemLabel="artikel"
+                  className="pt-2"
+                />
               </>
             )}
           </div>

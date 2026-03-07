@@ -1,5 +1,6 @@
 // app/sections/formulir/page.tsx
-import Chat from "@/components/layout/chat";
+import BackToTop from "@/components/layout/back-to-top"
+
 import Footer from "@/components/layout/footer";
 import Navbar from "@/components/layout/navbar";
 
@@ -11,7 +12,7 @@ export default function App() {
       <Navbar />
       <Formulir />
       <Footer />
-      <Chat />
+      <BackToTop />
     </>
   );
 }
