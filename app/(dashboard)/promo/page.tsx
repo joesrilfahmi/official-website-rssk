@@ -46,7 +46,7 @@ import { formatDateTime } from "@/lib/utils";
 import { validateImage } from "@/lib/validasi/validasiImage";
 import { PromoStatus, PromoWithCreator } from "@/types/index";
 import {
-  Calendar, Eye, File, Loader2, Pencil, Plus, Search, Trash2, Upload, X,
+  Calendar, Clock, Eye, File, Loader2, Pencil, Plus, Search, Trash2, Upload, X,
 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -62,8 +62,8 @@ interface FormDataType {
   status: PromoStatus;
   pictureFile: File | null;
   pictureDeleted: boolean;
-  start_date: string; // "YYYY-MM-DD" or ""
-  end_date: string;   // "YYYY-MM-DD" or ""
+  start_date: string;
+  end_date: string;
 }
 
 interface FormErrorsType {
@@ -330,47 +330,42 @@ export default function PromoPage() {
   };
 
   /* ── Validation ── */
-const validateForm = (): boolean => {
-  const errors: FormErrorsType = { ...DEFAULT_FORM_ERRORS };
-  let isValid = true;
+  const validateForm = (): boolean => {
+    const errors: FormErrorsType = { ...DEFAULT_FORM_ERRORS };
+    let isValid = true;
 
-  if (!formData.title.trim()) {
-    errors.title = "Judul promo wajib diisi";
-    isValid = false;
-  }
-
-  if (!formData.description.trim()) {
-    errors.description = "Deskripsi promo wajib diisi";
-    isValid = false;
-  }
-
-  if (formData.pictureFile) {
-    const validation = validateImage(formData.pictureFile);
-    if (!validation.valid) {
-      errors.picture = validation.error || "File tidak valid";
+    if (!formData.title.trim()) {
+      errors.title = "Judul promo wajib diisi";
       isValid = false;
     }
-  }
+    if (!formData.description.trim()) {
+      errors.description = "Deskripsi promo wajib diisi";
+      isValid = false;
+    }
+    if (formData.pictureFile) {
+      const validation = validateImage(formData.pictureFile);
+      if (!validation.valid) {
+        errors.picture = validation.error || "File tidak valid";
+        isValid = false;
+      }
+    }
+    if (!formData.start_date) {
+      errors.start_date = "Tanggal mulai wajib diisi";
+      isValid = false;
+    }
+    if (!formData.end_date) {
+      errors.end_date = "Tanggal berakhir wajib diisi";
+      isValid = false;
+    }
+    if (formData.start_date && formData.end_date && formData.end_date < formData.start_date) {
+      errors.end_date = "Tanggal berakhir tidak boleh sebelum tanggal mulai";
+      isValid = false;
+    }
 
-  // Tanggal wajib diisi
-  if (!formData.start_date) {
-    errors.start_date = "Tanggal mulai wajib diisi";
-    isValid = false;
-  }
+    setFormErrors(errors);
+    return isValid;
+  };
 
-  if (!formData.end_date) {
-    errors.end_date = "Tanggal berakhir wajib diisi";
-    isValid = false;
-  }
-
-  if (formData.start_date && formData.end_date && formData.end_date < formData.start_date) {
-    errors.end_date = "Tanggal berakhir tidak boleh sebelum tanggal mulai";
-    isValid = false;
-  }
-
-  setFormErrors(errors);
-  return isValid;
-};
   /* ── Submit ── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -468,37 +463,36 @@ const validateForm = (): boolean => {
   };
 
   /* ── Badge helpers ── */
-const getStatusBadge = (item: PromoWithCreator) => {
-  if (item.status === "non_active") {
+  const getStatusBadge = (item: PromoWithCreator) => {
+    if (item.status === "non_active") {
+      return (
+        <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700">
+          Tidak Aktif
+        </Badge>
+      );
+    }
+    const ds = getDateStatus(item.start_date, item.end_date);
+    if (ds === "upcoming") {
+      return (
+        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
+          Belum Mulai
+        </Badge>
+      );
+    }
+    if (ds === "expired") {
+      return (
+        <Badge variant="outline" className="bg-gray-100 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
+          Kadaluarsa
+        </Badge>
+      );
+    }
     return (
-      <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700">
-        Tidak Aktif
+      <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700">
+        Aktif
       </Badge>
     );
-  }
+  };
 
-  const ds = getDateStatus(item.start_date, item.end_date);
-
-  if (ds === "upcoming") {
-    return (
-      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
-        Belum Mulai
-      </Badge>
-    );
-  }
-  if (ds === "expired") {
-    return (
-      <Badge variant="outline" className="bg-gray-100 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
-        Kadaluarsa
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700">
-      Aktif
-    </Badge>
-  );
-};
   /* ── Card dimming helper ── */
   const isCardDimmed = (item: PromoWithCreator) => {
     if (item.status === "non_active") return true;
@@ -669,14 +663,12 @@ const getStatusBadge = (item: PromoWithCreator) => {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedPromo.map((item) => {
                 const dimmed = isCardDimmed(item);
-
                 return (
                   <Card
                     key={item.id}
                     className={`group overflow-hidden transition-all hover:shadow-lg cursor-pointer relative ${dimmed ? "opacity-60 grayscale" : ""}`}
                     onClick={() => handleOpenDetailDialog(item)}
                   >
-                    {/* Checkbox */}
                     <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedItems.includes(item.id)}
@@ -684,27 +676,18 @@ const getStatusBadge = (item: PromoWithCreator) => {
                         className="shadow-md h-5 w-5"
                       />
                     </div>
-
-                    {/* Image */}
                     <div className="relative h-48 bg-muted overflow-hidden rounded-t-xl -mt-6">
                       {item.picture ? (
-                        <Image
-                          src={item.picture}
-                          alt={item.title}
-                          fill
+                        <Image src={item.picture} alt={item.title} fill
                           className="object-cover transition-transform group-hover:scale-105"
                           style={{ objectPosition: "center 30%" }}
-                          sizes="(max-width: 640px) 100vw, 512px"
-                          unoptimized
-                        />
+                          sizes="(max-width: 640px) 100vw, 512px" unoptimized />
                       ) : (
                         <div className="flex h-full items-center justify-center">
                           <Eye className="h-12 w-12 text-muted-foreground/20" />
                         </div>
                       )}
                     </div>
-
-                    {/* Content */}
                     <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                       <div>
                         <div className="flex gap-2 flex-wrap mb-2">{getStatusBadge(item)}</div>
@@ -712,10 +695,8 @@ const getStatusBadge = (item: PromoWithCreator) => {
                           {item.title}
                         </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{item.description}</p>
-
-                        {/* Rentang tanggal */}
                         {(item.start_date || item.end_date) && (
-                          <div className={`flex items-center gap-1.5 mt-2 text-xs text-muted-foreground`}>
+                          <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                             <Calendar className="w-3 h-3 shrink-0" />
                             <span>
                               {item.start_date && item.end_date
@@ -728,8 +709,6 @@ const getStatusBadge = (item: PromoWithCreator) => {
                           </div>
                         )}
                       </div>
-
-                      {/* Footer */}
                       <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <Avatar className="h-5 w-5 shrink-0">
@@ -834,7 +813,9 @@ const getStatusBadge = (item: PromoWithCreator) => {
         )}
       </div>
 
-      {/* ── Form Dialog ── */}
+      {/* ══════════════════════════════════════════════════════
+          FORM DIALOG
+      ══════════════════════════════════════════════════════ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -907,113 +888,62 @@ const getStatusBadge = (item: PromoWithCreator) => {
               {formErrors.description && <p className="text-sm text-red-500">{formErrors.description}</p>}
             </div>
 
-{/* Tanggal mulai & berakhir */}
-<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-  <div className="space-y-2">
-    <Label className="text-sm">
-      Tanggal Mulai <span className="text-red-500">*</span>
-    </Label>
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={submitting}
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !formData.start_date && "text-muted-foreground",
-            formErrors.start_date && "border-red-500",
-          )}
-        >
-          <Calendar className="mr-2 h-4 w-4" />
-          {formData.start_date
-            ? new Date(formData.start_date).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })
-            : "Pilih tanggal mulai"}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <CalendarComponent
-          mode="single"
-          selected={formData.start_date ? new Date(formData.start_date) : undefined}
-onSelect={(date) => {
-  setFormData({
-    ...formData,
-    start_date: date
-      ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-      : "",
-  });
-            if (formErrors.start_date) setFormErrors({ ...formErrors, start_date: "" });
-          }}
-        />
-      </PopoverContent>
-    </Popover>
-    {formErrors.start_date && (
-      <p className="text-sm text-red-500">{formErrors.start_date}</p>
-    )}
-  </div>
+            {/* Tanggal mulai & berakhir */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-sm">Tanggal Mulai <span className="text-red-500">*</span></Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" disabled={submitting}
+                      className={cn("w-full justify-start text-left font-normal", !formData.start_date && "text-muted-foreground", formErrors.start_date && "border-red-500")}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {formData.start_date
+                        ? new Date(formData.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+                        : "Pilih tanggal mulai"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent mode="single"
+                      selected={formData.start_date ? new Date(formData.start_date) : undefined}
+                      onSelect={(date) => {
+                        setFormData({ ...formData, start_date: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : "" });
+                        if (formErrors.start_date) setFormErrors({ ...formErrors, start_date: "" });
+                      }} />
+                  </PopoverContent>
+                </Popover>
+                {formErrors.start_date && <p className="text-sm text-red-500">{formErrors.start_date}</p>}
+              </div>
 
-  <div className="space-y-2">
-    <Label className="text-sm">
-      Tanggal Berakhir <span className="text-red-500">*</span>
-    </Label>
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={submitting}
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !formData.end_date && "text-muted-foreground",
-            formErrors.end_date && "border-red-500",
-          )}
-        >
-          <Calendar className="mr-2 h-4 w-4" />
-          {formData.end_date
-            ? new Date(formData.end_date).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })
-            : "Pilih tanggal berakhir"}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <CalendarComponent
-          mode="single"
-          selected={formData.end_date ? new Date(formData.end_date) : undefined}
-          disabled={(date) =>
-            formData.start_date
-              ? date < new Date(formData.start_date)
-              : false
-          }
-onSelect={(date) => {
-  setFormData({
-    ...formData,
-    end_date: date
-      ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-      : "",
-  });
-            if (formErrors.end_date) setFormErrors({ ...formErrors, end_date: "" });
-          }}
-        />
-      </PopoverContent>
-    </Popover>
-    {formErrors.end_date && (
-      <p className="text-sm text-red-500">{formErrors.end_date}</p>
-    )}
-  </div>
-</div>
+              <div className="space-y-2">
+                <Label className="text-sm">Tanggal Berakhir <span className="text-red-500">*</span></Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" disabled={submitting}
+                      className={cn("w-full justify-start text-left font-normal", !formData.end_date && "text-muted-foreground", formErrors.end_date && "border-red-500")}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {formData.end_date
+                        ? new Date(formData.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+                        : "Pilih tanggal berakhir"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent mode="single"
+                      selected={formData.end_date ? new Date(formData.end_date) : undefined}
+                      disabled={(date) => formData.start_date ? date < new Date(formData.start_date) : false}
+                      onSelect={(date) => {
+                        setFormData({ ...formData, end_date: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : "" });
+                        if (formErrors.end_date) setFormErrors({ ...formErrors, end_date: "" });
+                      }} />
+                  </PopoverContent>
+                </Popover>
+                {formErrors.end_date && <p className="text-sm text-red-500">{formErrors.end_date}</p>}
+              </div>
+            </div>
 
-{/* Ganti info teks — tanggal sekarang wajib */}
-<p className="text-xs text-muted-foreground -mt-1">
-  Promo akan otomatis tampil abu-abu jika belum mencapai tanggal mulai
-  atau sudah melewati tanggal berakhir.
-</p>
+            <p className="text-xs text-muted-foreground -mt-1">
+              Promo akan otomatis tampil abu-abu jika belum mencapai tanggal mulai atau sudah melewati tanggal berakhir.
+            </p>
+
             {/* Status (edit only) */}
             {selectedPromo && (
               <div className="space-y-2">
@@ -1038,26 +968,34 @@ onSelect={(date) => {
         </DialogContent>
       </Dialog>
 
-      {/* ── Detail Dialog ── */}
+      {/* ══════════════════════════════════════════════════════
+          DETAIL DIALOG
+      ══════════════════════════════════════════════════════ */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">Detail Promo</DialogTitle>
           </DialogHeader>
           {selectedPromo && (
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-4">
+              {/* Gambar */}
               {selectedPromo.picture && (
                 <div className="relative w-full h-48 sm:h-56 md:h-64 rounded-lg overflow-hidden">
-                  <Image src={selectedPromo.picture} alt={selectedPromo.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 800px" priority unoptimized />
+                  <Image src={selectedPromo.picture} alt={selectedPromo.title} fill
+                    className="object-cover" sizes="(max-width: 768px) 100vw, 800px" priority unoptimized />
                 </div>
               )}
+
+              {/* Judul + Badge + Audit box — struktur identik dengan jadwal dokter */}
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold">{selectedPromo.title}</h2>
-                <div className="flex gap-2 mt-2 flex-wrap">{getStatusBadge(selectedPromo)}</div>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {getStatusBadge(selectedPromo)}
+                </div>
 
                 {/* Rentang tanggal */}
                 {(selectedPromo.start_date || selectedPromo.end_date) && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-easternblue-600 bg-easternblue-50 border border-easternblue-100 rounded-lg px-3 py-2 w-fit">
+                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4 shrink-0" />
                     <span>
                       {selectedPromo.start_date && selectedPromo.end_date
@@ -1070,14 +1008,51 @@ onSelect={(date) => {
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 mt-3 text-xs sm:text-sm text-muted-foreground">
-                  <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
-                    <AvatarImage src={selectedPromo.created_by_user?.avatar} alt={selectedPromo.created_by_user?.nama || "User"} />
-                    <AvatarFallback className="text-xs">{selectedPromo.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
-                  </Avatar>
-                  <span>Dibuat oleh {selectedPromo.created_by_user?.nama} • {formatDateTime(selectedPromo.created_at)}</span>
+                {/* ── Audit box — persis sama dengan jadwal dokter ── */}
+                <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-2 text-xs text-muted-foreground">
+                  {/* Dibuat oleh */}
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-5 w-5 shrink-0">
+                      <AvatarImage src={selectedPromo.created_by_user?.avatar} alt={selectedPromo.created_by_user?.nama || "User"} />
+                      <AvatarFallback className="text-[10px]">
+                        {selectedPromo.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>
+                      Dibuat oleh{" "}
+                      <span className="font-medium text-foreground">
+                        {selectedPromo.created_by_user?.nama ?? "-"}
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground/50">•</span>
+                    <Calendar className="h-3 w-3 shrink-0" />
+                    <span>{formatDateTime(selectedPromo.created_at)}</span>
+                  </div>
+
+                  {/* Diperbarui oleh — hanya tampil jika ada, identik jadwal dokter */}
+                  {selectedPromo.updated_by_user && (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-5 w-5 shrink-0">
+                        <AvatarImage src={selectedPromo.updated_by_user.avatar} alt={selectedPromo.updated_by_user.nama || "User"} />
+                        <AvatarFallback className="text-[10px]">
+                          {selectedPromo.updated_by_user.nama?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>
+                        Diperbarui oleh{" "}
+                        <span className="font-medium text-foreground">
+                          {selectedPromo.updated_by_user.nama}
+                        </span>
+                      </span>
+                      <span className="text-muted-foreground/50">•</span>
+                      <Clock className="h-3 w-3 shrink-0" />
+                      <span>{formatDateTime(selectedPromo.updated_at)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Deskripsi */}
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <p className="whitespace-pre-wrap text-sm sm:text-base">{selectedPromo.description}</p>
               </div>
@@ -1085,6 +1060,16 @@ onSelect={(date) => {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDetailDialog}>Tutup</Button>
+            {selectedPromo && (
+              <Button
+                onClick={() => {
+                  handleCloseDetailDialog();
+                  setTimeout(() => handleOpenDialog(selectedPromo), 200);
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-2" /> Edit
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

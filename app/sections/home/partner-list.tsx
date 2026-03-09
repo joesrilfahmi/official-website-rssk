@@ -244,10 +244,10 @@ export default function PartnerSection() {
   const third = Math.ceil(partners.length / 3);
   const row1 = partners.slice(0, third);
   const row2 = partners.slice(third, third * 2);
-  const row3 = partners.slice(third * 2);
+  // const row3 = partners.slice(third * 2);
 
   const safeRow2 = row2.length > 0 ? row2 : [...partners];
-  const safeRow3 = row3.length > 0 ? row3 : [...partners];
+  // const safeRow3 = row3.length > 0 ? row3 : [...partners];
 
   return (
     <section className="bg-gray-50 py-24 overflow-hidden">
@@ -308,7 +308,7 @@ export default function PartnerSection() {
             <FadeEdges />
             <TickerRow partners={row1} direction={1} duration={22} />
             <TickerRow partners={safeRow2} direction={-1} duration={18} />
-            <TickerRow partners={safeRow3} direction={1} duration={25} />
+            {/* <TickerRow partners={safeRow3} direction={1} duration={25} /> */}
           </div>
         </Animate>
       )}
