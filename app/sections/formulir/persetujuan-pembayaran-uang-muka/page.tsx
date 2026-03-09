@@ -98,6 +98,7 @@ const JENIS_TINDAKAN_OPTIONS = [
 ];
 const DOKTER_OPTIONS = [
   { value: "dr. AMIK YULIATI, Sp.OG", label: "dr. AMIK YULIATI, Sp.OG" },
+  { value: "dr. BAYU PRIANGGA, Sp.OG, M. Ked.Klin.", label: "dr. BAYU PRIANGGA, Sp.OG, M. Ked.Klin." },
   { value: "dr. ANDI BUDI HERIANTO, Sp.OG", label: "dr. ANDI BUDI HERIANTO, Sp.OG" },
   { value: "dr. PRASTI SULANJARI, Sp.OG", label: "dr. PRASTI SULANJARI, Sp.OG" },
   { value: "dr. RODIYAH, Sp.OG", label: "dr. RODIYAH, Sp.OG" },
@@ -385,40 +386,74 @@ export default function FormulirDP() {
     if (c) c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
   };
 
-  const handleConfirm = async () => {
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      const ttdDataUrl = getSignatureDataUrl(canvasRef.current);
-      const { error } = await supabase.from("fmo_1").insert([
+const handleConfirm = async () => {
+  setIsSubmitting(true);
+  setSubmitError(null);
+
+  try {
+    const ttdDataUrl = getSignatureDataUrl(canvasRef.current);
+
+    // ── 1. Insert ke Supabase ──────────────────────────────────
+    const { data: inserted, error } = await supabase
+      .from("fmo_1")
+      .insert([
         {
-          nama_pasien: form.namaPasien.trim(),
-          tgl_lahir: form.tglLahir || null,
-          no_rm: form.noRM.trim() || null,
-          nama_penanggung_jawab: form.namaPJ.trim(),
-          no_ktp: form.noKTP.trim() || null,
-          no_hp: form.noHP.trim() || null,
-          alamat: form.alamat.trim() || null,
-          tgl_rencana_persalinan: form.tglRencanaPersalinan || null,
-          jenis_tindakan: form.jenisTindakan || null,
+          nama_pasien:             form.namaPasien.trim(),
+          tgl_lahir:               form.tglLahir || null,
+          no_rm:                   form.noRM.trim() || null,
+          nama_penanggung_jawab:   form.namaPJ.trim(),
+          no_ktp:                  form.noKTP.trim() || null,
+          no_hp:                   form.noHP.trim() || null,
+          alamat:                  form.alamat.trim() || null,
+          tgl_rencana_persalinan:  form.tglRencanaPersalinan || null,
+          jenis_tindakan:          form.jenisTindakan || null,
           dokter_penanggung_jawab: form.dokterPJ || null,
-          jenis_penjamin: form.penjamin,
-          rencana_kelas: form.kelas,
-          deskripsi: form.deskripsi.trim() || null,
-          ttd: ttdDataUrl,
+          jenis_penjamin:          form.penjamin,
+          rencana_kelas:           form.kelas,
+          deskripsi:               form.deskripsi.trim() || null,
+          ttd:                     ttdDataUrl,
         },
-      ]);
-      if (error) throw error;
-      setShowConfirm(false);
-      setTimeout(() => { setShowSuccess(true); handleReset(); }, 300);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Gagal mengirim formulir. Silakan coba lagi.";
-      setSubmitError(msg);
-      setShowConfirm(false);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      ])
+      .select()   // <-- kembalikan row yang baru di-insert
+      .single();
+
+    if (error) throw error;
+
+    // ── 2. Kirim notifikasi Telegram + PDF ─────────────────────
+    //    Menggunakan Promise tanpa await agar tidak memblok UX,
+    //    tapi error tetap dicatat di console.
+    fetch("/api/notify-telegram-dp", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(inserted),
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!json.ok) {
+          console.error("[notify-telegram-dp] response error:", json);
+        }
+      })
+      .catch((err) => {
+        console.error("[notify-telegram-dp] fetch failed:", err);
+      });
+
+    // ── 3. Tampilkan sukses ke user ────────────────────────────
+    setShowConfirm(false);
+    setTimeout(() => {
+      setShowSuccess(true);
+      handleReset();
+    }, 300);
+
+  } catch (e: unknown) {
+    const msg =
+      e instanceof Error ? e.message : "Gagal mengirim formulir. Silakan coba lagi.";
+    setSubmitError(msg);
+    setShowConfirm(false);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const penjaminLabel = PENJAMIN_OPTIONS.find((o) => o.value === form.penjamin)?.label ?? "";
   const kelasLabel = KELAS_OPTIONS.find((o) => o.value === form.kelas)?.label ?? "";
