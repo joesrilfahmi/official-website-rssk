@@ -130,7 +130,7 @@ async function loadLogoPng(): Promise<Buffer | null> {
 }
 
 /* ─────────────────────────────────────────
-   GENERATE PDF  — layout sama dengan HTML di frontend
+   GENERATE PDF  — layout identik dengan HTML di frontend (1 halaman)
 ───────────────────────────────────────── */
 async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   const doc  = await PDFDocument.create();
@@ -141,13 +141,20 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   const fB = await doc.embedFont(StandardFonts.TimesRomanBold);
   const fI = await doc.embedFont(StandardFonts.TimesRomanItalic);
 
-  const ML  = 54;
-  const MR  = 54;
+  // Margins & baseline — match HTML: padding 44px top/bottom, 64px L/R
+  // 1px ≈ 0.75pt;  44px → ~33pt,  64px → ~48pt
+  const ML  = 48;
+  const MR  = 48;
   const BW  = W - ML - MR;
   const BLK = rgb(0, 0, 0);
-  const GRY = rgb(0.35, 0.35, 0.35);
+  const GRY = rgb(0.45, 0.45, 0.45);
 
-  let y = 842 - 45;
+  // Base font size matches HTML 12px → 9pt
+  const FS   = 9;   // body font size (pt)
+  const LH   = 13;  // standard line-height (pt)
+  const LHS  = 12;  // tight line-height for lists/fields
+
+  let y = 842 - 33; // top margin
 
   function hline(x1: number, yy: number, x2: number, t: number) {
     page.drawLine({ start: { x: x1, y: yy }, end: { x: x2, y: yy }, thickness: t, color: BLK });
@@ -157,7 +164,7 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
     str: string, x: number, curY: number,
     opts: { font?: PDFFont; size?: number; color?: ReturnType<typeof rgb>; maxW?: number; lh?: number } = {}
   ): number {
-    const { font = fR, size = 10, color = BLK, maxW = BW, lh = size * 1.5 } = opts;
+    const { font = fR, size = FS, color = BLK, maxW = BW, lh = LH } = opts;
     const words = safe(str).split(" ");
     let line = "", cy = curY;
     for (const w of words) {
@@ -176,14 +183,14 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   }
 
   function fieldRow(lbl: string, val: string, curY: number): number {
-    const LW = 147, CW = 10;
-    page.drawText(safe(lbl), { x: ML,       y: curY, size: 10, font: fR, color: BLK });
-    page.drawText(":",        { x: ML + LW,  y: curY, size: 10, font: fR, color: BLK });
-    return wrapText(val, ML + LW + CW, curY, { maxW: BW - LW - CW, lh: 14 });
+    const LW = 135, CW = 9;
+    page.drawText(safe(lbl), { x: ML,      y: curY, size: FS, font: fR, color: BLK });
+    page.drawText(":",       { x: ML + LW, y: curY, size: FS, font: fR, color: BLK });
+    return wrapText(val, ML + LW + CW, curY, { maxW: BW - LW - CW, lh: LHS });
   }
 
   /* ── LETTERHEAD ── */
-  const LOGO_PT = 44, LOGO_GAP = 10;
+  const LOGO_PT = 40, LOGO_GAP = 9;
   const INFO_X  = ML + LOGO_PT + LOGO_GAP;
   const INFO_W  = BW - LOGO_PT - LOGO_GAP;
 
@@ -199,33 +206,33 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   }
 
   const lhName = `${Profile.institusi} ${Profile.name}`.toUpperCase();
-  page.drawText(safe(lhName), { x: cxOf(lhName, fB, 11, INFO_X, INFO_W), y, size: 11, font: fB, color: BLK });
-  y -= 14;
-  page.drawText(safe(Profile.subtitle), { x: cxOf(Profile.subtitle, fR, 8, INFO_X, INFO_W), y, size: 8, font: fR, color: GRY });
-  y -= 11;
-  page.drawText(safe(Profile.address), { x: cxOf(Profile.address, fR, 7, INFO_X, INFO_W), y, size: 7, font: fR, color: GRY });
+  page.drawText(safe(lhName), { x: cxOf(lhName, fB, 10, INFO_X, INFO_W), y, size: 10, font: fB, color: BLK });
+  y -= 12;
+  page.drawText(safe(Profile.subtitle), { x: cxOf(Profile.subtitle, fR, 7, INFO_X, INFO_W), y, size: 7, font: fR, color: GRY });
   y -= 10;
+  page.drawText(safe(Profile.address), { x: cxOf(Profile.address, fR, 6.5, INFO_X, INFO_W), y, size: 6.5, font: fR, color: GRY });
+  y -= 9;
   const contact = `Telp: ${Profile.phone}  |  Email: ${Profile.email}  |  WhatsApp: ${Profile.whatsapp}`;
-  page.drawText(safe(contact), { x: cxOf(contact, fR, 7, INFO_X, INFO_W), y, size: 7, font: fR, color: GRY });
-  y -= 10;
+  page.drawText(safe(contact), { x: cxOf(contact, fR, 6.5, INFO_X, INFO_W), y, size: 6.5, font: fR, color: GRY });
+  y -= 9;
 
-  hline(ML, y, W - MR, 1.5); y -= 3;
-  hline(ML, y, W - MR, 0.5); y -= 14;
+  hline(ML, y, W - MR, 1.5); y -= 2.5;
+  hline(ML, y, W - MR, 0.4); y -= 12;
 
   /* ── TITLE ── */
   const jenisTindakanLabel = getLabel(TINDAKAN_MAP, item.jenis_tindakan);
   function drawTitle(t: string, curY: number): number {
-    const tw = fB.widthOfTextAtSize(t, 10), tx = (W - tw) / 2;
-    page.drawText(t, { x: tx, y: curY, size: 10, font: fB, color: BLK });
-    hline(tx, curY - 1.5, tx + tw, 0.5);
-    return curY - 15;
+    const tw = fB.widthOfTextAtSize(t, FS), tx = (W - tw) / 2;
+    page.drawText(t, { x: tx, y: curY, size: FS, font: fB, color: BLK });
+    hline(tx, curY - 1.2, tx + tw, 0.4);
+    return curY - 13;
   }
   y = drawTitle("FORMULIR PERSETUJUAN PEMBAYARAN UANG MUKA (DP)", y);
-  y = drawTitle(safe(`TINDAKAN PERSALINAN DI ${Profile.institusi} ${Profile.name}`.toUpperCase()), y);
-  y -= 8;
+  y = drawTitle(safe(`PERSALINAN ${jenisTindakanLabel.toUpperCase()} DI ${Profile.institusi} ${Profile.name}`.toUpperCase()), y);
+  y -= 6;
 
   /* ── FIELDS ── */
-  y = wrapText("Yang bertanda tangan di bawah ini:", ML, y); y -= 3;
+  y = wrapText("Yang bertanda tangan di bawah ini:", ML, y); y -= 2;
   y = fieldRow("Nama Pasien",             item.nama_pasien,                               y);
   y = fieldRow("Tanggal Lahir",           formatTanggalLong(item.tgl_lahir),              y);
   y = fieldRow("No. RM",                  item.no_rm ?? "-",                              y);
@@ -236,48 +243,46 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   y = fieldRow("Tgl. Rencana Persalinan", formatTanggalLong(item.tgl_rencana_persalinan), y);
   y = fieldRow("Jenis Tindakan",          jenisTindakanLabel,                             y);
   y = fieldRow("Dokter Penanggung Jawab", item.dokter_penanggung_jawab ?? "-",            y);
-  y -= 5;
+  y -= 4;
 
   /* ── PARAGRAPHS ── */
-  y = wrapText(`Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan mengenai rencana tindakan persalinan yang akan dilakukan di ${Profile.institusi} ${Profile.name}, termasuk estimasi biaya pelayanan medis, fasilitas perawatan, serta ketentuan administrasi yang berlaku.`, ML, y, { lh: 14 });
-  y -= 3;
-  y = wrapText("Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka (DP) persalinan sebesar: Rp1.000.000,- (Satu Juta Rupiah)", ML, y, { lh: 14, font: fR });
-  // Already drawn above — skip separate bold, keep it simple
-  y -= 3;
+  y = wrapText(`Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan mengenai rencana tindakan persalinan yang akan dilakukan di ${Profile.institusi} ${Profile.name}, termasuk estimasi biaya pelayanan medis, fasilitas perawatan, serta ketentuan administrasi yang berlaku.`, ML, y, { lh: LH });
+  y -= 2;
+  y = wrapText("Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka (DP) persalinan sebesar: Rp1.000.000,- (Satu Juta Rupiah)", ML, y, { lh: LH, font: fR });
+  y -= 2;
   y = wrapText("Saya memahami dan menyetujui bahwa:", ML, y, { font: fB });
   for (const li of [
     "1.  Uang muka (DP) merupakan bagian dari total biaya persalinan.",
     "2.  Pembayaran DP dilakukan sebagai bentuk konfirmasi dan komitmen pelayanan persalinan.",
     "3.  Uang muka (DP) yang telah dibayarkan tidak dapat dikembalikan (non-refundable) dengan alasan apa pun, termasuk apabila terjadi pembatalan dari pihak pasien.",
-  ]) { y = wrapText(li, ML + 10, y, { maxW: BW - 10, lh: 13 }); }
-  y -= 4;
+  ]) { y = wrapText(li, ML + 8, y, { maxW: BW - 8, lh: LHS }); }
+  y -= 3;
 
   /* ── SECTION LABEL — Rencana Penjamin ── */
   const secLabel = "Rencana Penjamin dan Kelas Perawatan";
-  page.drawText(safe(secLabel), { x: ML, y, size: 10, font: fB, color: BLK });
-  hline(ML, y - 1.5, ML + fB.widthOfTextAtSize(secLabel, 10), 0.5);
-  y -= 16;
+  page.drawText(safe(secLabel), { x: ML, y, size: FS, font: fB, color: BLK });
+  hline(ML, y - 1.2, ML + fB.widthOfTextAtSize(secLabel, FS), 0.4);
+  y -= 13;
   y = fieldRow("Jenis Penjamin",        getLabel(PENJAMIN_MAP, item.jenis_penjamin), y);
   y = fieldRow("Rencana Kelas / Kamar", getLabel(KELAS_MAP,    item.rencana_kelas),  y);
-  y -= 4;
-
-  // Keterangan kelas
-  page.drawText("Keterangan:", { x: ML, y, size: 10, font: fB, color: BLK });
-  y -= 14;
-  y = wrapText("Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.", ML, y, { maxW: BW, lh: 13 });
   y -= 3;
 
-  if (item.deskripsi) { y = wrapText(item.deskripsi, ML, y, { lh: 14, font: fI }); y -= 3; }
+  page.drawText("Keterangan:", { x: ML, y, size: FS, font: fB, color: BLK });
+  y -= 12;
+  y = wrapText("Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.", ML, y, { maxW: BW, lh: LHS });
+  y -= 2;
 
-  y = wrapText("Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.", ML, y, { lh: 14 });
-  y -= 16;
+  if (item.deskripsi) { y = wrapText(item.deskripsi, ML, y, { lh: LH, font: fI }); y -= 2; }
+
+  y = wrapText("Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.", ML, y, { lh: LH });
+  y -= 12;
 
   /* ── SIGNATURE ── */
-  const SIGN_W = 165, sigX = W - MR - SIGN_W;
-  page.drawText(safe(`Sepanjang, ${formatTanggalLong(item.tanggal)}`), { x: sigX, y, size: 10, font: fR, color: BLK });
-  y -= 14;
-  page.drawText("Pasien / Penanggung Jawab,", { x: sigX, y, size: 10, font: fR, color: BLK });
-  y -= 6;
+  const SIGN_W = 155, sigX = W - MR - SIGN_W;
+  page.drawText(safe(`Sepanjang, ${formatTanggalLong(item.tanggal)}`), { x: sigX, y, size: FS, font: fR, color: BLK });
+  y -= 12;
+  page.drawText("Pasien / Penanggung Jawab,", { x: sigX, y, size: FS, font: fR, color: BLK });
+  y -= 5;
 
   const gapTop = y;
   if (item.ttd) {
@@ -288,24 +293,24 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
       const ttdPng = await sharp(Buffer.from(buf)).png().toBuffer();
       const ttdBuf = ttdPng.buffer.slice(ttdPng.byteOffset, ttdPng.byteOffset + ttdPng.byteLength) as ArrayBuffer;
       const sigImg = await doc.embedPng(ttdBuf);
-      const dim    = sigImg.scaleToFit(SIGN_W - 10, 48);
+      const dim    = sigImg.scaleToFit(SIGN_W - 10, 44);
       page.drawImage(sigImg, { x: sigX + (SIGN_W - dim.width) / 2, y: gapTop - dim.height, width: dim.width, height: dim.height });
     } catch { /* skip */ }
   }
-  y = gapTop - 50;
+  y = gapTop - 46;
 
-  hline(sigX, y + 2, sigX + SIGN_W, 0.8);
-  y -= 12;
+  hline(sigX, y + 2, sigX + SIGN_W, 0.7);
+  y -= 11;
   const nameStr = `( ${safe(item.nama_penanggung_jawab)} )`;
-  page.drawText(nameStr, { x: sigX + (SIGN_W - fR.widthOfTextAtSize(nameStr, 10)) / 2, y, size: 10, font: fR, color: BLK });
+  page.drawText(nameStr, { x: sigX + (SIGN_W - fR.widthOfTextAtSize(nameStr, FS)) / 2, y, size: FS, font: fR, color: BLK });
 
-  // Footer halaman
+  /* ── FOOTER ── */
   const footerY = 22;
-  hline(ML, footerY + 12, W - MR, 0.4);
-  const footerLeft = "Halaman 1 dari 1";
+  hline(ML, footerY + 11, W - MR, 0.4);
+  const footerLeft  = "Halaman 1 dari 1";
   const footerRight = `FM-ADM-001 · ${Profile.shortName}`;
-  page.drawText(footerLeft,  { x: ML,                                                   y: footerY, size: 7, font: fR, color: GRY });
-  page.drawText(footerRight, { x: W - MR - fR.widthOfTextAtSize(footerRight, 7),        y: footerY, size: 7, font: fR, color: GRY });
+  page.drawText(footerLeft,  { x: ML,                                                    y: footerY, size: 6.5, font: fR, color: GRY });
+  page.drawText(footerRight, { x: W - MR - fR.widthOfTextAtSize(footerRight, 6.5),       y: footerY, size: 6.5, font: fR, color: GRY });
 
   const u8 = await doc.save();
   return u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength) as ArrayBuffer;

@@ -199,31 +199,32 @@ function buildDocumentHTML(item: InsertedRow, logoBase64?: string): string {
   html { background: #fff; }
   body {
     font-family: "Times New Roman", Times, serif;
-    font-size: 13px; color: #000; background: #fff;
-    width: 794px; padding: 60px 72px; line-height: 1.65;
+    font-size: 12px; color: #000; background: #fff;
+    width: 794px; padding: 44px 64px 40px; line-height: 1.5;
   }
-  .letterhead { display: flex; align-items: center; gap: 14px; padding-bottom: 8px; border-bottom: 3px double #000; margin-bottom: 16px; }
-  .lh-logo { width: 58px; height: 58px; object-fit: contain; flex-shrink: 0; }
+  .letterhead { display: flex; align-items: center; gap: 12px; padding-bottom: 7px; border-bottom: 3px double #000; margin-bottom: 12px; }
+  .lh-logo { width: 52px; height: 52px; object-fit: contain; flex-shrink: 0; }
   .lh-info { flex: 1; text-align: center; }
-  .lh-name { font-size: 15px; font-weight: 700; text-transform: uppercase; line-height: 1.3; }
-  .lh-sub  { font-size: 11px; margin-top: 2px; }
-  .lh-addr { font-size: 10px; margin-top: 2px; }
-  .doc-title { text-align: center; font-size: 13px; font-weight: 700; text-transform: uppercase; text-decoration: underline; line-height: 1.5; margin-bottom: 16px; }
-  p { margin-bottom: 5px; font-size: 13px; }
-  .field-block { margin-bottom: 12px; }
-  .field-row { display: flex; align-items: flex-end; margin-bottom: 3px; font-size: 13px; }
-  .field-label { width: 195px; flex-shrink: 0; }
-  .field-colon { width: 14px; flex-shrink: 0; }
+  .lh-name { font-size: 14px; font-weight: 700; text-transform: uppercase; line-height: 1.3; }
+  .lh-sub  { font-size: 10px; margin-top: 2px; }
+  .lh-addr { font-size: 9px; margin-top: 2px; }
+  .doc-title { text-align: center; font-size: 12px; font-weight: 700; text-transform: uppercase; text-decoration: underline; line-height: 1.45; margin-bottom: 12px; }
+  p { margin-bottom: 4px; font-size: 12px; }
+  .field-block { margin-bottom: 8px; }
+  .field-row { display: flex; align-items: flex-end; margin-bottom: 2px; font-size: 12px; }
+  .field-label { width: 185px; flex-shrink: 0; }
+  .field-colon { width: 12px; flex-shrink: 0; }
   .field-value { flex: 1; padding-bottom: 1px; padding-left: 4px; }
-  ol { margin: 3px 0 8px 20px; padding: 0; }
-  ol li { font-size: 13px; margin-bottom: 2px; line-height: 1.55; }
-  .section-label { font-size: 13px; font-weight: 700; text-decoration: underline; margin-top: 10px; margin-bottom: 4px; }
-  .sign-block { margin-top: 16px; display: flex; justify-content: flex-end; }
-  .sign-inner { text-align: center; width: 220px; }
-  .sign-inner p { font-size: 13px; margin-bottom: 3px; }
-  .sign-gap { height: 64px; display: flex; align-items: center; justify-content: center; margin: 4px 0; }
-  .sign-gap img { max-height: 60px; max-width: 190px; object-fit: contain; }
-  .sign-name { font-size: 13px; border-top: 1px solid #000; padding-top: 4px; display: inline-block; min-width: 175px; text-align: center; }
+  ol { margin: 2px 0 6px 18px; padding: 0; }
+  ol li { font-size: 12px; margin-bottom: 1px; line-height: 1.45; }
+  .section-label { font-size: 12px; font-weight: 700; text-decoration: underline; margin-top: 8px; margin-bottom: 3px; }
+  .sign-block { margin-top: 12px; display: flex; justify-content: flex-end; }
+  .sign-inner { text-align: center; width: 210px; }
+  .sign-inner p { font-size: 12px; margin-bottom: 2px; }
+  .sign-gap { height: 58px; display: flex; align-items: center; justify-content: center; margin: 3px 0; }
+  .sign-gap img { max-height: 54px; max-width: 180px; object-fit: contain; }
+  .sign-name { font-size: 12px; border-top: 1px solid #000; padding-top: 3px; display: inline-block; min-width: 165px; text-align: center; }
+  .footer { margin-top: 14px; border-top: 0.5px solid #ccc; padding-top: 5px; display: flex; justify-content: space-between; font-size: 9px; color: #888; }
 </style>
 </head>
 <body>
@@ -269,16 +270,20 @@ function buildDocumentHTML(item: InsertedRow, logoBase64?: string): string {
   <p><strong>Keterangan:</strong></p>
   <p style="text-align:justify;">Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.</p>
   ${item.deskripsi ? `<p>${item.deskripsi}</p>` : ""}
-  <p style="text-align:justify; margin-top:8px;">Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.</p>
+  <p style="text-align:justify; margin-top:6px;">Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.</p>
   <div class="sign-block">
     <div class="sign-inner">
       <p>Sepanjang, ${tanggalFormatted}</p>
       <p>Pasien / Penanggung Jawab,</p>
       <div class="sign-gap">
-        ${item.ttd ? `<img src="${item.ttd}" alt="Tanda tangan" />` : `<span style="display:block;height:60px;"></span>`}
+        ${item.ttd ? `<img src="${item.ttd}" alt="Tanda tangan" />` : `<span style="display:block;height:58px;"></span>`}
       </div>
       <span class="sign-name">( ${item.nama_penanggung_jawab} )</span>
     </div>
+  </div>
+  <div class="footer">
+    <span>Halaman 1 dari 1</span>
+    <span>FM-ADM-001 · ${Profile.shortName}</span>
   </div>
 </body>
 </html>`;
@@ -329,11 +334,13 @@ async function downloadPDFFromRow(item: InsertedRow): Promise<void> {
   const { jsPDF } = (window as any).jspdf;
 
   const iframeBody = iframeDoc.body;
-  const fullHeight = iframeBody.scrollHeight;
+  // A4 at 96dpi = 1123px tall. Cap render height to A4 to guarantee 1 page.
+  const A4_PX = 1123;
+  const renderH = Math.min(iframeBody.scrollHeight, A4_PX);
 
   const canvas = await html2canvas(iframeBody, {
     scale: 2.5, useCORS: true, allowTaint: true, backgroundColor: "#ffffff",
-    width: 794, height: fullHeight, windowWidth: 794, windowHeight: fullHeight,
+    width: 794, height: renderH, windowWidth: 794, windowHeight: A4_PX,
     scrollX: 0, scrollY: 0, logging: false,
   });
 
@@ -343,26 +350,9 @@ async function downloadPDFFromRow(item: InsertedRow): Promise<void> {
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
-  const imgHeight = pageWidth * (canvas.height / canvas.width);
-
-  if (imgHeight <= pageHeight) {
-    pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeight);
-  } else {
-    let rendered = 0;
-    const sliceH = Math.floor((canvas.width * pageHeight) / pageWidth);
-    let page = 0;
-    while (rendered < canvas.height) {
-      if (page > 0) pdf.addPage();
-      const tmp = document.createElement("canvas");
-      tmp.width = canvas.width;
-      tmp.height = Math.min(sliceH, canvas.height - rendered);
-      const ctx = tmp.getContext("2d")!;
-      ctx.drawImage(canvas, 0, rendered, canvas.width, tmp.height, 0, 0, canvas.width, tmp.height);
-      pdf.addImage(tmp.toDataURL("image/jpeg", 0.97), "JPEG", 0, 0, pageWidth, (tmp.height / canvas.width) * pageWidth);
-      rendered += tmp.height;
-      page++;
-    }
-  }
+  // Always fit to 1 page — scale height proportionally, never exceed pageHeight
+  const imgHeight = Math.min(pageWidth * (canvas.height / canvas.width), pageHeight);
+  pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeight);
 
   pdf.save(`${fileName}.pdf`);
 }
@@ -797,7 +787,6 @@ export default function FormulirDP() {
                   Formulir Persetujuan Pembayaran{" "}
                   <span className="text-curiousblue-500">Uang Muka (DP) Persalinan</span>
                 </h1>
-
               </div>
             </div>
           </div>
@@ -1055,7 +1044,7 @@ export default function FormulirDP() {
           {/* Doc footer */}
           <div className="border-t border-catskillwhite-600 bg-catskillwhite-400 px-6 sm:px-10 lg:px-14 py-3 flex justify-between items-center flex-wrap gap-1">
             <span className="text-[11px] text-catskillwhite-900">Halaman 1 dari 1</span>
-            <span className="text-[11px] text-catskillwhite-900">FM-ADM-001 · Rev.01 · {Profile.shortName}</span>
+            <span className="text-[11px] text-catskillwhite-900">FM-ADM-001 · {Profile.shortName}</span>
           </div>
         </div>
 
