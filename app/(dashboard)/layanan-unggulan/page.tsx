@@ -420,7 +420,7 @@ export default function LayananUnggulanPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "layanan_unggulan" },
-        () => void fetchData(),
+        () => { void fetchData(); },
       )
       .subscribe();
 
@@ -918,7 +918,7 @@ export default function LayananUnggulanPage() {
               Hapus ({selectedIds.size})
             </Button>
           )}
-          <Button onClick={() => void handleOpenDialog()}>
+          <Button onClick={() => { void handleOpenDialog(); }}>
             <Plus className="mr-2 h-4 w-4" />
             Tambah Layanan
           </Button>
@@ -1120,7 +1120,7 @@ export default function LayananUnggulanPage() {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => void handleOpenDialog(item)}
+                                  onClick={() => { void handleOpenDialog(item); }}
                                   className="h-8 w-8"
                                   disabled={submitting}
                                 >
@@ -1367,7 +1367,7 @@ export default function LayananUnggulanPage() {
             <Button
               onClick={() => {
                 setDetailDialogOpen(false);
-                if (selectedItem) void handleOpenDialog(selectedItem);
+                if (selectedItem) { void handleOpenDialog(selectedItem); }
               }}
             >
               <Pencil className="h-4 w-4 mr-2" />
@@ -1394,7 +1394,7 @@ export default function LayananUnggulanPage() {
           </DialogHeader>
 
           <form
-            onSubmit={(e) => void handleSubmit(e)}
+            onSubmit={(e) => { void handleSubmit(e); }}
             className="flex flex-col flex-1 min-h-0"
           >
             <Tabs defaultValue="info" className="flex flex-col flex-1 min-h-0">
@@ -1826,7 +1826,7 @@ export default function LayananUnggulanPage() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => void handleDelete()}
+              onClick={() => { void handleDelete(); }}
               disabled={submitting}
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
             >
@@ -1855,7 +1855,7 @@ export default function LayananUnggulanPage() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => void handleBulkDelete()}
+              onClick={() => { void handleBulkDelete(); }}
               disabled={submitting}
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white hover:text-white"
             >

@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -60,6 +61,8 @@ import { supabase } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/utils";
 import {
   ArrowUpDown,
+  Calendar,
+  Clock,
   Loader2,
   Pencil,
   Plus,
@@ -70,14 +73,27 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 type SortField = "title" | "created_at";
 type SortOrder = "asc" | "desc";
+
+interface AuditUser {
+  id: string;
+  nama: string;
+  username: string;
+  avatar?: string;
+}
 
 interface Kategori {
   id: string;
   title: string;
   created_at: string;
   updated_at: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+  created_by_user?: AuditUser;
+  updated_by_user?: AuditUser;
 }
 
 interface FormDataType {
@@ -88,13 +104,10 @@ interface FormErrorsType {
   title: string;
 }
 
-const DEFAULT_FORM_DATA: FormDataType = {
-  title: "",
-};
+const DEFAULT_FORM_DATA: FormDataType = { title: "" };
+const DEFAULT_FORM_ERRORS: FormErrorsType = { title: "" };
 
-const DEFAULT_FORM_ERRORS: FormErrorsType = {
-  title: "",
-};
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function KategoriPage() {
   const [kategori, setKategori] = useState<Kategori[]>([]);
@@ -103,54 +116,46 @@ export default function KategoriPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [selectedKategori, setSelectedKategori] = useState<Kategori | null>(
-    null,
-  );
+  const [selectedKategori, setSelectedKategori] = useState<Kategori | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
-  // Access control state
   const [showAccessDenied, setShowAccessDenied] = useState(false);
-
-  // Selection states
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Pagination & Filter States
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState<number | "all">(10);
 
-  // Sorting states
   const [sortField, setSortField] = useState<SortField>("title");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
-  const [formErrors, setFormErrors] =
-    useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
+  const [formErrors, setFormErrors] = useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
 
-  // Debounce search
+  // ── Debounce search ───────────────────────────────────────────────────────
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
       setCurrentPage(1);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // ── Filter & sort ─────────────────────────────────────────────────────────
 
   const applyFilters = useCallback(() => {
     let filtered = [...kategori];
 
-    // Search filter
     if (debouncedSearch.trim()) {
       const query = debouncedSearch.toLowerCase();
       filtered = filtered.filter((k) => k.title.toLowerCase().includes(query));
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       let compareValue = 0;
-
       if (sortField === "title") {
         compareValue = a.title.localeCompare(b.title, "id");
       } else if (sortField === "created_at") {
@@ -158,7 +163,6 @@ export default function KategoriPage() {
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
         compareValue = dateA - dateB;
       }
-
       return sortOrder === "asc" ? compareValue : -compareValue;
     });
 
@@ -171,64 +175,70 @@ export default function KategoriPage() {
     applyFilters();
   }, [applyFilters]);
 
-  // Fetch kategori
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+
   const fetchKategori = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("kategori")
-        .select("*")
+        .select(
+          `*,
+          created_by_user:users!kategori_created_by_fkey(id, nama, username, avatar),
+          updated_by_user:users!kategori_updated_by_fkey(id, nama, username, avatar)`,
+        )
         .order("title", { ascending: true });
 
       if (error) throw error;
 
-      setKategori(data || []);
+      // Konversi null → undefined
+      const mapped: Kategori[] = (data || []).map((row) => ({
+        ...row,
+        created_by_user: row.created_by_user ?? undefined,
+        updated_by_user: row.updated_by_user ?? undefined,
+      }));
+
+      setKategori(mapped);
     } catch (error) {
       console.error("Error fetching kategori:", error);
-      if (error instanceof Error) {
-        toast.error(`Gagal memuat data kategori: ${error.message}`);
-      } else {
-        toast.error("Gagal memuat data kategori");
-      }
+      toast.error(
+        error instanceof Error
+          ? `Gagal memuat data kategori: ${error.message}`
+          : "Gagal memuat data kategori",
+      );
     }
   }, []);
 
-  // Initial load
+  // ── Initial load ──────────────────────────────────────────────────────────
+
   useEffect(() => {
     const loadInitial = async () => {
       try {
         setLoading(true);
-
-        // Check user access
-        const currentUser = getCurrentUser();
+        const currentUser = await getCurrentUser();
         if (!currentUser) {
           setShowAccessDenied(true);
           return;
         }
-
+        setCurrentUserId(currentUser.id);
         await fetchKategori();
       } finally {
         setLoading(false);
       }
     };
 
-    loadInitial();
+    void loadInitial();
 
-    // Real-time subscription
     const channel = supabase
       .channel("kategori_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "kategori" },
-        () => {
-          fetchKategori();
-        },
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "kategori" }, () => {
+        void fetchKategori();
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { void supabase.removeChannel(channel); };
   }, [fetchKategori]);
+
+  // ── Sort helpers ──────────────────────────────────────────────────────────
 
   const handleSortChange = (value: string) => {
     const [field, order] = value.split("-") as [SortField, SortOrder];
@@ -237,11 +247,8 @@ export default function KategoriPage() {
   };
 
   const getSortLabel = () => {
-    if (sortField === "title") {
-      return sortOrder === "asc" ? "Nama (A-Z)" : "Nama (Z-A)";
-    } else {
-      return sortOrder === "asc" ? "Terlama" : "Terbaru";
-    }
+    if (sortField === "title") return sortOrder === "asc" ? "Nama (A-Z)" : "Nama (Z-A)";
+    return sortOrder === "asc" ? "Terlama" : "Terbaru";
   };
 
   const handleResetFilters = () => {
@@ -250,48 +257,40 @@ export default function KategoriPage() {
     setSearchQuery("");
   };
 
+  // ── Pagination ────────────────────────────────────────────────────────────
+
   const totalItems = filteredKategori.length;
   const totalPages =
-    itemsPerPage === "all" ? 1 : Math.ceil(totalItems / itemsPerPage);
+    itemsPerPage === "all" ? 1 : Math.ceil(totalItems / (itemsPerPage as number));
   const startIndex =
-    itemsPerPage === "all" ? 0 : (currentPage - 1) * itemsPerPage;
+    itemsPerPage === "all" ? 0 : (currentPage - 1) * (itemsPerPage as number);
   const endIndex =
-    itemsPerPage === "all" ? totalItems : startIndex + itemsPerPage;
+    itemsPerPage === "all" ? totalItems : startIndex + (itemsPerPage as number);
   const currentKategori = filteredKategori.slice(startIndex, endIndex);
 
-  // Checkbox handlers
+  // ── Selection ─────────────────────────────────────────────────────────────
+
   const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const allIds = new Set(currentKategori.map((k) => k.id));
-      setSelectedIds(allIds);
-    } else {
-      setSelectedIds(new Set());
-    }
+    setSelectedIds(checked ? new Set(currentKategori.map((k) => k.id)) : new Set());
   };
 
   const handleSelectOne = (id: string, checked: boolean) => {
-    const newSelected = new Set(selectedIds);
-    if (checked) {
-      newSelected.add(id);
-    } else {
-      newSelected.delete(id);
-    }
-    setSelectedIds(newSelected);
+    const next = new Set(selectedIds);
+    checked ? next.add(id) : next.delete(id);
+    setSelectedIds(next);
   };
 
   const isAllSelected =
-    currentKategori.length > 0 &&
-    currentKategori.every((k) => selectedIds.has(k.id));
-
+    currentKategori.length > 0 && currentKategori.every((k) => selectedIds.has(k.id));
   const isSomeSelected =
     currentKategori.some((k) => selectedIds.has(k.id)) && !isAllSelected;
+
+  // ── Dialog ────────────────────────────────────────────────────────────────
 
   const handleOpenDialog = (item?: Kategori) => {
     if (item) {
       setSelectedKategori(item);
-      setFormData({
-        title: item.title,
-      });
+      setFormData({ title: item.title });
     } else {
       setSelectedKategori(null);
       setFormData(DEFAULT_FORM_DATA);
@@ -309,61 +308,51 @@ export default function KategoriPage() {
     }, 200);
   };
 
-  // Validate form
-  const validateForm = (): boolean => {
-    const errors: FormErrorsType = {
-      title: "",
-    };
+  // ── Validation ────────────────────────────────────────────────────────────
 
+  const validateForm = (): boolean => {
+    const errors: FormErrorsType = { title: "" };
     let isValid = true;
 
     if (!formData.title.trim()) {
-      errors.title = "Nama kategori wajib diisi";
-      isValid = false;
+      errors.title = "Nama kategori wajib diisi"; isValid = false;
     } else if (formData.title.trim().length < 3) {
-      errors.title = "Nama kategori minimal 3 karakter";
-      isValid = false;
+      errors.title = "Nama kategori minimal 3 karakter"; isValid = false;
     } else if (formData.title.trim().length > 100) {
-      errors.title = "Nama kategori maksimal 100 karakter";
-      isValid = false;
+      errors.title = "Nama kategori maksimal 100 karakter"; isValid = false;
     }
 
     setFormErrors(errors);
     return isValid;
   };
 
-  // Submit handler
+  // ── Submit ────────────────────────────────────────────────────────────────
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error("Mohon periksa kembali form Anda");
-      return;
-    }
-
+    if (!validateForm()) { toast.error("Mohon periksa kembali form Anda"); return; }
     setSubmitting(true);
 
     try {
-      const payload = {
-        title: formData.title.trim(),
-      };
-
       if (selectedKategori) {
-        // Update existing kategori
+        // UPDATE — catat siapa yang mengupdate
         const { error } = await supabase
           .from("kategori")
-          .update(payload)
+          .update({
+            title: formData.title.trim(),
+            updated_by: currentUserId,           // ← siapa yang update
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", selectedKategori.id);
-
         if (error) throw error;
-
         toast.success("Kategori berhasil diperbarui");
       } else {
-        // Create new kategori
-        const { error } = await supabase.from("kategori").insert([payload]);
-
+        // INSERT — catat siapa yang membuat
+        const { error } = await supabase.from("kategori").insert([{
+          title: formData.title.trim(),
+          created_by: currentUserId,             // ← siapa yang buat
+        }]);
         if (error) throw error;
-
         toast.success("Kategori berhasil ditambahkan");
       }
 
@@ -371,38 +360,24 @@ export default function KategoriPage() {
       await fetchKategori();
     } catch (error) {
       console.error("Error saving kategori:", error);
-
-      // Type guard untuk PostgrestError
       if (error && typeof error === "object" && "code" in error) {
-        const dbError = error as { code: string; message?: string };
-        if (dbError.code === "23505") {
+        const dbErr = error as { code: string };
+        if (dbErr.code === "23505") {
           toast.error("Nama kategori sudah digunakan");
-          setFormErrors({
-            ...formErrors,
-            title: "Nama kategori sudah digunakan",
-          });
+          setFormErrors({ ...formErrors, title: "Nama kategori sudah digunakan" });
         } else {
-          toast.error(
-            selectedKategori
-              ? "Gagal memperbarui kategori"
-              : "Gagal menambahkan kategori",
-          );
+          toast.error(selectedKategori ? "Gagal memperbarui kategori" : "Gagal menambahkan kategori");
         }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
       } else {
-        toast.error(
-          selectedKategori
-            ? "Gagal memperbarui kategori"
-            : "Gagal menambahkan kategori",
-        );
+        toast.error(error instanceof Error ? error.message : "Terjadi kesalahan");
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Delete handlers
+  // ── Delete ────────────────────────────────────────────────────────────────
+
   const handleOpenDeleteDialog = (item: Kategori) => {
     setSelectedKategori(item);
     setDeleteDialogOpen(true);
@@ -410,84 +385,60 @@ export default function KategoriPage() {
 
   const handleDelete = async () => {
     if (!selectedKategori) return;
-
     setSubmitting(true);
-
     try {
-      const { error } = await supabase
-        .from("kategori")
-        .delete()
-        .eq("id", selectedKategori.id);
-
+      const { error } = await supabase.from("kategori").delete().eq("id", selectedKategori.id);
       if (error) throw error;
-
       toast.success("Kategori berhasil dihapus");
       setDeleteDialogOpen(false);
       setSelectedKategori(null);
       await fetchKategori();
     } catch (error) {
-      console.error("Error deleting kategori:", error);
-
-      // Type guard untuk PostgrestError
       if (error && typeof error === "object" && "code" in error) {
-        const dbError = error as { code: string; message?: string };
-        if (dbError.code === "23503") {
-          toast.error(
-            "Tidak dapat menghapus kategori karena masih terhubung dengan data lain",
-          );
-        } else {
-          toast.error("Gagal menghapus kategori");
-        }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
+        const dbErr = error as { code: string };
+        toast.error(
+          dbErr.code === "23503"
+            ? "Tidak dapat menghapus kategori karena masih terhubung dengan data lain"
+            : "Gagal menghapus kategori",
+        );
       } else {
-        toast.error("Gagal menghapus kategori");
+        toast.error(error instanceof Error ? error.message : "Gagal menghapus kategori");
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Bulk delete handler
   const handleBulkDelete = async () => {
     setSubmitting(true);
-
     try {
       const { error } = await supabase
         .from("kategori")
         .delete()
         .in("id", Array.from(selectedIds));
-
       if (error) throw error;
-
       toast.success(`${selectedIds.size} kategori berhasil dihapus`);
       setBulkDeleteDialogOpen(false);
       setSelectedIds(new Set());
       await fetchKategori();
     } catch (error) {
-      console.error("Error bulk deleting kategori:", error);
-
-      // Type guard untuk PostgrestError
       if (error && typeof error === "object" && "code" in error) {
-        const dbError = error as { code: string; message?: string };
-        if (dbError.code === "23503") {
-          toast.error(
-            "Beberapa kategori tidak dapat dihapus karena masih terhubung dengan data lain",
-          );
-        } else {
-          toast.error("Gagal menghapus kategori");
-        }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
+        const dbErr = error as { code: string };
+        toast.error(
+          dbErr.code === "23503"
+            ? "Beberapa kategori tidak dapat dihapus karena masih terhubung dengan data lain"
+            : "Gagal menghapus kategori",
+        );
       } else {
-        toast.error("Gagal menghapus kategori");
+        toast.error(error instanceof Error ? error.message : "Gagal menghapus kategori");
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Sort options
+  // ── Misc ──────────────────────────────────────────────────────────────────
+
   const sortOptions = [
     { value: "title-asc", label: "Nama (A-Z)" },
     { value: "title-desc", label: "Nama (Z-A)" },
@@ -495,8 +446,9 @@ export default function KategoriPage() {
     { value: "created_at-asc", label: "Terlama" },
   ];
 
-  const showReset =
-    sortField !== "title" || sortOrder !== "asc" || searchQuery !== "";
+  const showReset = sortField !== "title" || sortOrder !== "asc" || searchQuery !== "";
+
+  // ── Loading skeleton ──────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -506,9 +458,7 @@ export default function KategoriPage() {
           <Skeleton className="h-5 w-96" />
         </div>
         <Card>
-          <CardHeader>
-            <Skeleton className="h-7 w-48" />
-          </CardHeader>
+          <CardHeader><Skeleton className="h-7 w-48" /></CardHeader>
           <CardContent>
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
@@ -522,6 +472,8 @@ export default function KategoriPage() {
       </div>
     );
   }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -541,12 +493,8 @@ export default function KategoriPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
-            Kategori
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Kelola kategori untuk sistem
-          </p>
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Kategori</h1>
+          <p className="text-muted-foreground mt-1">Kelola kategori untuk sistem</p>
         </div>
         <div className="flex gap-2 self-end sm:self-auto">
           {selectedIds.size > 0 && (
@@ -571,13 +519,11 @@ export default function KategoriPage() {
       <Card>
         <CardHeader>
           <div className="space-y-4">
-            {/* Title and Search Row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <CardTitle>Daftar Kategori ({totalItems})</CardTitle>
-
               <div className="flex gap-3 w-full sm:w-auto">
                 <div className="relative grow sm:grow-0 sm:w-64">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Cari nama kategori..."
                     value={searchQuery}
@@ -588,13 +534,8 @@ export default function KategoriPage() {
               </div>
             </div>
 
-            {/* Filters Row */}
             <div className="flex gap-3">
-              {/* Sort Filter */}
-              <Select
-                value={`${sortField}-${sortOrder}`}
-                onValueChange={handleSortChange}
-              >
+              <Select value={`${sortField}-${sortOrder}`} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-full sm:w-[200px]">
                   <div className="flex items-center gap-2">
                     <ArrowUpDown className="h-4 w-4" />
@@ -602,15 +543,12 @@ export default function KategoriPage() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
+                  {sortOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              {/* Reset Button */}
               {showReset && (
                 <Button variant="outline" onClick={handleResetFilters}>
                   <X className="h-4 w-4 mr-2" />
@@ -620,8 +558,8 @@ export default function KategoriPage() {
             </div>
           </div>
         </CardHeader>
+
         <CardContent>
-          {/* Table */}
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -631,26 +569,21 @@ export default function KategoriPage() {
                       checked={isAllSelected}
                       onCheckedChange={handleSelectAll}
                       aria-label="Select all"
-                      className={
-                        isSomeSelected
-                          ? "data-[state=checked]:bg-primary/50"
-                          : ""
-                      }
+                      className={isSomeSelected ? "data-[state=checked]:bg-primary/50" : ""}
                     />
                   </TableHead>
                   <TableHead className="w-16">No</TableHead>
                   <TableHead>Nama Kategori</TableHead>
-                  <TableHead className="w-[180px]">Dibuat</TableHead>
+                  {/* ── Kolom Audit ── */}
+                  <TableHead className="w-52">Dibuat Oleh</TableHead>
+                  <TableHead className="w-52">Diperbarui Oleh</TableHead>
                   <TableHead className="text-right w-32">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentKategori.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center text-muted-foreground h-32"
-                    >
+                    <TableCell colSpan={6} className="text-center text-muted-foreground h-32">
                       {searchQuery
                         ? "Tidak ada data yang sesuai dengan pencarian"
                         : "Belum ada data kategori"}
@@ -659,7 +592,6 @@ export default function KategoriPage() {
                 ) : (
                   currentKategori.map((item, index) => {
                     const rowNumber = startIndex + index + 1;
-
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
@@ -671,15 +603,67 @@ export default function KategoriPage() {
                             aria-label={`Select ${item.title}`}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {rowNumber}
-                        </TableCell>
+                        <TableCell className="font-medium">{rowNumber}</TableCell>
                         <TableCell>
                           <div className="font-medium">{item.title}</div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDateTime(item.created_at)}
+
+                        {/* ── Dibuat Oleh ── */}
+                        <TableCell>
+                          {item.created_by_user ? (
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <Avatar className="h-5 w-5 shrink-0">
+                                  <AvatarImage
+                                    src={item.created_by_user.avatar}
+                                    alt={item.created_by_user.nama}
+                                  />
+                                  <AvatarFallback className="text-[10px]">
+                                    {item.created_by_user.nama.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs font-medium truncate max-w-[100px]">
+                                  {item.created_by_user.nama}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground pl-6">
+                                {formatDateTime(item.created_at)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              {formatDateTime(item.created_at)}
+                            </span>
+                          )}
                         </TableCell>
+
+                        {/* ── Diperbarui Oleh ── */}
+                        <TableCell>
+                          {item.updated_by_user ? (
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <Avatar className="h-5 w-5 shrink-0">
+                                  <AvatarImage
+                                    src={item.updated_by_user.avatar}
+                                    alt={item.updated_by_user.nama}
+                                  />
+                                  <AvatarFallback className="text-[10px]">
+                                    {item.updated_by_user.nama.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs font-medium truncate max-w-[100px]">
+                                  {item.updated_by_user.nama}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground pl-6">
+                                {item.updated_at ? formatDateTime(item.updated_at) : "-"}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+
                         <TableCell>
                           <div className="flex justify-end gap-2">
                             <TooltipProvider>
@@ -695,9 +679,7 @@ export default function KategoriPage() {
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Edit</p>
-                                </TooltipContent>
+                                <TooltipContent><p>Edit</p></TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                             <TooltipProvider>
@@ -713,9 +695,7 @@ export default function KategoriPage() {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Hapus</p>
-                                </TooltipContent>
+                                <TooltipContent><p>Hapus</p></TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           </div>
@@ -728,7 +708,6 @@ export default function KategoriPage() {
             </Table>
           </div>
 
-          {/* Pagination */}
           <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -742,7 +721,9 @@ export default function KategoriPage() {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Dialog */}
+      {/* ════════════════════════════════════════════════════════════════════
+          Dialog Tambah / Edit
+      ════════════════════════════════════════════════════════════════════ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -750,12 +731,11 @@ export default function KategoriPage() {
               {selectedKategori ? "Edit Kategori" : "Tambah Kategori"}
             </DialogTitle>
             <DialogDescription>
-              {selectedKategori
-                ? "Update informasi kategori"
-                : "Tambah kategori baru"}
+              {selectedKategori ? "Update informasi kategori" : "Tambah kategori baru"}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
+
+          <form onSubmit={(e) => { void handleSubmit(e); }}>
             <div className="space-y-4 py-4">
               {/* Nama Kategori */}
               <div className="space-y-2">
@@ -767,9 +747,7 @@ export default function KategoriPage() {
                   value={formData.title}
                   onChange={(e) => {
                     setFormData({ ...formData, title: e.target.value });
-                    if (formErrors.title) {
-                      setFormErrors({ ...formErrors, title: "" });
-                    }
+                    if (formErrors.title) setFormErrors({ ...formErrors, title: "" });
                   }}
                   placeholder="Masukkan nama kategori"
                   disabled={submitting}
@@ -779,7 +757,67 @@ export default function KategoriPage() {
                   <p className="text-sm text-red-500">{formErrors.title}</p>
                 )}
               </div>
+
+              {/* ── Audit Box — hanya tampil saat mode Edit ── */}
+              {selectedKategori && (
+                <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-2 text-xs text-muted-foreground">
+                  {/* Dibuat oleh */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Avatar className="h-5 w-5 shrink-0">
+                      <AvatarImage
+                        src={selectedKategori.created_by_user?.avatar}
+                        alt={selectedKategori.created_by_user?.nama ?? ""}
+                      />
+                      <AvatarFallback className="text-[10px]">
+                        {(selectedKategori.created_by_user?.nama ?? "?").charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>
+                      Dibuat oleh{" "}
+                      <span className="font-medium text-foreground">
+                        {selectedKategori.created_by_user?.nama ?? "—"}
+                      </span>
+                    </span>
+                    {selectedKategori.created_at && (
+                      <>
+                        <span className="text-muted-foreground/50">•</span>
+                        <Calendar className="h-3 w-3 shrink-0" />
+                        <span>{formatDateTime(selectedKategori.created_at)}</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Diperbarui oleh — hanya jika ada */}
+                  {selectedKategori.updated_by_user && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Avatar className="h-5 w-5 shrink-0">
+                        <AvatarImage
+                          src={selectedKategori.updated_by_user.avatar}
+                          alt={selectedKategori.updated_by_user.nama}
+                        />
+                        <AvatarFallback className="text-[10px]">
+                          {selectedKategori.updated_by_user.nama.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>
+                        Diperbarui oleh{" "}
+                        <span className="font-medium text-foreground">
+                          {selectedKategori.updated_by_user.nama}
+                        </span>
+                      </span>
+                      {selectedKategori.updated_at && (
+                        <>
+                          <span className="text-muted-foreground/50">•</span>
+                          <Clock className="h-3 w-3 shrink-0" />
+                          <span>{formatDateTime(selectedKategori.updated_at)}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
             <DialogFooter>
               <Button
                 type="button"
@@ -790,9 +828,7 @@ export default function KategoriPage() {
                 Batal
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
@@ -800,21 +836,20 @@ export default function KategoriPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* ── Delete Dialog ── */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Kategori?</AlertDialogTitle>
             <AlertDialogDescription>
               Apakah Anda yakin ingin menghapus kategori{" "}
-              <strong>{selectedKategori?.title}</strong>? Tindakan ini tidak
-              dapat dibatalkan.
+              <strong>{selectedKategori?.title}</strong>? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={() => { void handleDelete(); }}
               disabled={submitting}
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white"
             >
@@ -825,25 +860,20 @@ export default function KategoriPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Confirmation Dialog */}
-      <AlertDialog
-        open={bulkDeleteDialogOpen}
-        onOpenChange={setBulkDeleteDialogOpen}
-      >
+      {/* ── Bulk Delete Dialog ── */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Hapus {selectedIds.size} Kategori?
-            </AlertDialogTitle>
+            <AlertDialogTitle>Hapus {selectedIds.size} Kategori?</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus {selectedIds.size} kategori yang
-              dipilih? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus {selectedIds.size} kategori yang dipilih?
+              Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleBulkDelete}
+              onClick={() => { void handleBulkDelete(); }}
               disabled={submitting}
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
             >
@@ -854,11 +884,7 @@ export default function KategoriPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Access Denied Dialog */}
-      <AccessDeniedDialog
-        open={showAccessDenied}
-        onOpenChange={setShowAccessDenied}
-      />
+      <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
     </div>
   );
 }

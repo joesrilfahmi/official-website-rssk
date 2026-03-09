@@ -1,4 +1,3 @@
-// app/(dashboard)/daftar-poli/page.tsx
 "use client";
 
 import { AccessDeniedDialog } from "@/components/access-denied-dialog";
@@ -13,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -65,6 +65,8 @@ import { Poli } from "@/types/index";
 import * as Icons from "lucide-react";
 import {
   ArrowUpDown,
+  Calendar,
+  Clock,
   Loader2,
   Pencil,
   Plus,
@@ -75,14 +77,25 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 type SortField = "nama_poli" | "urutan" | "created_at";
 type SortOrder = "asc" | "desc";
 
-interface PoliExtended extends Poli {
-  icon: string;
-  description: string;
-  urutan: number;
+interface AuditUser {
+  id: string;
+  nama: string;
+  username: string;
+  avatar?: string;
 }
+
+interface PoliExtended extends Poli {
+  created_by?: string | null;
+  updated_by?: string | null;
+  created_by_user?: AuditUser;
+  updated_by_user?: AuditUser;
+}
+
 interface FormDataType {
   nama_poli: string;
   description: string;
@@ -111,6 +124,8 @@ const DEFAULT_FORM_ERRORS: FormErrorsType = {
   urutan: "",
 };
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function DaftarPoliPage() {
   const [poli, setPoli] = useState<PoliExtended[]>([]);
   const [filteredPoli, setFilteredPoli] = useState<PoliExtended[]>([]);
@@ -120,44 +135,38 @@ export default function DaftarPoliPage() {
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [selectedPoli, setSelectedPoli] = useState<PoliExtended | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive"
-  >("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
-  // Access control state
   const [showAccessDenied, setShowAccessDenied] = useState(false);
-
-  // Selection states
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Pagination & Filter States
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState<number | "all">(10);
 
-  // Sorting states
   const [sortField, setSortField] = useState<SortField>("urutan");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
-  const [formErrors, setFormErrors] =
-    useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
+  const [formErrors, setFormErrors] = useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
 
-  // Debounce search
+  // ── Debounce search ───────────────────────────────────────────────────────
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
       setCurrentPage(1);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // ── Filter & sort ─────────────────────────────────────────────────────────
 
   const applyFilters = useCallback(() => {
     let filtered = [...poli];
 
-    // Search filter
     if (debouncedSearch.trim()) {
       const query = debouncedSearch.toLowerCase();
       filtered = filtered.filter(
@@ -168,20 +177,14 @@ export default function DaftarPoliPage() {
       );
     }
 
-
-
-    // Status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter((p) => {
-        const isActive = p.status === "active";
-        return statusFilter === "active" ? isActive : !isActive;
-      });
+      filtered = filtered.filter((p) =>
+        statusFilter === "active" ? p.status === "active" : p.status !== "active",
+      );
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       let compareValue = 0;
-
       if (sortField === "nama_poli") {
         compareValue = a.nama_poli.localeCompare(b.nama_poli, "id");
       } else if (sortField === "urutan") {
@@ -191,7 +194,6 @@ export default function DaftarPoliPage() {
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
         compareValue = dateA - dateB;
       }
-
       return sortOrder === "asc" ? compareValue : -compareValue;
     });
 
@@ -204,64 +206,70 @@ export default function DaftarPoliPage() {
     applyFilters();
   }, [applyFilters]);
 
-  // Fetch poli
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+
   const fetchPoli = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("poli")
-        .select("*")
+        .select(
+          `*,
+          created_by_user:users!poli_created_by_fkey(id, nama, username, avatar),
+          updated_by_user:users!poli_updated_by_fkey(id, nama, username, avatar)`,
+        )
         .order("urutan", { ascending: true });
 
       if (error) throw error;
 
-      setPoli(data || []);
+      // Konversi null → undefined agar sesuai tipe PoliExtended
+      const mapped: PoliExtended[] = (data || []).map((row) => ({
+        ...row,
+        created_by_user: row.created_by_user ?? undefined,
+        updated_by_user: row.updated_by_user ?? undefined,
+      }));
+
+      setPoli(mapped);
     } catch (error) {
       console.error("Error fetching poli:", error);
-      if (error instanceof Error) {
-        toast.error(`Gagal memuat data poli: ${error.message}`);
-      } else {
-        toast.error("Gagal memuat data poli");
-      }
+      toast.error(
+        error instanceof Error
+          ? `Gagal memuat data poli: ${error.message}`
+          : "Gagal memuat data poli",
+      );
     }
   }, []);
 
-  // Initial load
+  // ── Initial load ──────────────────────────────────────────────────────────
+
   useEffect(() => {
     const loadInitial = async () => {
       try {
         setLoading(true);
-
-        // Check user access
-        const currentUser = getCurrentUser();
+        const currentUser = await getCurrentUser();
         if (!currentUser) {
           setShowAccessDenied(true);
           return;
         }
-
+        setCurrentUserId(currentUser.id);
         await fetchPoli();
       } finally {
         setLoading(false);
       }
     };
 
-    loadInitial();
+    void loadInitial();
 
-    // Real-time subscription
     const channel = supabase
       .channel("poli_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "poli" },
-        () => {
-          fetchPoli();
-        },
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "poli" }, () => {
+        void fetchPoli();
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { void supabase.removeChannel(channel); };
   }, [fetchPoli]);
+
+  // ── Sort helpers ──────────────────────────────────────────────────────────
 
   const handleSortChange = (value: string) => {
     const [field, order] = value.split("-") as [SortField, SortOrder];
@@ -270,13 +278,9 @@ export default function DaftarPoliPage() {
   };
 
   const getSortLabel = () => {
-    if (sortField === "nama_poli") {
-      return sortOrder === "asc" ? "Nama (A-Z)" : "Nama (Z-A)";
-    } else if (sortField === "urutan") {
-      return sortOrder === "asc" ? "Urutan (1-9)" : "Urutan (9-1)";
-    } else {
-      return sortOrder === "asc" ? "Terlama" : "Terbaru";
-    }
+    if (sortField === "nama_poli") return sortOrder === "asc" ? "Nama (A-Z)" : "Nama (Z-A)";
+    if (sortField === "urutan") return sortOrder === "asc" ? "Urutan (1-9)" : "Urutan (9-1)";
+    return sortOrder === "asc" ? "Terlama" : "Terbaru";
   };
 
   const handleResetFilters = () => {
@@ -285,40 +289,35 @@ export default function DaftarPoliPage() {
     setSearchQuery("");
   };
 
+  // ── Pagination ────────────────────────────────────────────────────────────
+
   const totalItems = filteredPoli.length;
   const totalPages =
-    itemsPerPage === "all" ? 1 : Math.ceil(totalItems / itemsPerPage);
+    itemsPerPage === "all" ? 1 : Math.ceil(totalItems / (itemsPerPage as number));
   const startIndex =
-    itemsPerPage === "all" ? 0 : (currentPage - 1) * itemsPerPage;
+    itemsPerPage === "all" ? 0 : (currentPage - 1) * (itemsPerPage as number);
   const endIndex =
-    itemsPerPage === "all" ? totalItems : startIndex + itemsPerPage;
+    itemsPerPage === "all" ? totalItems : startIndex + (itemsPerPage as number);
   const currentPoli = filteredPoli.slice(startIndex, endIndex);
 
-  // Checkbox handlers
+  // ── Selection ─────────────────────────────────────────────────────────────
+
   const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const allIds = new Set(currentPoli.map((p) => p.id));
-      setSelectedIds(allIds);
-    } else {
-      setSelectedIds(new Set());
-    }
+    setSelectedIds(checked ? new Set(currentPoli.map((p) => p.id)) : new Set());
   };
 
   const handleSelectOne = (id: string, checked: boolean) => {
-    const newSelected = new Set(selectedIds);
-    if (checked) {
-      newSelected.add(id);
-    } else {
-      newSelected.delete(id);
-    }
-    setSelectedIds(newSelected);
+    const next = new Set(selectedIds);
+    checked ? next.add(id) : next.delete(id);
+    setSelectedIds(next);
   };
 
   const isAllSelected =
     currentPoli.length > 0 && currentPoli.every((p) => selectedIds.has(p.id));
-
   const isSomeSelected =
     currentPoli.some((p) => selectedIds.has(p.id)) && !isAllSelected;
+
+  // ── Dialog ────────────────────────────────────────────────────────────────
 
   const handleOpenDialog = async (item?: PoliExtended) => {
     if (item) {
@@ -330,20 +329,14 @@ export default function DaftarPoliPage() {
         urutan: item.urutan,
       });
     } else {
-      // Get max urutan for new item
       const { data } = await supabase
         .from("poli")
         .select("urutan")
         .order("urutan", { ascending: false })
         .limit(1);
-
       const nextUrutan = data && data.length > 0 ? data[0].urutan + 1 : 1;
-
       setSelectedPoli(null);
-      setFormData({
-        ...DEFAULT_FORM_DATA,
-        urutan: nextUrutan,
-      });
+      setFormData({ ...DEFAULT_FORM_DATA, urutan: nextUrutan });
     }
     setFormErrors(DEFAULT_FORM_ERRORS);
     setDialogOpen(true);
@@ -358,7 +351,8 @@ export default function DaftarPoliPage() {
     }, 200);
   };
 
-  // Validate form
+  // ── Validation ────────────────────────────────────────────────────────────
+
   const validateForm = (): boolean => {
     const errors: FormErrorsType = {
       nama_poli: "",
@@ -366,78 +360,72 @@ export default function DaftarPoliPage() {
       icon: "",
       urutan: "",
     };
-
     let isValid = true;
 
     if (!formData.nama_poli.trim()) {
-      errors.nama_poli = "Nama poli wajib diisi";
-      isValid = false;
+      errors.nama_poli = "Nama poli wajib diisi"; isValid = false;
     } else if (formData.nama_poli.trim().length < 3) {
-      errors.nama_poli = "Nama poli minimal 3 karakter";
-      isValid = false;
+      errors.nama_poli = "Nama poli minimal 3 karakter"; isValid = false;
     } else if (formData.nama_poli.trim().length > 100) {
-      errors.nama_poli = "Nama poli maksimal 100 karakter";
-      isValid = false;
+      errors.nama_poli = "Nama poli maksimal 100 karakter"; isValid = false;
     }
 
     if (!formData.description.trim()) {
-      errors.description = "Deskripsi wajib diisi";
-      isValid = false;
+      errors.description = "Deskripsi wajib diisi"; isValid = false;
     } else if (formData.description.trim().length < 10) {
-      errors.description = "Deskripsi minimal 10 karakter";
-      isValid = false;
+      errors.description = "Deskripsi minimal 10 karakter"; isValid = false;
     }
 
     if (!formData.icon.trim()) {
-      errors.icon = "Icon wajib dipilih";
-      isValid = false;
+      errors.icon = "Icon wajib dipilih"; isValid = false;
     }
 
     if (formData.urutan < 0) {
-      errors.urutan = "Urutan tidak boleh negatif";
-      isValid = false;
+      errors.urutan = "Urutan tidak boleh negatif"; isValid = false;
     }
 
     setFormErrors(errors);
     return isValid;
   };
 
-  // Submit handler
+  // ── Submit ────────────────────────────────────────────────────────────────
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) {
       toast.error("Mohon periksa kembali form Anda");
       return;
     }
-
     setSubmitting(true);
 
     try {
-      const payload = {
-        nama_poli: formData.nama_poli.trim(),
-        description: formData.description.trim(),
-        icon: formData.icon.trim(),
-        urutan: formData.urutan,
-        status: "active" as const,
-      };
-
       if (selectedPoli) {
-        // Update existing poli
+        // UPDATE — catat siapa yang mengupdate
         const { error } = await supabase
           .from("poli")
-          .update(payload)
+          .update({
+            nama_poli: formData.nama_poli.trim(),
+            description: formData.description.trim(),
+            icon: formData.icon.trim(),
+            urutan: formData.urutan,
+            status: "active" as const,
+            updated_by: currentUserId,           // ← siapa yang update
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", selectedPoli.id);
-
         if (error) throw error;
-
         toast.success("Poli berhasil diperbarui");
       } else {
-        // Create new poli
-        const { error } = await supabase.from("poli").insert([payload]);
-
+        // INSERT — catat siapa yang membuat
+        const { error } = await supabase.from("poli").insert([{
+          nama_poli: formData.nama_poli.trim(),
+          description: formData.description.trim(),
+          icon: formData.icon.trim(),
+          urutan: formData.urutan,
+          status: "active" as const,
+          created_by: currentUserId,             // ← siapa yang buat
+        }]);
         if (error) throw error;
-
         toast.success("Poli berhasil ditambahkan");
       }
 
@@ -445,34 +433,24 @@ export default function DaftarPoliPage() {
       await fetchPoli();
     } catch (error) {
       console.error("Error saving poli:", error);
-
-      // Type guard untuk PostgrestError
       if (error && typeof error === "object" && "code" in error) {
-        const dbError = error as { code: string; message?: string };
-        if (dbError.code === "23505") {
+        const dbErr = error as { code: string };
+        if (dbErr.code === "23505") {
           toast.error("Nama poli sudah digunakan");
-          setFormErrors({
-            ...formErrors,
-            nama_poli: "Nama poli sudah digunakan",
-          });
+          setFormErrors({ ...formErrors, nama_poli: "Nama poli sudah digunakan" });
         } else {
-          toast.error(
-            selectedPoli ? "Gagal memperbarui poli" : "Gagal menambahkan poli",
-          );
+          toast.error(selectedPoli ? "Gagal memperbarui poli" : "Gagal menambahkan poli");
         }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
       } else {
-        toast.error(
-          selectedPoli ? "Gagal memperbarui poli" : "Gagal menambahkan poli",
-        );
+        toast.error(error instanceof Error ? error.message : "Terjadi kesalahan");
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Delete handlers
+  // ── Delete ────────────────────────────────────────────────────────────────
+
   const handleOpenDeleteDialog = (item: PoliExtended) => {
     setSelectedPoli(item);
     setDeleteDialogOpen(true);
@@ -480,84 +458,60 @@ export default function DaftarPoliPage() {
 
   const handleDelete = async () => {
     if (!selectedPoli) return;
-
     setSubmitting(true);
-
     try {
-      const { error } = await supabase
-        .from("poli")
-        .delete()
-        .eq("id", selectedPoli.id);
-
+      const { error } = await supabase.from("poli").delete().eq("id", selectedPoli.id);
       if (error) throw error;
-
       toast.success("Poli berhasil dihapus");
       setDeleteDialogOpen(false);
       setSelectedPoli(null);
       await fetchPoli();
     } catch (error) {
-      console.error("Error deleting poli:", error);
-
-      // Type guard untuk PostgrestError
       if (error && typeof error === "object" && "code" in error) {
-        const dbError = error as { code: string; message?: string };
-        if (dbError.code === "23503") {
-          toast.error(
-            "Tidak dapat menghapus poli karena masih terhubung dengan data dokter",
-          );
-        } else {
-          toast.error("Gagal menghapus poli");
-        }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
+        const dbErr = error as { code: string };
+        toast.error(
+          dbErr.code === "23503"
+            ? "Tidak dapat menghapus poli karena masih terhubung dengan data dokter"
+            : "Gagal menghapus poli",
+        );
       } else {
-        toast.error("Gagal menghapus poli");
+        toast.error(error instanceof Error ? error.message : "Gagal menghapus poli");
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Bulk delete handler
   const handleBulkDelete = async () => {
     setSubmitting(true);
-
     try {
       const { error } = await supabase
         .from("poli")
         .delete()
         .in("id", Array.from(selectedIds));
-
       if (error) throw error;
-
       toast.success(`${selectedIds.size} poli berhasil dihapus`);
       setBulkDeleteDialogOpen(false);
       setSelectedIds(new Set());
       await fetchPoli();
     } catch (error) {
-      console.error("Error bulk deleting poli:", error);
-
-      // Type guard untuk PostgrestError
       if (error && typeof error === "object" && "code" in error) {
-        const dbError = error as { code: string; message?: string };
-        if (dbError.code === "23503") {
-          toast.error(
-            "Beberapa poli tidak dapat dihapus karena masih terhubung dengan data dokter",
-          );
-        } else {
-          toast.error("Gagal menghapus poli");
-        }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
+        const dbErr = error as { code: string };
+        toast.error(
+          dbErr.code === "23503"
+            ? "Beberapa poli tidak dapat dihapus karena masih terhubung dengan data dokter"
+            : "Gagal menghapus poli",
+        );
       } else {
-        toast.error("Gagal menghapus poli");
+        toast.error(error instanceof Error ? error.message : "Gagal menghapus poli");
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Sort options
+  // ── Misc ──────────────────────────────────────────────────────────────────
+
   const sortOptions = [
     { value: "urutan-asc", label: "Urutan (1-9)" },
     { value: "urutan-desc", label: "Urutan (9-1)" },
@@ -567,8 +521,9 @@ export default function DaftarPoliPage() {
     { value: "created_at-asc", label: "Terlama" },
   ];
 
-  const showReset =
-    sortField !== "urutan" || sortOrder !== "asc" || searchQuery !== "";
+  const showReset = sortField !== "urutan" || sortOrder !== "asc" || searchQuery !== "";
+
+  // ── Loading skeleton ──────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -578,9 +533,7 @@ export default function DaftarPoliPage() {
           <Skeleton className="h-5 w-96" />
         </div>
         <Card>
-          <CardHeader>
-            <Skeleton className="h-7 w-48" />
-          </CardHeader>
+          <CardHeader><Skeleton className="h-7 w-48" /></CardHeader>
           <CardContent>
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
@@ -594,6 +547,8 @@ export default function DaftarPoliPage() {
       </div>
     );
   }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -613,9 +568,7 @@ export default function DaftarPoliPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
-            Daftar Poli
-          </h1>
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Daftar Poli</h1>
           <p className="text-muted-foreground mt-1">
             Kelola daftar poli untuk ditampilkan di website
           </p>
@@ -632,7 +585,7 @@ export default function DaftarPoliPage() {
               Hapus ({selectedIds.size})
             </Button>
           )}
-          <Button onClick={() => handleOpenDialog()}>
+          <Button onClick={() => { void handleOpenDialog(); }}>
             <Plus className="mr-2 h-4 w-4" />
             Tambah Poli
           </Button>
@@ -643,13 +596,11 @@ export default function DaftarPoliPage() {
       <Card>
         <CardHeader>
           <div className="space-y-4">
-            {/* Title and Search Row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <CardTitle>Daftar Poli ({totalItems})</CardTitle>
-
               <div className="flex gap-3 w-full sm:w-auto">
                 <div className="relative grow sm:grow-0 sm:w-64">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Cari nama poli, deskripsi..."
                     value={searchQuery}
@@ -660,13 +611,8 @@ export default function DaftarPoliPage() {
               </div>
             </div>
 
-            {/* Filters Row */}
             <div className="flex flex-wrap gap-3">
-              {/* Sort Filter */}
-              <Select
-                value={`${sortField}-${sortOrder}`}
-                onValueChange={handleSortChange}
-              >
+              <Select value={`${sortField}-${sortOrder}`} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-full sm:w-[200px]">
                   <div className="flex items-center gap-2">
                     <ArrowUpDown className="h-4 w-4" />
@@ -674,20 +620,15 @@ export default function DaftarPoliPage() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
+                  {sortOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              {/* Status Filter */}
               <Select
                 value={statusFilter}
-                onValueChange={(value: "all" | "active" | "inactive") =>
-                  setStatusFilter(value)
-                }
+                onValueChange={(v: "all" | "active" | "inactive") => setStatusFilter(v)}
               >
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <div className="flex items-center gap-2">
@@ -695,9 +636,7 @@ export default function DaftarPoliPage() {
                     <span>
                       {statusFilter === "all"
                         ? "Semua Status"
-                        : statusFilter === "active"
-                          ? "Aktif"
-                          : "Nonaktif"}
+                        : statusFilter === "active" ? "Aktif" : "Nonaktif"}
                     </span>
                   </div>
                 </SelectTrigger>
@@ -708,7 +647,6 @@ export default function DaftarPoliPage() {
                 </SelectContent>
               </Select>
 
-              {/* Reset Button */}
               {showReset && (
                 <Button variant="outline" onClick={handleResetFilters}>
                   <X className="h-4 w-4 mr-2" />
@@ -718,8 +656,8 @@ export default function DaftarPoliPage() {
             </div>
           </div>
         </CardHeader>
+
         <CardContent>
-          {/* Table */}
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -729,11 +667,7 @@ export default function DaftarPoliPage() {
                       checked={isAllSelected}
                       onCheckedChange={handleSelectAll}
                       aria-label="Select all"
-                      className={
-                        isSomeSelected
-                          ? "data-[state=checked]:bg-primary/50"
-                          : ""
-                      }
+                      className={isSomeSelected ? "data-[state=checked]:bg-primary/50" : ""}
                     />
                   </TableHead>
                   <TableHead className="w-16">No</TableHead>
@@ -742,17 +676,16 @@ export default function DaftarPoliPage() {
                   <TableHead className="max-w-md">Deskripsi</TableHead>
                   <TableHead className="w-24">Urutan</TableHead>
                   <TableHead className="w-24">Status</TableHead>
-                  <TableHead className="w-[180px]">Dibuat</TableHead>
+                  {/* ── Kolom Audit ── */}
+                  <TableHead className="w-52">Dibuat Oleh</TableHead>
+                  <TableHead className="w-52">Diperbarui Oleh</TableHead>
                   <TableHead className="text-right w-32">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentPoli.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={9}
-                      className="text-center text-muted-foreground h-32"
-                    >
+                    <TableCell colSpan={10} className="text-center text-muted-foreground h-32">
                       {searchQuery
                         ? "Tidak ada data yang sesuai dengan pencarian"
                         : "Belum ada data poli"}
@@ -779,9 +712,7 @@ export default function DaftarPoliPage() {
                             aria-label={`Select ${item.nama_poli}`}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {rowNumber}
-                        </TableCell>
+                        <TableCell className="font-medium">{rowNumber}</TableCell>
                         <TableCell>
                           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
                             {IconComponent ? (
@@ -791,36 +722,84 @@ export default function DaftarPoliPage() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {item.nama_poli}
-                        </TableCell>
+                        <TableCell className="font-medium">{item.nama_poli}</TableCell>
                         <TableCell className="max-w-md">
                           <p className="line-clamp-2 text-sm text-muted-foreground">
                             {item.description}
                           </p>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="font-mono">
-                            {item.urutan}
-                          </Badge>
+                          <Badge variant="outline" className="font-mono">{item.urutan}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
                             className={
                               item.status === "active"
-                                ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700"
-                                : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300 dark:border-green-700"
+                                : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700"
                             }
                           >
                             {item.status === "active" ? "Aktif" : "Tidak Aktif"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {item.created_at
-                            ? formatDateTime(item.created_at)
-                            : "-"}
+
+                        {/* ── Dibuat Oleh ── */}
+                        <TableCell>
+                          {item.created_by_user ? (
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <Avatar className="h-5 w-5 shrink-0">
+                                  <AvatarImage
+                                    src={item.created_by_user.avatar}
+                                    alt={item.created_by_user.nama}
+                                  />
+                                  <AvatarFallback className="text-[10px]">
+                                    {item.created_by_user.nama.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs font-medium truncate max-w-[100px]">
+                                  {item.created_by_user.nama}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground pl-6">
+                                {item.created_at ? formatDateTime(item.created_at) : "-"}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              {item.created_at ? formatDateTime(item.created_at) : "-"}
+                            </span>
+                          )}
                         </TableCell>
+
+                        {/* ── Diperbarui Oleh ── */}
+                        <TableCell>
+                          {item.updated_by_user ? (
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <Avatar className="h-5 w-5 shrink-0">
+                                  <AvatarImage
+                                    src={item.updated_by_user.avatar}
+                                    alt={item.updated_by_user.nama}
+                                  />
+                                  <AvatarFallback className="text-[10px]">
+                                    {item.updated_by_user.nama.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs font-medium truncate max-w-[100px]">
+                                  {item.updated_by_user.nama}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground pl-6">
+                                {item.updated_at ? formatDateTime(item.updated_at) : "-"}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <TooltipProvider>
@@ -829,16 +808,14 @@ export default function DaftarPoliPage() {
                                   <Button
                                     variant="outline"
                                     size="icon"
-                                    onClick={() => handleOpenDialog(item)}
+                                    onClick={() => { void handleOpenDialog(item); }}
                                     className="h-8 w-8"
                                     disabled={submitting}
                                   >
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Edit</p>
-                                </TooltipContent>
+                                <TooltipContent><p>Edit</p></TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                             <TooltipProvider>
@@ -854,9 +831,7 @@ export default function DaftarPoliPage() {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Hapus</p>
-                                </TooltipContent>
+                                <TooltipContent><p>Hapus</p></TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           </div>
@@ -869,7 +844,6 @@ export default function DaftarPoliPage() {
             </Table>
           </div>
 
-          {/* Pagination */}
           <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -883,18 +857,19 @@ export default function DaftarPoliPage() {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Dialog */}
+      {/* ════════════════════════════════════════════════════════════════════
+          Dialog Tambah / Edit
+      ════════════════════════════════════════════════════════════════════ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedPoli ? "Edit Poli" : "Tambah Poli"}
-            </DialogTitle>
+            <DialogTitle>{selectedPoli ? "Edit Poli" : "Tambah Poli"}</DialogTitle>
             <DialogDescription>
               {selectedPoli ? "Update informasi poli" : "Tambah poli baru"}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
+
+          <form onSubmit={(e) => { void handleSubmit(e); }}>
             <div className="space-y-4 py-4">
               {/* Nama Poli */}
               <div className="space-y-2">
@@ -906,9 +881,7 @@ export default function DaftarPoliPage() {
                   value={formData.nama_poli}
                   onChange={(e) => {
                     setFormData({ ...formData, nama_poli: e.target.value });
-                    if (formErrors.nama_poli) {
-                      setFormErrors({ ...formErrors, nama_poli: "" });
-                    }
+                    if (formErrors.nama_poli) setFormErrors({ ...formErrors, nama_poli: "" });
                   }}
                   placeholder="Masukkan nama poli"
                   disabled={submitting}
@@ -919,7 +892,7 @@ export default function DaftarPoliPage() {
                 )}
               </div>
 
-              {/* Description */}
+              {/* Deskripsi */}
               <div className="space-y-2">
                 <Label htmlFor="description">
                   Deskripsi <span className="text-red-500">*</span>
@@ -929,23 +902,19 @@ export default function DaftarPoliPage() {
                   value={formData.description}
                   onChange={(e) => {
                     setFormData({ ...formData, description: e.target.value });
-                    if (formErrors.description) {
+                    if (formErrors.description)
                       setFormErrors({ ...formErrors, description: "" });
-                    }
                   }}
                   placeholder="Masukkan deskripsi poli"
                   disabled={submitting}
                   rows={4}
                   className={cn(
                     "min-h-[150px] resize-y",
-                    formErrors.description &&
-                      "border-red-500 focus-visible:ring-red-500",
+                    formErrors.description && "border-red-500 focus-visible:ring-red-500",
                   )}
                 />
                 {formErrors.description && (
-                  <p className="text-sm text-red-500">
-                    {formErrors.description}
-                  </p>
+                  <p className="text-sm text-red-500">{formErrors.description}</p>
                 )}
               </div>
 
@@ -954,9 +923,7 @@ export default function DaftarPoliPage() {
                 value={formData.icon}
                 onChange={(iconName) => {
                   setFormData({ ...formData, icon: iconName });
-                  if (formErrors.icon) {
-                    setFormErrors({ ...formErrors, icon: "" });
-                  }
+                  if (formErrors.icon) setFormErrors({ ...formErrors, icon: "" });
                 }}
                 error={formErrors.icon}
                 disabled={submitting}
@@ -973,13 +940,8 @@ export default function DaftarPoliPage() {
                   min="0"
                   value={formData.urutan}
                   onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      urutan: parseInt(e.target.value) || 0,
-                    });
-                    if (formErrors.urutan) {
-                      setFormErrors({ ...formErrors, urutan: "" });
-                    }
+                    setFormData({ ...formData, urutan: parseInt(e.target.value) || 0 });
+                    if (formErrors.urutan) setFormErrors({ ...formErrors, urutan: "" });
                   }}
                   placeholder="Masukkan urutan tampilan"
                   disabled={submitting}
@@ -989,11 +951,70 @@ export default function DaftarPoliPage() {
                   <p className="text-sm text-red-500">{formErrors.urutan}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Urutan menentukan posisi tampilan (semakin kecil angka,
-                  semakin awal ditampilkan)
+                  Urutan menentukan posisi tampilan (semakin kecil angka, semakin awal ditampilkan)
                 </p>
               </div>
+
+              {/* ── Audit Box — hanya tampil saat mode Edit ── */}
+              {selectedPoli && (
+                <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-2 text-xs text-muted-foreground">
+                  {/* Dibuat oleh */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Avatar className="h-5 w-5 shrink-0">
+                      <AvatarImage
+                        src={selectedPoli.created_by_user?.avatar}
+                        alt={selectedPoli.created_by_user?.nama ?? ""}
+                      />
+                      <AvatarFallback className="text-[10px]">
+                        {(selectedPoli.created_by_user?.nama ?? "?").charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>
+                      Dibuat oleh{" "}
+                      <span className="font-medium text-foreground">
+                        {selectedPoli.created_by_user?.nama ?? "—"}
+                      </span>
+                    </span>
+                    {selectedPoli.created_at && (
+                      <>
+                        <span className="text-muted-foreground/50">•</span>
+                        <Calendar className="h-3 w-3 shrink-0" />
+                        <span>{formatDateTime(selectedPoli.created_at)}</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Diperbarui oleh — hanya jika ada */}
+                  {selectedPoli.updated_by_user && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Avatar className="h-5 w-5 shrink-0">
+                        <AvatarImage
+                          src={selectedPoli.updated_by_user.avatar}
+                          alt={selectedPoli.updated_by_user.nama}
+                        />
+                        <AvatarFallback className="text-[10px]">
+                          {selectedPoli.updated_by_user.nama.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>
+                        Diperbarui oleh{" "}
+                        <span className="font-medium text-foreground">
+                          {selectedPoli.updated_by_user.nama}
+                        </span>
+                      </span>
+                      {selectedPoli.updated_at && (
+                        <>
+                          <span className="text-muted-foreground/50">•</span>
+                          <Clock className="h-3 w-3 shrink-0" />
+                          <span>{formatDateTime(selectedPoli.updated_at)}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
             <DialogFooter>
               <Button
                 type="button"
@@ -1004,9 +1025,7 @@ export default function DaftarPoliPage() {
                 Batal
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
@@ -1014,21 +1033,20 @@ export default function DaftarPoliPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* ── Delete Dialog ── */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Poli?</AlertDialogTitle>
             <AlertDialogDescription>
               Apakah Anda yakin ingin menghapus poli{" "}
-              <strong>{selectedPoli?.nama_poli}</strong>? Tindakan ini tidak
-              dapat dibatalkan.
+              <strong>{selectedPoli?.nama_poli}</strong>? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={() => { void handleDelete(); }}
               disabled={submitting}
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white"
             >
@@ -1039,23 +1057,20 @@ export default function DaftarPoliPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Confirmation Dialog */}
-      <AlertDialog
-        open={bulkDeleteDialogOpen}
-        onOpenChange={setBulkDeleteDialogOpen}
-      >
+      {/* ── Bulk Delete Dialog ── */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus {selectedIds.size} Poli?</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus {selectedIds.size} poli yang
-              dipilih? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus {selectedIds.size} poli yang dipilih?
+              Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleBulkDelete}
+              onClick={() => { void handleBulkDelete(); }}
               disabled={submitting}
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
             >
@@ -1066,11 +1081,7 @@ export default function DaftarPoliPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Access Denied Dialog */}
-      <AccessDeniedDialog
-        open={showAccessDenied}
-        onOpenChange={setShowAccessDenied}
-      />
+      <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
     </div>
   );
 }
