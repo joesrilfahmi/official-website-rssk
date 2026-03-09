@@ -10,6 +10,7 @@ import DialogPendaftaran, {
   type PendaftaranPrefill,
 } from "@/components/ui/custom/dialog-pendaftaran";
 import Input from "@/components/ui/custom/input";
+import Pagination from "@/components/ui/custom/pagination";
 import { supabase } from "@/lib/supabase/client";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
 import * as Icons from "lucide-react";
@@ -19,7 +20,6 @@ import {
   ArrowRight,
   Calendar,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   Clock,
   ExternalLink,
@@ -989,7 +989,6 @@ const LayananUnggulan = () => {
         )}
       </AnimatePresence>
 
-      {/* pt-24 = 96px → memberi ruang agar tombol Kembali tidak tertutup navbar (h-20 = 80px) */}
       <div className="bg-gray-50 pt-24 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <Animate type="fadein" duration={0.5} ready={!loading}>
@@ -1111,6 +1110,7 @@ const LayananUnggulan = () => {
                 ))}
               </Animate>
 
+              {/* ── Pagination ── */}
               {filteredLayanan.length > ITEMS_PER_PAGE && (
                 <Animate
                   type="fadein"
@@ -1118,39 +1118,15 @@ const LayananUnggulan = () => {
                   delay={0.15}
                   once={false}
                 >
-                  <div className="flex items-center justify-end gap-3 mt-2 mb-8">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                      disabled={currentPage === 1}
-                      className={
-                        currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-                      }
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                      Prev
-                    </Button>
-                    <span className="text-sm text-gray-600">
-                      {currentPage}/{totalPages}
-                    </span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() =>
-                        setCurrentPage((p) => Math.min(p + 1, totalPages))
-                      }
-                      disabled={currentPage === totalPages}
-                      className={
-                        currentPage === totalPages
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                      }
-                    >
-                      Next
-                      <ChevronRight className="w-5 h-5" />
-                    </Button>
-                  </div>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    totalItems={filteredLayanan.length}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    itemLabel="klinik"
+                    className="mt-2 mb-8"
+                  />
                 </Animate>
               )}
             </>
