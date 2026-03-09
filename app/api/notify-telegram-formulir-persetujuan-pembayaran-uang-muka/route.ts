@@ -1,4 +1,4 @@
-// app/api/notify-telegram-dp/route.ts
+// app/api/notify-telegram-formulir-persetujuan-pembayaran-uang-muka/route.ts
 //
 // Install:  npm i pdf-lib sharp
 //
@@ -10,9 +10,9 @@ import sharp from "sharp";
 import { Profile } from "@/config/profile";
 
 const TELEGRAM_TOKEN = process.env.TOKEN_TELEGRAM!;
-// id telegram 
+// id telegram
 //  6200327574 : bu ratri
-const PENERIMA_PESAN = [ 1897938211, 6200327574];
+const PENERIMA_PESAN = [1897938211];
 
 /* ─────────────────────────────────────────
    TYPES
@@ -87,33 +87,33 @@ function buildFileName(item: FormPayload): string {
 }
 
 /* ─────────────────────────────────────────
-   TELEGRAM — sendMessage (teks notifikasi)
+   TELEGRAM — sendDocument WITH CAPTION
+   Mengirim PDF beserta caption teks notifikasi dalam 1 pesan
 ───────────────────────────────────────── */
-async function sendMessage(chatId: number, text: string): Promise<void> {
-  const res  = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" }),
-  });
-  const json = (await res.json()) as { ok: boolean; description?: string };
-  if (!json.ok) throw new Error(`sendMessage [${chatId}]: ${json.description}`);
-}
-
-/* ─────────────────────────────────────────
-   TELEGRAM — sendDocument (PDF)
-───────────────────────────────────────── */
-async function sendDocument(
-  chatId: number, pdfBuf: ArrayBuffer, fileName: string,
+async function sendDocumentWithCaption(
+  chatId: number,
+  pdfBuf: ArrayBuffer,
+  fileName: string,
+  caption: string,
 ): Promise<void> {
   const form = new FormData();
   form.append("chat_id", String(chatId));
   form.append("document", new Blob([pdfBuf], { type: "application/pdf" }), `${fileName}.pdf`);
+  form.append("caption", caption);
+  form.append("parse_mode", "MarkdownV2");
 
   const res  = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
     method: "POST", body: form,
   });
   const json = (await res.json()) as { ok: boolean; description?: string };
   if (!json.ok) throw new Error(`sendDocument [${chatId}]: ${json.description}`);
+}
+
+/* ─────────────────────────────────────────
+   ESCAPE MarkdownV2 special characters
+───────────────────────────────────────── */
+function escMd(s: string): string {
+  return s.replace(/[_*[\]()~`>#+=|{}.!\\-]/g, "\\$&");
 }
 
 /* ─────────────────────────────────────────
@@ -130,7 +130,7 @@ async function loadLogoPng(): Promise<Buffer | null> {
 }
 
 /* ─────────────────────────────────────────
-   GENERATE PDF
+   GENERATE PDF  — layout sama dengan HTML di frontend
 ───────────────────────────────────────── */
 async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   const doc  = await PDFDocument.create();
@@ -139,6 +139,7 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
 
   const fR = await doc.embedFont(StandardFonts.TimesRoman);
   const fB = await doc.embedFont(StandardFonts.TimesRomanBold);
+  const fI = await doc.embedFont(StandardFonts.TimesRomanItalic);
 
   const ML  = 54;
   const MR  = 54;
@@ -220,7 +221,7 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
     return curY - 15;
   }
   y = drawTitle("FORMULIR PERSETUJUAN PEMBAYARAN UANG MUKA (DP)", y);
-  y = drawTitle(safe(`PERSALINAN ${jenisTindakanLabel.toUpperCase()} DI ${Profile.institusi} ${Profile.name}`.toUpperCase()), y);
+  y = drawTitle(safe(`TINDAKAN PERSALINAN DI ${Profile.institusi} ${Profile.name}`.toUpperCase()), y);
   y -= 8;
 
   /* ── FIELDS ── */
@@ -240,9 +241,10 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   /* ── PARAGRAPHS ── */
   y = wrapText(`Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan mengenai rencana tindakan persalinan yang akan dilakukan di ${Profile.institusi} ${Profile.name}, termasuk estimasi biaya pelayanan medis, fasilitas perawatan, serta ketentuan administrasi yang berlaku.`, ML, y, { lh: 14 });
   y -= 3;
-  y = wrapText("Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka (DP) persalinan sebesar: Rp1.000.000,- (Satu Juta Rupiah)", ML, y, { lh: 14 });
+  y = wrapText("Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka (DP) persalinan sebesar: Rp1.000.000,- (Satu Juta Rupiah)", ML, y, { lh: 14, font: fR });
+  // Already drawn above — skip separate bold, keep it simple
   y -= 3;
-  y = wrapText("Saya memahami dan menyetujui bahwa:", ML, y);
+  y = wrapText("Saya memahami dan menyetujui bahwa:", ML, y, { font: fB });
   for (const li of [
     "1.  Uang muka (DP) merupakan bagian dari total biaya persalinan.",
     "2.  Pembayaran DP dilakukan sebagai bentuk konfirmasi dan komitmen pelayanan persalinan.",
@@ -250,7 +252,7 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   ]) { y = wrapText(li, ML + 10, y, { maxW: BW - 10, lh: 13 }); }
   y -= 4;
 
-  /* ── SECTION LABEL ── */
+  /* ── SECTION LABEL — Rencana Penjamin ── */
   const secLabel = "Rencana Penjamin dan Kelas Perawatan";
   page.drawText(safe(secLabel), { x: ML, y, size: 10, font: fB, color: BLK });
   hline(ML, y - 1.5, ML + fB.widthOfTextAtSize(secLabel, 10), 0.5);
@@ -259,12 +261,13 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   y = fieldRow("Rencana Kelas / Kamar", getLabel(KELAS_MAP,    item.rencana_kelas),  y);
   y -= 4;
 
+  // Keterangan kelas
   page.drawText("Keterangan:", { x: ML, y, size: 10, font: fB, color: BLK });
-  const kW = fB.widthOfTextAtSize("Keterangan:", 10) + 4;
-  y = wrapText("Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.", ML + kW, y, { maxW: BW - kW, lh: 13 });
+  y -= 14;
+  y = wrapText("Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.", ML, y, { maxW: BW, lh: 13 });
   y -= 3;
 
-  if (item.deskripsi) { y = wrapText(item.deskripsi, ML, y, { lh: 14 }); y -= 3; }
+  if (item.deskripsi) { y = wrapText(item.deskripsi, ML, y, { lh: 14, font: fI }); y -= 3; }
 
   y = wrapText("Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.", ML, y, { lh: 14 });
   y -= 16;
@@ -296,6 +299,14 @@ async function generatePdf(item: FormPayload): Promise<ArrayBuffer> {
   const nameStr = `( ${safe(item.nama_penanggung_jawab)} )`;
   page.drawText(nameStr, { x: sigX + (SIGN_W - fR.widthOfTextAtSize(nameStr, 10)) / 2, y, size: 10, font: fR, color: BLK });
 
+  // Footer halaman
+  const footerY = 22;
+  hline(ML, footerY + 12, W - MR, 0.4);
+  const footerLeft = "Halaman 1 dari 1";
+  const footerRight = `FM-ADM-001 · ${Profile.shortName}`;
+  page.drawText(footerLeft,  { x: ML,                                                   y: footerY, size: 7, font: fR, color: GRY });
+  page.drawText(footerRight, { x: W - MR - fR.widthOfTextAtSize(footerRight, 7),        y: footerY, size: 7, font: fR, color: GRY });
+
   const u8 = await doc.save();
   return u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength) as ArrayBuffer;
 }
@@ -316,27 +327,29 @@ export async function POST(req: NextRequest) {
     const kelas       = getLabel(KELAS_MAP,    item.rencana_kelas);
     const waktu       = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
 
-    const message =
-      `🔔 *Formulir DP Persalinan Baru!*\n\n` +
-      `*Pasien* : ${item.nama_pasien}\n` +
-      `*No\\. RM* : ${item.no_rm ?? "-"}\n` +
-      `*Penanggung Jawab* : ${item.nama_penanggung_jawab}\n` +
-      `*No\\. HP* : ${item.no_hp ?? "-"}\n\n` +
-      `*Tindakan* : ${tindakan}\n` +
-      `*Dokter* : ${item.dokter_penanggung_jawab ?? "-"}\n` +
-      `*Rencana Persalinan* : ${formatTanggalLong(item.tgl_rencana_persalinan)}\n\n` +
-      `*Penjamin* : ${penjamin}\n` +
-      `*Kelas* : ${kelas}\n\n` +
-      `${waktu}`;
+    // Caption dikirim bersamaan dengan PDF (1 pesan = dokumen + caption)
+    // Gunakan MarkdownV2 — semua karakter khusus harus di-escape
+    const caption =
+      `🔔 *Formulir DP Persalinan Baru\\!*\n\n` +
+      `*Pasien*           : ${escMd(item.nama_pasien)}\n` +
+      `*No\\. RM*          : ${escMd(item.no_rm ?? "-")}\n` +
+      `*Penanggung Jawab* : ${escMd(item.nama_penanggung_jawab)}\n` +
+      `*No\\. HP*          : ${escMd(item.no_hp ?? "-")}\n\n` +
+      `*Tindakan*         : ${escMd(tindakan)}\n` +
+      `*Dokter*           : ${escMd(item.dokter_penanggung_jawab ?? "-")}\n` +
+      `*Rencana Persalinan* : ${escMd(formatTanggalLong(item.tgl_rencana_persalinan))}\n\n` +
+      `*Penjamin*         : ${escMd(penjamin)}\n` +
+      `*Kelas*            : ${escMd(kelas)}\n\n` +
+      `_${escMd(waktu)}_`;
 
     const fileName = buildFileName(item);
     const pdfBuf   = await generatePdf(item);
 
+    // Kirim 1 pesan = PDF + caption ke semua penerima
     const results = await Promise.allSettled(
-      PENERIMA_PESAN.map(async (chatId) => {
-        await sendMessage(chatId, message);
-        await sendDocument(chatId, pdfBuf, fileName);
-      })
+      PENERIMA_PESAN.map((chatId) =>
+        sendDocumentWithCaption(chatId, pdfBuf, fileName, caption)
+      )
     );
 
     const failed = results.filter((r) => r.status === "rejected");

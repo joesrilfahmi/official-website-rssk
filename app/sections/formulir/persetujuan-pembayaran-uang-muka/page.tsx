@@ -31,6 +31,7 @@ type FormErrors = Partial<Record<keyof FormState, string>>;
 
 interface SignaturePadProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  onClear: () => void;
 }
 interface ConfirmDialogProps {
   open: boolean;
@@ -76,6 +77,14 @@ function getTodayFormatted(): string {
     "Juli","Agustus","September","Oktober","November","Desember",
   ];
   return `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+function getTodayISO(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function formatDateLong(dateStr: string): string {
@@ -161,7 +170,7 @@ const getJenisTindakanLabel = (val: string | null) => {
 };
 
 /* ─────────────────────────────────────────
-   PDF HELPERS — same format as dashboard
+   PDF HELPERS
 ───────────────────────────────────────── */
 function buildFileName(item: InsertedRow): string {
   const now = new Date();
@@ -229,7 +238,7 @@ function buildDocumentHTML(item: InsertedRow, logoBase64?: string): string {
   </div>
   <div class="doc-title">
     Formulir Persetujuan Pembayaran Uang Muka (DP)<br/>
-    Persalinan ${jenisTindakanLabel} di ${Profile.institusi} ${Profile.name}
+    Tindakan Persalinan di ${Profile.institusi} ${Profile.name}
   </div>
   <p>Yang bertanda tangan di bawah ini:</p>
   <div class="field-block">
@@ -401,7 +410,7 @@ const FieldRow: React.FC<{
 /* ─────────────────────────────────────────
    SIGNATURE PAD
 ───────────────────────────────────────── */
-const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef }) => {
+const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef, onClear }) => {
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
   const [hasDrawn, setHasDrawn] = useState(false);
@@ -428,19 +437,27 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef }) => {
     ctx.stroke(); last.current = p;
   };
   const stop = () => { drawing.current = false; last.current = null; };
-  const clear = () => {
+
+  const handleClear = () => {
     const c = canvasRef.current; if (!c) return;
-    c.getContext("2d")?.clearRect(0, 0, c.width, c.height); setHasDrawn(false);
+    c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
+    setHasDrawn(false);
+    onClear();
   };
+
+  // Expose clear function via ref pattern - store in canvas dataset
+  if (canvasRef.current) {
+    (canvasRef.current as HTMLCanvasElement & { __clearFn?: () => void }).__clearFn = handleClear;
+  }
 
   return (
     <div>
-      <div className="relative border border-gray-300 rounded-lg bg-white overflow-hidden cursor-crosshair touch-none h-40 hover:border-blue-500 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.12)] transition-all">
+      <div className="relative border border-gray-300 rounded-lg bg-white overflow-hidden cursor-crosshair touch-none h-56 hover:border-blue-500 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.12)] transition-all">
         <div aria-hidden className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{ backgroundImage: "linear-gradient(#6b7280 1px,transparent 1px),linear-gradient(90deg,#6b7280 1px,transparent 1px)", backgroundSize: "24px 24px" }}
         />
-        <div className="absolute bottom-9 left-5 right-5 border-b border-dashed border-gray-200 pointer-events-none" />
-        <canvas ref={canvasRef} width={860} height={160}
+        <div className="absolute bottom-10 left-6 right-6 border-b border-dashed border-gray-200 pointer-events-none" />
+        <canvas ref={canvasRef} width={1200} height={224}
           className="w-full h-full relative z-10 block"
           onMouseDown={start} onMouseMove={move} onMouseUp={stop} onMouseLeave={stop}
           onTouchStart={start} onTouchMove={move} onTouchEnd={stop}
@@ -455,14 +472,6 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef }) => {
           </div>
         )}
       </div>
-      <button type="button" onClick={clear}
-        className="mt-1.5 text-[11px] text-gray-400 bg-transparent border-none cursor-pointer flex items-center gap-1 px-1 py-0.5 rounded hover:text-red-500 transition-colors"
-      >
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-        Hapus tanda tangan
-      </button>
     </div>
   );
 };
@@ -524,7 +533,15 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <div className="flex gap-2.5 justify-end flex-wrap px-6 py-4 border-t border-gray-200">
           <Button variant="secondary" size="sm" onClick={onClose} disabled={isSubmitting}>Periksa Lagi</Button>
           <Button variant="primary" size="sm" onClick={onConfirm} disabled={isSubmitting}>
-            {isSubmitting ? "Mengirim..." : (
+            {isSubmitting ? (
+              <>
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Memproses...
+              </>
+            ) : (
               <>
                 Ya, Kirim Formulir
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -545,13 +562,12 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 const SuccessDialog: React.FC<{
   open: boolean;
   onClose: () => void;
-  isPdfLoading: boolean;
-}> = ({ open, onClose, isPdfLoading }) => {
+}> = ({ open, onClose }) => {
   if (!open) return null;
   return (
     <div
       className="fixed inset-0 z-9999 bg-gray-800/40 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={!isPdfLoading ? onClose : undefined}
+      onClick={onClose}
     >
       <div
         className="bg-white rounded-xl shadow-2xl w-full max-w-[360px] overflow-hidden text-center"
@@ -568,45 +584,17 @@ const SuccessDialog: React.FC<{
             Data Anda telah diterima dan akan diproses oleh tim administrasi {Profile.shortName}.
           </p>
           <p className="text-[12px] text-gray-400 leading-relaxed mb-6">
-            Klik tombol di bawah untuk menyimpan salinan PDF formulir ini.
+            PDF formulir telah otomatis diunduh ke perangkat Anda.
           </p>
           <Button
             variant="primary"
             onClick={onClose}
-            disabled={isPdfLoading}
             className="w-full justify-center"
           >
-            {isPdfLoading ? (
-              <>
-                {/* Spinner */}
-                <svg
-                  className="w-4 h-4 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12" cy="12" r="10"
-                    stroke="currentColor" strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Menyiapkan PDF...
-              </>
-            ) : (
-              <>
-                {/* Download icon */}
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Selesai &amp; Simpan PDF
-              </>
-            )}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Selesai
           </Button>
         </div>
       </div>
@@ -614,25 +602,7 @@ const SuccessDialog: React.FC<{
   );
 };
 
-/* ─────────────────────────────────────────
-   TOOLBAR
-───────────────────────────────────────── */
-const Toolbar: React.FC = () => (
-  <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-    <div className="max-w-[860px] mx-auto px-5 h-[52px] flex items-center gap-3">
-      <div className="w-[34px] h-[34px] rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden">
-        <Image src={Profile.logo} alt={Profile.shortName} width={40} height={40}
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-        />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-semibold text-gray-800 leading-tight">Formulir Persetujuan DP Persalinan</div>
-        <div className="text-[11px] text-gray-400 mt-px">{Profile.shortName} · {Profile.subtitle}</div>
-      </div>
-      <span className="text-[11px] text-gray-400 bg-gray-100 border border-gray-200 rounded px-2 py-0.5 whitespace-nowrap">FM-ADM-001</span>
-    </div>
-  </div>
-);
+/* Toolbar removed */
 
 /* ─────────────────────────────────────────
    MAIN
@@ -643,17 +613,30 @@ export default function FormulirDP() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [, setSignatureHasDrawn] = useState(false);
 
-  // Holds the inserted row from Supabase so we can download PDF after success dialog closes
-  const pendingPdfRow = useRef<InsertedRow | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const today = getTodayFormatted();
+  const todayISO = getTodayISO();
 
   const setField = (k: keyof FormState) => (v: string) => setForm((p) => ({ ...p, [k]: v }));
   const setInputField = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setField(k)(e.target.value);
   const clearError = (k: keyof FormState) => () => setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
+
+  /* ── Validasi tanggal lahir: tidak boleh lebih dari hari ini ── */
+  const validateTglLahir = (val: string): string | undefined => {
+    if (!val) return undefined;
+    if (val > todayISO) return "Tanggal lahir tidak boleh lebih dari hari ini";
+    return undefined;
+  };
+
+  /* ── Validasi tanggal rencana: tidak boleh kurang dari hari ini ── */
+  const validateTglRencana = (val: string): string | undefined => {
+    if (!val) return undefined;
+    if (val < todayISO) return "Tanggal rencana tidak boleh kurang dari hari ini";
+    return undefined;
+  };
 
   const validate = (): boolean => {
     const e: FormErrors = {};
@@ -663,16 +646,36 @@ export default function FormulirDP() {
     if (!form.kelas) e.kelas = "Wajib dipilih";
     if (!form.jenisTindakan) e.jenisTindakan = "Wajib dipilih";
     if (!form.dokterPJ) e.dokterPJ = "Wajib dipilih";
+
+    // Validasi tanggal lahir
+    const tglLahirErr = validateTglLahir(form.tglLahir);
+    if (tglLahirErr) e.tglLahir = tglLahirErr;
+
+    // Validasi tanggal rencana persalinan
+    const tglRencanaErr = validateTglRencana(form.tglRencanaPersalinan);
+    if (tglRencanaErr) e.tglRencanaPersalinan = tglRencanaErr;
+
     setErrors(e);
     return Object.keys(e).length === 0;
+  };
+
+  const handleClearSignature = () => {
+    setSignatureHasDrawn(false);
+  };
+
+  const handleClearSignatureBtn = () => {
+    const c = canvasRef.current;
+    if (c) {
+      c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
+    }
+    setSignatureHasDrawn(false);
   };
 
   const handleReset = () => {
     setForm(EMPTY);
     setErrors({});
     setSubmitError(null);
-    const c = canvasRef.current;
-    if (c) c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
+    handleClearSignatureBtn();
   };
 
   const handleConfirm = async () => {
@@ -708,38 +711,31 @@ export default function FormulirDP() {
 
       if (error) throw error;
 
-      // ── 2. Kirim notifikasi Telegram (fire & forget) ───────────
-      fetch("/api/notify-telegram-dp", {
+      const insertedRow = inserted as InsertedRow;
+
+      // ── 2. Generate & download PDF langsung ───────────────────
+      setShowConfirm(false);
+      try {
+        await downloadPDFFromRow(insertedRow);
+      } catch (pdfErr) {
+        console.error("[download-pdf] failed:", pdfErr);
+      }
+
+      // ── 3. Kirim notifikasi Telegram (fire & forget) ───────────
+      fetch("/api/notify-telegram-formulir-persetujuan-pembayaran-uang-muka", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(inserted),
+        body:    JSON.stringify(insertedRow),
       })
         .then(async (res) => {
           const json = await res.json();
-          if (!json.ok) console.error("[notify-telegram-dp] response error:", json);
+          if (!json.ok) console.error("[notify-telegram] response error:", json);
         })
-        .catch((err) => console.error("[notify-telegram-dp] fetch failed:", err));
+        .catch((err) => console.error("[notify-telegram] fetch failed:", err));
 
-      // ── 3. Simpan row untuk PDF setelah user klik "Selesai & Simpan PDF"
-      pendingPdfRow.current = inserted as InsertedRow;
-
-      // ── 4. Pre-load PDF scripts di background ─────────────────
-      setIsPdfLoading(true);
-      setShowConfirm(false);
-      try {
-        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", "html2canvas-script");
-        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js", "jspdf-script");
-      } catch (e) {
-        console.warn("[pdf-preload] script load failed:", e);
-      } finally {
-        setIsPdfLoading(false);
-      }
-
-      // ── 5. Tampilkan sukses & reset form ──────────────────────
-      setTimeout(() => {
-        setShowSuccess(true);
-        handleReset();
-      }, 300);
+      // ── 4. Tampilkan sukses & reset form ──────────────────────
+      handleReset();
+      setShowSuccess(true);
 
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Gagal mengirim formulir. Silakan coba lagi.";
@@ -750,30 +746,12 @@ export default function FormulirDP() {
     }
   };
 
-  // Called when user clicks "Selesai & Simpan PDF" — triggers auto-download
-  const handleSuccessClose = async () => {
-    const row = pendingPdfRow.current;
-    if (row) {
-      setIsPdfLoading(true);
-      try {
-        await downloadPDFFromRow(row);
-      } catch (err) {
-        console.error("[download-pdf] failed:", err);
-      } finally {
-        setIsPdfLoading(false);
-        pendingPdfRow.current = null;
-      }
-    }
-    setShowSuccess(false);
-  };
-
   const penjaminLabel = PENJAMIN_OPTIONS.find((o) => o.value === form.penjamin)?.label ?? "";
   const kelasLabel = KELAS_OPTIONS.find((o) => o.value === form.kelas)?.label ?? "";
   const jenisTindakanLabel = JENIS_TINDAKAN_OPTIONS.find((o) => o.value === form.jenisTindakan)?.label ?? "";
 
   return (
     <div className="font-sans text-sm text-gray-800 bg-gray-100 min-h-screen antialiased">
-      <Toolbar />
 
       <ConfirmDialog
         open={showConfirm}
@@ -788,12 +766,11 @@ export default function FormulirDP() {
 
       <SuccessDialog
         open={showSuccess}
-        onClose={handleSuccessClose}
-        isPdfLoading={isPdfLoading}
+        onClose={() => setShowSuccess(false)}
       />
 
-      <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 pb-12 sm:pb-14 lg:pb-16">
-        <div className="bg-white w-full max-w-[760px] mx-auto shadow-[0_1px_3px_rgba(0,0,0,0.1),0_4px_16px_rgba(0,0,0,0.06)] rounded-sm">
+      <div className="py-8 px-4 sm:py-10 sm:px-8 lg:py-12 lg:px-12 xl:px-0">
+        <div className="bg-white w-full max-w-[900px] mx-auto shadow-[0_1px_3px_rgba(0,0,0,0.1),0_4px_16px_rgba(0,0,0,0.06)] rounded-sm">
 
           {/* Letterhead */}
           <div className="px-5 pt-6 pb-5 sm:px-8 sm:pt-7 sm:pb-6 lg:px-[52px] lg:pt-9 lg:pb-7 border-b border-gray-200">
@@ -854,9 +831,20 @@ export default function FormulirDP() {
                 <FieldRow label="Tanggal Lahir">
                   <DatePicker
                     value={form.tglLahir}
-                    onChange={(v) => { setField("tglLahir")(v); clearError("tglLahir")(); }}
+                    onChange={(v) => {
+                      setField("tglLahir")(v);
+                      // Validasi real-time
+                      const err = validateTglLahir(v);
+                      if (err) {
+                        setErrors((p) => ({ ...p, tglLahir: err }));
+                      } else {
+                        clearError("tglLahir")();
+                      }
+                    }}
                     placeholder="Pilih tanggal lahir"
+                    maxDate={todayISO}
                     rounded="md" selectSize="sm"
+                    error={errors.tglLahir}
                   />
                 </FieldRow>
                 <FieldRow label="No. Rekam Medis">
@@ -882,9 +870,20 @@ export default function FormulirDP() {
                 <FieldRow label="Tgl. Rencana Persalinan">
                   <DatePicker
                     value={form.tglRencanaPersalinan}
-                    onChange={(v) => { setField("tglRencanaPersalinan")(v); clearError("tglRencanaPersalinan")(); }}
+                    onChange={(v) => {
+                      setField("tglRencanaPersalinan")(v);
+                      // Validasi real-time
+                      const err = validateTglRencana(v);
+                      if (err) {
+                        setErrors((p) => ({ ...p, tglRencanaPersalinan: err }));
+                      } else {
+                        clearError("tglRencanaPersalinan")();
+                      }
+                    }}
                     placeholder="Pilih tanggal rencana"
+                    minDate={todayISO}
                     rounded="md" selectSize="sm"
+                    error={errors.tglRencanaPersalinan}
                   />
                 </FieldRow>
                 <FieldRow label="Jenis Tindakan" required>
@@ -977,16 +976,32 @@ export default function FormulirDP() {
             {/* §4 Tanda Tangan */}
             <div className="mb-8">
               <SectionLabel>Tanda Tangan</SectionLabel>
-              <div className="flex flex-col gap-4 sm:flex-row sm:gap-6 sm:items-start">
-                <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3.5 sm:w-40 shrink-0">
-                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.06em] mb-2">Tanggal</div>
-                  <div className="text-xs text-gray-400">Sepanjang,</div>
-                  <div className="text-[13px] font-semibold text-gray-800 mt-0.5 leading-snug">{today}</div>
+              <div className="w-full">
+                {/* Baris atas: label kiri, tanggal kanan — keduanya di LUAR box */}
+                <div className="flex items-end justify-between mb-2">
+                  <div className="text-[11px] font-medium text-gray-400 uppercase tracking-[0.06em]">
+                    Pasien / Penanggung Jawab
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] text-gray-400">Sepanjang,</span>
+                    <span className="text-[12px] font-semibold text-gray-700">{today}</span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[11px] font-medium text-gray-400 uppercase tracking-[0.06em] mb-2 text-center">Pasien / Penanggung Jawab</div>
-                  <SignaturePad canvasRef={canvasRef} />
-                  <div className="mt-2.5 border-t-2 border-gray-800 pt-1.5 text-center">
+                {/* Box tanda tangan */}
+                <SignaturePad canvasRef={canvasRef} onClear={handleClearSignature} />
+                {/* Baris bawah: tombol hapus kiri, nama kanan — keduanya di LUAR box */}
+                <div className="flex items-start justify-between mt-1.5">
+                  <button
+                    type="button"
+                    onClick={handleClearSignatureBtn}
+                    className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer px-0 py-0.5 rounded"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Hapus tanda tangan
+                  </button>
+                  <div className="border-t-2 border-gray-800 pt-1.5 text-center min-w-[200px]">
                     {form.namaPJ ? (
                       <span className="text-[13px] font-semibold text-gray-800">( {form.namaPJ} )</span>
                     ) : (
@@ -999,15 +1014,17 @@ export default function FormulirDP() {
 
             <div className="h-px bg-gray-200 my-6" />
 
-            {/* Actions */}
+            {/* Actions — urutan: Kembali | Reset | Hapus TTD || Kirim Formulir */}
             <div className="flex items-center justify-between flex-wrap gap-2.5">
               <div className="flex items-center gap-2 flex-wrap">
+                {/* Kembali */}
                 <Button variant="secondary" size="sm" onClick={() => window.history.back()}>
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
                   Kembali
                 </Button>
+                {/* Reset */}
                 <Button variant="default" size="sm" onClick={handleReset}>
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1015,14 +1032,27 @@ export default function FormulirDP() {
                   Reset
                 </Button>
               </div>
+              {/* Kirim Formulir */}
               <Button variant="primary" size="md"
                 onClick={() => { if (validate()) setShowConfirm(true); }}
                 disabled={isSubmitting}
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                Kirim Formulir
+                {isSubmitting ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Memproses...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Kirim Formulir
+                  </>
+                )}
               </Button>
             </div>
           </div>
