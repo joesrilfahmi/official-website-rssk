@@ -12,7 +12,7 @@ import { Profile } from "@/config/profile";
 const TELEGRAM_TOKEN = process.env.TOKEN_TELEGRAM!;
 // id telegram
 //  6200327574 : bu ratri
-const PENERIMA_PESAN = [1897938211];
+const PENERIMA_PESAN = [1897938211, 6200327574];
 
 /* ─────────────────────────────────────────
    TYPES

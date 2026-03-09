@@ -142,8 +142,11 @@ const formatTanggal = (dateStr: string | null) => {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
 
-const formatTanggalLong = (dateStr: string | null) => {
-  if (!dateStr) return "—";
+/* ─────────────────────────────────────────
+   formatDateLong — SAMA PERSIS dengan formulir
+───────────────────────────────────────── */
+const formatDateLong = (dateStr: string | null): string => {
+  if (!dateStr) return "";
   const months = [
     "Januari","Februari","Maret","April","Mei","Juni",
     "Juli","Agustus","September","Oktober","November","Desember",
@@ -167,7 +170,7 @@ const dateToStr = (d: Date): string => {
 };
 
 /* ─────────────────────────────────────────
-   FILENAME HELPER
+   FILENAME HELPER — SAMA PERSIS dengan formulir
 ───────────────────────────────────────── */
 function buildFileName(item: Fmo1): string {
   const now = new Date();
@@ -181,13 +184,17 @@ function buildFileName(item: Fmo1): string {
 }
 
 /* ─────────────────────────────────────────
-   BUILD DOCUMENT HTML
+   BUILD DOCUMENT HTML — DISINKRONKAN dengan formulir/page.tsx
+   - font-size 12px (bukan 13px)
+   - padding 44px 64px 40px (bukan 60px 72px)
+   - ada .footer div di bawah
+   - lh-logo 52px, lh-name 14px, dll
 ───────────────────────────────────────── */
 function buildDocumentHTML(item: Fmo1, logoBase64?: string): string {
   const penjaminLabel = getPenjaminLabel(item.jenis_penjamin);
   const kelasLabel = getKelasLabel(item.rencana_kelas);
   const jenisTindakanLabel = getJenisTindakanLabel(item.jenis_tindakan);
-  const tanggalFormatted = formatTanggalLong(item.tanggal);
+  const tanggalFormatted = formatDateLong(item.tanggal);
   const logoSrc = logoBase64 ?? Profile.logo;
 
   return `<!DOCTYPE html>
@@ -199,31 +206,32 @@ function buildDocumentHTML(item: Fmo1, logoBase64?: string): string {
   html { background: #fff; }
   body {
     font-family: "Times New Roman", Times, serif;
-    font-size: 13px; color: #000; background: #fff;
-    width: 794px; padding: 60px 72px; line-height: 1.65;
+    font-size: 12px; color: #000; background: #fff;
+    width: 794px; padding: 44px 64px 40px; line-height: 1.5;
   }
-  .letterhead { display: flex; align-items: center; gap: 14px; padding-bottom: 8px; border-bottom: 3px double #000; margin-bottom: 16px; }
-  .lh-logo { width: 58px; height: 58px; object-fit: contain; flex-shrink: 0; }
+  .letterhead { display: flex; align-items: center; gap: 12px; padding-bottom: 7px; border-bottom: 3px double #000; margin-bottom: 12px; }
+  .lh-logo { width: 52px; height: 52px; object-fit: contain; flex-shrink: 0; }
   .lh-info { flex: 1; text-align: center; }
-  .lh-name { font-size: 15px; font-weight: 700; text-transform: uppercase; line-height: 1.3; }
-  .lh-sub  { font-size: 11px; margin-top: 2px; }
-  .lh-addr { font-size: 10px; margin-top: 2px; }
-  .doc-title { text-align: center; font-size: 13px; font-weight: 700; text-transform: uppercase; text-decoration: underline; line-height: 1.5; margin-bottom: 16px; }
-  p { margin-bottom: 5px; font-size: 13px; }
-  .field-block { margin-bottom: 12px; }
-  .field-row { display: flex; align-items: flex-end; margin-bottom: 3px; font-size: 13px; }
-  .field-label { width: 195px; flex-shrink: 0; }
-  .field-colon { width: 14px; flex-shrink: 0; }
+  .lh-name { font-size: 14px; font-weight: 700; text-transform: uppercase; line-height: 1.3; }
+  .lh-sub  { font-size: 10px; margin-top: 2px; }
+  .lh-addr { font-size: 9px; margin-top: 2px; }
+  .doc-title { text-align: center; font-size: 12px; font-weight: 700; text-transform: uppercase; text-decoration: underline; line-height: 1.45; margin-bottom: 12px; }
+  p { margin-bottom: 4px; font-size: 12px; }
+  .field-block { margin-bottom: 8px; }
+  .field-row { display: flex; align-items: flex-end; margin-bottom: 2px; font-size: 12px; }
+  .field-label { width: 185px; flex-shrink: 0; }
+  .field-colon { width: 12px; flex-shrink: 0; }
   .field-value { flex: 1; padding-bottom: 1px; padding-left: 4px; }
-  ol { margin: 3px 0 8px 20px; padding: 0; }
-  ol li { font-size: 13px; margin-bottom: 2px; line-height: 1.55; }
-  .section-label { font-size: 13px; font-weight: 700; text-decoration: underline; margin-top: 10px; margin-bottom: 4px; }
-  .sign-block { margin-top: 16px; display: flex; justify-content: flex-end; }
-  .sign-inner { text-align: center; width: 220px; }
-  .sign-inner p { font-size: 13px; margin-bottom: 3px; }
-  .sign-gap { height: 64px; display: flex; align-items: center; justify-content: center; margin: 4px 0; }
-  .sign-gap img { max-height: 60px; max-width: 190px; object-fit: contain; }
-  .sign-name { font-size: 13px; border-top: 1px solid #000; padding-top: 4px; display: inline-block; min-width: 175px; text-align: center; }
+  ol { margin: 2px 0 6px 18px; padding: 0; }
+  ol li { font-size: 12px; margin-bottom: 1px; line-height: 1.45; }
+  .section-label { font-size: 12px; font-weight: 700; text-decoration: underline; margin-top: 8px; margin-bottom: 3px; }
+  .sign-block { margin-top: 12px; display: flex; justify-content: flex-end; }
+  .sign-inner { text-align: center; width: 210px; }
+  .sign-inner p { font-size: 12px; margin-bottom: 2px; }
+  .sign-gap { height: 58px; display: flex; align-items: center; justify-content: center; margin: 3px 0; }
+  .sign-gap img { max-height: 54px; max-width: 180px; object-fit: contain; }
+  .sign-name { font-size: 12px; border-top: 1px solid #000; padding-top: 3px; display: inline-block; min-width: 165px; text-align: center; }
+  .footer { margin-top: 14px; border-top: 0.5px solid #ccc; padding-top: 5px; display: flex; justify-content: space-between; font-size: 9px; color: #888; }
 </style>
 </head>
 <body>
@@ -243,13 +251,13 @@ function buildDocumentHTML(item: Fmo1, logoBase64?: string): string {
   <p>Yang bertanda tangan di bawah ini:</p>
   <div class="field-block">
     <div class="field-row"><span class="field-label">Nama Pasien</span><span class="field-colon">:</span><span class="field-value">${item.nama_pasien}</span></div>
-    <div class="field-row"><span class="field-label">Tanggal Lahir</span><span class="field-colon">:</span><span class="field-value">${item.tgl_lahir ? formatTanggalLong(item.tgl_lahir) : ""}</span></div>
+    <div class="field-row"><span class="field-label">Tanggal Lahir</span><span class="field-colon">:</span><span class="field-value">${item.tgl_lahir ? formatDateLong(item.tgl_lahir) : ""}</span></div>
     <div class="field-row"><span class="field-label">No. RM</span><span class="field-colon">:</span><span class="field-value">${item.no_rm ?? ""}</span></div>
     <div class="field-row"><span class="field-label">Nama Penanggung Jawab</span><span class="field-colon">:</span><span class="field-value">${item.nama_penanggung_jawab}</span></div>
     <div class="field-row"><span class="field-label">No. KTP/Identitas</span><span class="field-colon">:</span><span class="field-value">${item.no_ktp ?? ""}</span></div>
     <div class="field-row"><span class="field-label">No. HP</span><span class="field-colon">:</span><span class="field-value">${item.no_hp ?? ""}</span></div>
     <div class="field-row"><span class="field-label">Alamat</span><span class="field-colon">:</span><span class="field-value">${item.alamat ?? ""}</span></div>
-    <div class="field-row"><span class="field-label">Tgl. Rencana Persalinan</span><span class="field-colon">:</span><span class="field-value">${item.tgl_rencana_persalinan ? formatTanggalLong(item.tgl_rencana_persalinan) : ""}</span></div>
+    <div class="field-row"><span class="field-label">Tgl. Rencana Persalinan</span><span class="field-colon">:</span><span class="field-value">${item.tgl_rencana_persalinan ? formatDateLong(item.tgl_rencana_persalinan) : ""}</span></div>
     <div class="field-row"><span class="field-label">Jenis Tindakan</span><span class="field-colon">:</span><span class="field-value">${jenisTindakanLabel}</span></div>
     <div class="field-row"><span class="field-label">Dokter Penanggung Jawab</span><span class="field-colon">:</span><span class="field-value">${item.dokter_penanggung_jawab ?? ""}</span></div>
   </div>
@@ -269,16 +277,20 @@ function buildDocumentHTML(item: Fmo1, logoBase64?: string): string {
   <p><strong>Keterangan:</strong></p>
   <p style="text-align:justify;">Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.</p>
   ${item.deskripsi ? `<p>${item.deskripsi}</p>` : ""}
-  <p style="text-align:justify; margin-top:8px;">Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.</p>
+  <p style="text-align:justify; margin-top:6px;">Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.</p>
   <div class="sign-block">
     <div class="sign-inner">
       <p>Sepanjang, ${tanggalFormatted}</p>
       <p>Pasien / Penanggung Jawab,</p>
       <div class="sign-gap">
-        ${item.ttd ? `<img src="${item.ttd}" alt="Tanda tangan" />` : `<span style="display:block;height:60px;"></span>`}
+        ${item.ttd ? `<img src="${item.ttd}" alt="Tanda tangan" />` : `<span style="display:block;height:58px;"></span>`}
       </div>
       <span class="sign-name">( ${item.nama_penanggung_jawab} )</span>
     </div>
+  </div>
+  <div class="footer">
+    <span>Halaman 1 dari 1</span>
+    <span>FM-ADM-001 · ${Profile.shortName}</span>
   </div>
 </body>
 </html>`;
@@ -299,7 +311,9 @@ function loadScript(src: string, id: string): Promise<void> {
 }
 
 /* ─────────────────────────────────────────
-   DOWNLOAD PDF
+   DOWNLOAD PDF — DISINKRONKAN dengan formulir/page.tsx
+   - Batasi renderH ke A4_PX = 1123 (selalu 1 halaman)
+   - imgHeight di-cap ke pageHeight (tidak pernah melebihi)
 ───────────────────────────────────────── */
 async function handleDownloadPDF(item: Fmo1): Promise<void> {
   const toastId = toast.loading("Membuat PDF...");
@@ -337,11 +351,15 @@ async function handleDownloadPDF(item: Fmo1): Promise<void> {
     const { jsPDF } = (window as any).jspdf;
 
     const iframeBody = iframeDoc.body;
-    const fullHeight = iframeBody.scrollHeight;
+
+    // ── PERBAIKAN UTAMA: sama dengan formulir/page.tsx ──────────
+    // Batasi tinggi render ke A4 (1123px) agar selalu 1 halaman
+    const A4_PX = 1123;
+    const renderH = Math.min(iframeBody.scrollHeight, A4_PX);
 
     const canvas = await html2canvas(iframeBody, {
       scale: 2.5, useCORS: true, allowTaint: true, backgroundColor: "#ffffff",
-      width: 794, height: fullHeight, windowWidth: 794, windowHeight: fullHeight,
+      width: 794, height: renderH, windowWidth: 794, windowHeight: A4_PX,
       scrollX: 0, scrollY: 0, logging: false,
     });
 
@@ -351,26 +369,10 @@ async function handleDownloadPDF(item: Fmo1): Promise<void> {
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const imgHeight = pageWidth * (canvas.height / canvas.width);
 
-    if (imgHeight <= pageHeight) {
-      pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeight);
-    } else {
-      let rendered = 0;
-      const sliceH = Math.floor((canvas.width * pageHeight) / pageWidth);
-      let page = 0;
-      while (rendered < canvas.height) {
-        if (page > 0) pdf.addPage();
-        const tmp = document.createElement("canvas");
-        tmp.width = canvas.width;
-        tmp.height = Math.min(sliceH, canvas.height - rendered);
-        const ctx = tmp.getContext("2d")!;
-        ctx.drawImage(canvas, 0, rendered, canvas.width, tmp.height, 0, 0, canvas.width, tmp.height);
-        pdf.addImage(tmp.toDataURL("image/jpeg", 0.97), "JPEG", 0, 0, pageWidth, (tmp.height / canvas.width) * pageWidth);
-        rendered += tmp.height;
-        page++;
-      }
-    }
+    // ── PERBAIKAN UTAMA: selalu fit ke 1 halaman, tidak pernah multi-page ──
+    const imgHeight = Math.min(pageWidth * (canvas.height / canvas.width), pageHeight);
+    pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeight);
 
     pdf.save(`${fileName}.pdf`);
     toast.success("PDF berhasil diunduh", { id: toastId });
@@ -925,7 +927,6 @@ export default function FormulirDPPage() {
               <Select value={`${sortField}-${sortOrder}`}
                 onValueChange={(v) => {
                   const parts = v.split("-");
-                  // handle "created_at-desc" which has underscore
                   const order = parts[parts.length - 1] as SortOrder;
                   const field = parts.slice(0, -1).join("-") as SortField;
                   setSortField(field); setSortOrder(order);
@@ -1073,7 +1074,7 @@ export default function FormulirDPPage() {
                             className={
                               row.jenis_tindakan === "sc"
                                 ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700"
-                                : "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700"
+                                : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700"
                             }>
                             {getJenisTindakanLabel(row.jenis_tindakan)}
                           </Badge>
@@ -1087,19 +1088,16 @@ export default function FormulirDPPage() {
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <Badge variant="outline"
-                          className="bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
+                          className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700">
                           {getKelasLabel(row.rencana_kelas)}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
                         <div>{formatTanggal(row.tanggal)}</div>
-
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
                         {row.tgl_rencana_persalinan && (
-                          <div >
-                            {formatTanggal(row.tgl_rencana_persalinan)}
-                          </div>
+                          <div>{formatTanggal(row.tgl_rencana_persalinan)}</div>
                         )}
                       </TableCell>
                       <TableCell>
