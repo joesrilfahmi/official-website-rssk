@@ -1,11 +1,13 @@
 "use client";
 import Animate from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
+import Button from "@/components/ui/custom/button";
 import DialogPendaftaran, {
   type PendaftaranPrefill,
 } from "@/components/ui/custom/dialog-pendaftaran";
 import { supabase } from "@/lib/supabase/client";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
+
 import {
   Activity,
   ArrowRight,
@@ -23,7 +25,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 const easeOut: [number, number, number, number] = [0.0, 0.0, 0.2, 1];
@@ -49,7 +51,7 @@ interface DokterItem {
   dokter: {
     nama: string;
     profile: string | null;
-    status: string; // ← ditambahkan
+    status: string;
     poli_id: string;
     poli: { nama_poli: string } | null;
   } | null;
@@ -167,6 +169,58 @@ function ContentSkeleton() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+
+
+// ── TabList — native CSS horizontal scroll on mobile ──────────────────────
+
+const TAB_LIST = [
+  { key: "kondisi" as const, label: "Kondisi Medis" },
+  { key: "teknologi" as const, label: "Teknologi Medis" },
+  { key: "dokter" as const, label: "Dokter Kami" },
+];
+
+interface TabCarouselProps {
+  activeTab: "kondisi" | "teknologi" | "dokter";
+  onTabChange: (tab: "kondisi" | "teknologi" | "dokter") => void;
+}
+
+function TabCarousel({ activeTab, onTabChange }: TabCarouselProps) {
+  const activeRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [activeTab]);
+
+  return (
+    <div
+      className="flex mb-6 border-b border-gray-200 overflow-x-auto"
+      style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+    >
+      {TAB_LIST.map((tab) => {
+        const isActive = activeTab === tab.key;
+        return (
+          <button
+            key={tab.key}
+            ref={isActive ? activeRef : null}
+            onClick={() => onTabChange(tab.key)}
+            className={`flex-none px-5 py-3 font-medium text-sm whitespace-nowrap transition-all ${
+              isActive
+                ? "text-mariner-600 border-b-2 border-mariner-600"
+                : "text-gray-600 hover:text-mariner-600"
+            }`}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -555,7 +609,7 @@ const DokterCard: React.FC<DokterCardProps> = ({ item, poliId, poliNama }) => {
         )}
       </AnimatePresence>
 
-      <div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3">
+      <div className="bg-mariner-50 border border-mariner-100 rounded-lg p-4 flex items-center gap-3">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full bg-mariner-50 overflow-hidden ring-2 ring-mariner-100 shrink-0 flex items-center justify-center">
           {item.dokter.profile ? (
@@ -590,16 +644,15 @@ const DokterCard: React.FC<DokterCardProps> = ({ item, poliId, poliNama }) => {
           </div>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ duration: 0.16 } satisfies Transition}
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => setShowJadwal(true)}
-          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-mariner-600 bg-mariner-50 hover:bg-mariner-100 border border-mariner-200 px-3 py-1.5 rounded-full transition-colors duration-150 shrink-0"
+          className="shrink-0"
         >
           <Calendar className="w-3.5 h-3.5" />
-          Jadwal
-        </motion.button>
+          <span className="hidden sm:inline">Jadwal</span>
+        </Button>
       </div>
     </>
   );
@@ -816,36 +869,16 @@ export default function LayananUnggulanSection() {
                         temu sesuai dengan waktu yang tersedia.
                       </p>
 
-                      {/* Tab buttons */}
+                      {/* Tab buttons — Embla carousel on mobile, flex on desktop */}
                       <Animate type="growx" ready={dataReady} delay={0.05}>
-                        <div className="flex gap-2 mb-6 border-b border-gray-200">
-                          {(
-                            [
-                              { key: "kondisi", label: "Kondisi Medis" },
-                              { key: "teknologi", label: "Teknologi Medis" },
-                              { key: "dokter", label: "Dokter Kami" },
-                            ] as {
-                              key: "kondisi" | "teknologi" | "dokter";
-                              label: string;
-                            }[]
-                          ).map((tab) => (
-                            <button
-                              key={tab.key}
-                              onClick={() => setActiveTab(tab.key)}
-                              className={`px-6 py-3 font-medium transition-all ${
-                                activeTab === tab.key
-                                  ? "text-mariner-600 border-b-2 border-mariner-600"
-                                  : "text-gray-600 hover:text-mariner-600"
-                              }`}
-                            >
-                              {tab.label}
-                            </button>
-                          ))}
-                        </div>
+                        <TabCarousel
+                          activeTab={activeTab}
+                          onTabChange={setActiveTab}
+                        />
                       </Animate>
 
                       {/* Tab Content */}
-                      <div className="bg-gray-50 rounded-xl p-6">
+                      <div>
                         {/* Kondisi Medis */}
                         {activeTab === "kondisi" &&
                           (hasKondisi ? (
@@ -864,7 +897,7 @@ export default function LayananUnggulanSection() {
                                   type="slideup"
                                   once={false}
                                 >
-                                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                                  <div className="bg-mariner-50 border border-mariner-100 rounded-lg p-4">
                                     <h4 className="font-semibold text-mariner-600 mb-2">
                                       {item.title}
                                     </h4>
@@ -898,7 +931,7 @@ export default function LayananUnggulanSection() {
                                     type="slideup"
                                     once={false}
                                   >
-                                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                                    <div className="bg-mariner-50 border border-mariner-100 rounded-lg p-4">
                                       <h4 className="font-semibold text-mariner-600 mb-2">
                                         {item.title}
                                       </h4>
