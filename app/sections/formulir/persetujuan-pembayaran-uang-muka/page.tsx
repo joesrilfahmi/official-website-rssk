@@ -238,7 +238,7 @@ function buildDocumentHTML(item: InsertedRow, logoBase64?: string): string {
   </div>
   <div class="doc-title">
     Formulir Persetujuan Pembayaran Uang Muka (DP)<br/>
-    Tindakan Persalinan di ${Profile.institusi} ${Profile.name}
+    Persalinan ${jenisTindakanLabel} di ${Profile.institusi} ${Profile.name}
   </div>
   <p>Yang bertanda tangan di bawah ini:</p>
   <div class="field-block">
@@ -371,11 +371,11 @@ async function downloadPDFFromRow(item: InsertedRow): Promise<void> {
    SECTION LABEL
 ───────────────────────────────────────── */
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex items-center gap-2 mb-3.5">
-    <span className="text-[10px] font-semibold tracking-[0.09em] uppercase text-blue-600 whitespace-nowrap">
+  <div className="flex items-center gap-2 mb-4">
+    <span className="text-[10px] font-bold tracking-widest uppercase text-curiousblue-500 whitespace-nowrap">
       {children}
     </span>
-    <div className="flex-1 h-px bg-blue-100" />
+    <div className="flex-1 h-px bg-curiousblue-500/20" />
   </div>
 );
 
@@ -390,20 +390,20 @@ const FieldRow: React.FC<{
 }> = ({ label, required, alignTop, children }) => (
   <div
     className={[
-      "flex flex-col sm:flex-row border-b border-gray-200 last:border-b-0",
+      "flex flex-col sm:flex-row border-b border-catskillwhite-600 last:border-b-0",
       alignTop ? "sm:items-start" : "sm:items-center",
     ].join(" ")}
   >
     <div
       className={[
-        "text-xs font-medium text-gray-500 bg-gray-50 px-3 py-2 sm:w-48 sm:border-r sm:border-gray-200 shrink-0",
+        "text-xs font-medium text-mineshaft-500/70 bg-catskillwhite-400 px-4 py-2.5 sm:w-52 sm:border-r sm:border-catskillwhite-600 shrink-0",
         alignTop ? "sm:pt-3" : "",
       ].join(" ")}
     >
       {label}
-      {required && <span className="text-red-500 ml-0.5">*</span>}
+      {required && <span className="text-bittersweet-500 ml-0.5">*</span>}
     </div>
-    <div className="flex-1 px-2 py-1.5">{children}</div>
+    <div className="flex-1 px-3 py-2">{children}</div>
   </div>
 );
 
@@ -452,7 +452,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef, onClear }) => {
 
   return (
     <div>
-      <div className="relative border border-gray-300 rounded-lg bg-white overflow-hidden cursor-crosshair touch-none h-56 hover:border-blue-500 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.12)] transition-all">
+      <div className="relative border border-catskillwhite-700 rounded-lg bg-white overflow-hidden cursor-crosshair touch-none h-56 hover:border-curiousblue-500 hover:shadow-[0_0_0_2px_rgba(52,152,219,0.12)] transition-all">
         <div aria-hidden className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{ backgroundImage: "linear-gradient(#6b7280 1px,transparent 1px),linear-gradient(90deg,#6b7280 1px,transparent 1px)", backgroundSize: "24px 24px" }}
         />
@@ -501,8 +501,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-8 h-8 rounded-lg bg-curiousblue-500/10 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-curiousblue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -574,8 +574,8 @@ const SuccessDialog: React.FC<{
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-8 pt-9 pb-7">
-          <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-14 h-14 rounded-full bg-pastelgreen-500/10 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-pastelgreen-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -751,7 +751,7 @@ export default function FormulirDP() {
   const jenisTindakanLabel = JENIS_TINDAKAN_OPTIONS.find((o) => o.value === form.jenisTindakan)?.label ?? "";
 
   return (
-    <div className="font-sans text-sm text-gray-800 bg-gray-100 min-h-screen antialiased">
+    <div className="font-sans text-sm text-mineshaft-500 bg-catskillwhite-500 min-h-screen antialiased">
 
       <ConfirmDialog
         open={showConfirm}
@@ -769,14 +769,14 @@ export default function FormulirDP() {
         onClose={() => setShowSuccess(false)}
       />
 
-      <div className="py-8 px-4 sm:py-10 sm:px-8 lg:py-12 lg:px-12 xl:px-0">
-        <div className="bg-white w-full max-w-[900px] mx-auto shadow-[0_1px_3px_rgba(0,0,0,0.1),0_4px_16px_rgba(0,0,0,0.06)] rounded-sm">
+      <div className="py-8 px-4 sm:py-10 sm:px-6 lg:py-12 lg:px-10 xl:px-16 2xl:px-0">
+        <div className="bg-white w-full max-w-[960px] mx-auto shadow-[0_2px_8px_rgba(0,0,0,0.07),0_8px_32px_rgba(0,0,0,0.05)] rounded-xl overflow-hidden">
 
           {/* Letterhead */}
-          <div className="px-5 pt-6 pb-5 sm:px-8 sm:pt-7 sm:pb-6 lg:px-[52px] lg:pt-9 lg:pb-7 border-b border-gray-200">
-            <div className="flex flex-col gap-3.5 sm:flex-row sm:items-start sm:gap-[18px]">
-              <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
-                <Image src={Profile.logo} alt={Profile.shortName} width={56} height={56} className="w-full h-full object-contain"
+          <div className="px-6 pt-7 pb-6 sm:px-10 sm:pt-8 sm:pb-7 lg:px-14 lg:pt-10 lg:pb-8 border-b border-catskillwhite-600 bg-linear-to-br from-white to-catskillwhite-400">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden border border-catskillwhite-600 bg-white p-1">
+                <Image src={Profile.logo} alt={Profile.shortName} width={60} height={60} className="w-full h-full object-contain"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                     const next = e.currentTarget.nextElementSibling as HTMLElement | null;
@@ -784,38 +784,33 @@ export default function FormulirDP() {
                   }}
                 />
                 <div className="w-full h-full items-center justify-center hidden">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-7 h-7 text-catskillwhite-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1" />
                   </svg>
                 </div>
               </div>
-              <div className="min-w-0">
-                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold text-curiousblue-500/70 uppercase tracking-widest mb-1.5">
                   {Profile.institusi} {Profile.name} · {Profile.subtitle}
                 </div>
-                <h1 className="text-[18px] sm:text-xl lg:text-[22px] font-bold text-gray-800 leading-[1.3]">
-                  Formulir Persetujuan Pembayaran<br />
-                  <span className="text-blue-600">Uang Muka (DP) Persalinan</span>
+                <h1 className="text-[20px] sm:text-[22px] lg:text-[24px] font-bold text-mineshaft-500 leading-tight">
+                  Formulir Persetujuan Pembayaran{" "}
+                  <span className="text-curiousblue-500">Uang Muka (DP) Persalinan</span>
                 </h1>
-                <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                  <span className="inline-flex items-center text-[11px] font-medium text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">
-                    {jenisTindakanLabel ? `Persalinan ${jenisTindakanLabel}` : "Tindakan Persalinan"}
-                  </span>
-                  <span className="text-[11px] text-gray-400">{today}</span>
-                </div>
+
               </div>
             </div>
           </div>
 
           {/* Body */}
-          <div className="px-5 py-6 sm:px-8 sm:py-7 lg:px-[52px] lg:py-9">
+          <div className="px-6 py-7 sm:px-10 sm:py-8 lg:px-14 lg:py-10">
 
             {submitError && (
-              <div className="mb-6 flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-                <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mb-6 flex items-start gap-3 bg-bittersweet-500/5 border border-bittersweet-500/30 rounded-xl px-4 py-3.5">
+                <svg className="w-4 h-4 text-bittersweet-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-[12px] text-red-700">{submitError}</p>
+                <p className="text-[12px] text-bittersweet-600">{submitError}</p>
               </div>
             )}
 
@@ -823,7 +818,7 @@ export default function FormulirDP() {
             <div className="mb-8">
               <SectionLabel>Data Identitas</SectionLabel>
               <p className="text-[13px] text-gray-500 mb-3.5 leading-relaxed">Yang bertanda tangan di bawah ini:</p>
-              <div className="border border-gray-200 rounded-md overflow-hidden">
+              <div className="border border-catskillwhite-600 rounded-xl overflow-hidden">
                 <FieldRow label="Nama Pasien" required>
                   <Input value={form.namaPasien} onChange={setInputField("namaPasien")} onFocus={clearError("namaPasien")}
                     placeholder="Isi nama pasien" error={errors.namaPasien} rounded="md" inputSize="sm" />
@@ -922,13 +917,13 @@ export default function FormulirDP() {
                 </p>
                 <p>Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka (DP) persalinan sebesar:</p>
               </div>
-              <div className="flex gap-2.5 items-start bg-blue-50 rounded-lg px-4 py-3 mb-4">
-                <svg className="w-[18px] h-[18px] text-blue-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex gap-3 items-start bg-curiousblue-500/8 border border-curiousblue-500/20 rounded-xl px-5 py-4 mb-4">
+                <svg className="w-5 h-5 text-curiousblue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <div className="text-[17px] font-bold text-blue-600">Rp 1.000.000,–</div>
-                  <div className="text-[11px] text-gray-500 mt-0.5">Satu Juta Rupiah</div>
+                  <div className="text-[18px] font-bold text-curiousblue-500">Rp 1.000.000,–</div>
+                  <div className="text-[11px] text-catskillwhite-900 mt-0.5">Satu Juta Rupiah</div>
                 </div>
               </div>
               <p className="text-[13px] text-gray-700 font-medium mb-2.5">Saya memahami dan menyetujui bahwa:</p>
@@ -944,13 +939,13 @@ export default function FormulirDP() {
             {/* §3 Penjamin & Kelas */}
             <div className="mb-8">
               <SectionLabel>Rencana Penjamin &amp; Kelas Perawatan</SectionLabel>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 {[
                   { alpha: "A", title: "Jenis Penjamin", key: "penjamin" as const, opts: PENJAMIN_OPTIONS, ph: "Pilih jenis penjamin" },
                   { alpha: "B", title: "Rencana Kelas / Kamar", key: "kelas" as const, opts: KELAS_OPTIONS, ph: "Pilih kelas perawatan" },
                 ].map(({ alpha, title, key, opts, ph }) => (
-                  <div key={key} className="bg-white border border-gray-200 rounded-lg px-4 py-3.5">
-                    <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.06em] mb-2">{alpha}. {title}</div>
+                  <div key={key} className="bg-catskillwhite-400 border border-catskillwhite-600 rounded-xl px-5 py-4">
+                    <div className="text-[10px] font-bold text-curiousblue-500/70 uppercase tracking-[0.08em] mb-2.5">{alpha}. {title}</div>
                     <Select placeholder={ph} value={form[key]}
                       onChange={(v) => { setField(key)(v); clearError(key)(); }}
                       options={opts} error={errors[key]} required rounded="xl" selectSize="sm"
@@ -958,11 +953,11 @@ export default function FormulirDP() {
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2.5 items-start bg-amber-50 rounded-lg px-4 py-3">
-                <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex gap-3 items-start bg-mariner-500/6 border border-mariner-500/20 rounded-xl px-5 py-4">
+                <svg className="w-4 h-4 text-mariner-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 </svg>
-                <p className="text-[12px] text-amber-800 leading-relaxed">
+                <p className="text-[12px] text-mariner-500 leading-relaxed">
                   Apabila terjadi perubahan kelas perawatan selama masa rawat inap, pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.
                 </p>
               </div>
@@ -1012,11 +1007,11 @@ export default function FormulirDP() {
               </div>
             </div>
 
-            <div className="h-px bg-gray-200 my-6" />
+            <div className="h-px bg-catskillwhite-600 my-7" />
 
-            {/* Actions — urutan: Kembali | Reset | Hapus TTD || Kirim Formulir */}
-            <div className="flex items-center justify-between flex-wrap gap-2.5">
-              <div className="flex items-center gap-2 flex-wrap">
+            {/* Actions — urutan: Kembali | Reset || Kirim Formulir */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 {/* Kembali */}
                 <Button variant="secondary" size="sm" onClick={() => window.history.back()}>
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1058,13 +1053,13 @@ export default function FormulirDP() {
           </div>
 
           {/* Doc footer */}
-          <div className="border-t border-gray-200 bg-gray-50 px-5 sm:px-8 lg:px-[52px] py-2.5 flex justify-between items-center flex-wrap gap-1">
-            <span className="text-[11px] text-gray-400">Halaman 1 dari 1</span>
-            <span className="text-[11px] text-gray-400">FM-ADM-001 · Rev.01 · {Profile.shortName}</span>
+          <div className="border-t border-catskillwhite-600 bg-catskillwhite-400 px-6 sm:px-10 lg:px-14 py-3 flex justify-between items-center flex-wrap gap-1">
+            <span className="text-[11px] text-catskillwhite-900">Halaman 1 dari 1</span>
+            <span className="text-[11px] text-catskillwhite-900">FM-ADM-001 · Rev.01 · {Profile.shortName}</span>
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-gray-400 mt-5 px-4">
+        <p className="text-center text-[11px] text-catskillwhite-900 mt-5 px-4">
           Dokumen ini bersifat resmi dan dipergunakan sebagai arsip administrasi rumah sakit.
         </p>
       </div>
