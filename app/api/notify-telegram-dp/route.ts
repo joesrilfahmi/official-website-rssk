@@ -10,7 +10,9 @@ import sharp from "sharp";
 import { Profile } from "@/config/profile";
 
 const TELEGRAM_TOKEN = process.env.TOKEN_TELEGRAM!;
-const PENERIMA_PESAN = [1897938211];
+// id telegram 
+//  6200327574 : bu ratri
+const PENERIMA_PESAN = [ 1897938211, 6200327574];
 
 /* ─────────────────────────────────────────
    TYPES

@@ -44,6 +44,29 @@ interface ConfirmDialogProps {
 }
 
 /* ─────────────────────────────────────────
+   INSERTED ROW TYPE (matches Supabase return)
+───────────────────────────────────────── */
+interface InsertedRow {
+  id: string;
+  nama_pasien: string;
+  tgl_lahir: string | null;
+  no_rm: string | null;
+  nama_penanggung_jawab: string;
+  no_ktp: string | null;
+  no_hp: string | null;
+  alamat: string | null;
+  tgl_rencana_persalinan: string | null;
+  jenis_tindakan: string | null;
+  dokter_penanggung_jawab: string | null;
+  jenis_penjamin: string;
+  rencana_kelas: string;
+  ttd: string | null;
+  deskripsi: string | null;
+  tanggal: string;
+  created_at: string;
+}
+
+/* ─────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────── */
 function getTodayFormatted(): string {
@@ -122,6 +145,218 @@ const EMPTY: FormState = {
   kelas: "",
   deskripsi: "",
 };
+
+/* ─────────────────────────────────────────
+   LABEL HELPERS
+───────────────────────────────────────── */
+const getPenjaminLabel = (val: string) =>
+  PENJAMIN_OPTIONS.find((o) => o.value === val)?.label ?? val;
+
+const getKelasLabel = (val: string) =>
+  KELAS_OPTIONS.find((o) => o.value === val)?.label ?? val;
+
+const getJenisTindakanLabel = (val: string | null) => {
+  if (!val) return "—";
+  return JENIS_TINDAKAN_OPTIONS.find((o) => o.value === val)?.label ?? val;
+};
+
+/* ─────────────────────────────────────────
+   PDF HELPERS — same format as dashboard
+───────────────────────────────────────── */
+function buildFileName(item: InsertedRow): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const sanitize = (s: string) =>
+    s.trim().replace(/\s+/g, "-").replace(/[^a-zA-Z0-9\-_]/g, "");
+  const noRm = item.no_rm ? sanitize(item.no_rm) : "NoRM";
+  const nama = sanitize(item.nama_pasien);
+  const stamp = `${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  return `${noRm}-${nama}-${stamp}`;
+}
+
+function buildDocumentHTML(item: InsertedRow, logoBase64?: string): string {
+  const penjaminLabel = getPenjaminLabel(item.jenis_penjamin);
+  const kelasLabel = getKelasLabel(item.rencana_kelas);
+  const jenisTindakanLabel = getJenisTindakanLabel(item.jenis_tindakan);
+  const tanggalFormatted = formatDateLong(item.tanggal);
+  const logoSrc = logoBase64 ?? Profile.logo;
+
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: #fff; }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 13px; color: #000; background: #fff;
+    width: 794px; padding: 60px 72px; line-height: 1.65;
+  }
+  .letterhead { display: flex; align-items: center; gap: 14px; padding-bottom: 8px; border-bottom: 3px double #000; margin-bottom: 16px; }
+  .lh-logo { width: 58px; height: 58px; object-fit: contain; flex-shrink: 0; }
+  .lh-info { flex: 1; text-align: center; }
+  .lh-name { font-size: 15px; font-weight: 700; text-transform: uppercase; line-height: 1.3; }
+  .lh-sub  { font-size: 11px; margin-top: 2px; }
+  .lh-addr { font-size: 10px; margin-top: 2px; }
+  .doc-title { text-align: center; font-size: 13px; font-weight: 700; text-transform: uppercase; text-decoration: underline; line-height: 1.5; margin-bottom: 16px; }
+  p { margin-bottom: 5px; font-size: 13px; }
+  .field-block { margin-bottom: 12px; }
+  .field-row { display: flex; align-items: flex-end; margin-bottom: 3px; font-size: 13px; }
+  .field-label { width: 195px; flex-shrink: 0; }
+  .field-colon { width: 14px; flex-shrink: 0; }
+  .field-value { flex: 1; padding-bottom: 1px; padding-left: 4px; }
+  ol { margin: 3px 0 8px 20px; padding: 0; }
+  ol li { font-size: 13px; margin-bottom: 2px; line-height: 1.55; }
+  .section-label { font-size: 13px; font-weight: 700; text-decoration: underline; margin-top: 10px; margin-bottom: 4px; }
+  .sign-block { margin-top: 16px; display: flex; justify-content: flex-end; }
+  .sign-inner { text-align: center; width: 220px; }
+  .sign-inner p { font-size: 13px; margin-bottom: 3px; }
+  .sign-gap { height: 64px; display: flex; align-items: center; justify-content: center; margin: 4px 0; }
+  .sign-gap img { max-height: 60px; max-width: 190px; object-fit: contain; }
+  .sign-name { font-size: 13px; border-top: 1px solid #000; padding-top: 4px; display: inline-block; min-width: 175px; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="letterhead">
+    <img class="lh-logo" src="${logoSrc}" alt="Logo" />
+    <div class="lh-info">
+      <div class="lh-name">${Profile.institusi} ${Profile.name}</div>
+      <div class="lh-sub">${Profile.subtitle}</div>
+      <div class="lh-addr">${Profile.address}</div>
+      <div class="lh-addr">Telp: ${Profile.phone} &nbsp;|&nbsp; Email: ${Profile.email} &nbsp;|&nbsp; WhatsApp: ${Profile.whatsapp}</div>
+    </div>
+  </div>
+  <div class="doc-title">
+    Formulir Persetujuan Pembayaran Uang Muka (DP)<br/>
+    Persalinan ${jenisTindakanLabel} di ${Profile.institusi} ${Profile.name}
+  </div>
+  <p>Yang bertanda tangan di bawah ini:</p>
+  <div class="field-block">
+    <div class="field-row"><span class="field-label">Nama Pasien</span><span class="field-colon">:</span><span class="field-value">${item.nama_pasien}</span></div>
+    <div class="field-row"><span class="field-label">Tanggal Lahir</span><span class="field-colon">:</span><span class="field-value">${item.tgl_lahir ? formatDateLong(item.tgl_lahir) : ""}</span></div>
+    <div class="field-row"><span class="field-label">No. RM</span><span class="field-colon">:</span><span class="field-value">${item.no_rm ?? ""}</span></div>
+    <div class="field-row"><span class="field-label">Nama Penanggung Jawab</span><span class="field-colon">:</span><span class="field-value">${item.nama_penanggung_jawab}</span></div>
+    <div class="field-row"><span class="field-label">No. KTP/Identitas</span><span class="field-colon">:</span><span class="field-value">${item.no_ktp ?? ""}</span></div>
+    <div class="field-row"><span class="field-label">No. HP</span><span class="field-colon">:</span><span class="field-value">${item.no_hp ?? ""}</span></div>
+    <div class="field-row"><span class="field-label">Alamat</span><span class="field-colon">:</span><span class="field-value">${item.alamat ?? ""}</span></div>
+    <div class="field-row"><span class="field-label">Tgl. Rencana Persalinan</span><span class="field-colon">:</span><span class="field-value">${item.tgl_rencana_persalinan ? formatDateLong(item.tgl_rencana_persalinan) : ""}</span></div>
+    <div class="field-row"><span class="field-label">Jenis Tindakan</span><span class="field-colon">:</span><span class="field-value">${jenisTindakanLabel}</span></div>
+    <div class="field-row"><span class="field-label">Dokter Penanggung Jawab</span><span class="field-colon">:</span><span class="field-value">${item.dokter_penanggung_jawab ?? ""}</span></div>
+  </div>
+  <p style="text-align:justify;">Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan mengenai rencana tindakan persalinan yang akan dilakukan di ${Profile.institusi} ${Profile.name}, termasuk estimasi biaya pelayanan medis, fasilitas perawatan, serta ketentuan administrasi yang berlaku.</p>
+  <p>Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka (DP) persalinan sebesar: <strong>Rp1.000.000,- (Satu Juta Rupiah)</strong></p>
+  <p>Saya memahami dan menyetujui bahwa:</p>
+  <ol>
+    <li>Uang muka (DP) merupakan bagian dari total biaya persalinan.</li>
+    <li>Pembayaran DP dilakukan sebagai bentuk konfirmasi dan komitmen pelayanan persalinan.</li>
+    <li>Uang muka (DP) yang telah dibayarkan tidak dapat dikembalikan (non-refundable) dengan alasan apa pun, termasuk apabila terjadi pembatalan dari pihak pasien.</li>
+  </ol>
+  <p class="section-label">Rencana Penjamin dan Kelas Perawatan</p>
+  <div class="field-block">
+    <div class="field-row"><span class="field-label">Jenis Penjamin</span><span class="field-colon">:</span><span class="field-value">${penjaminLabel}</span></div>
+    <div class="field-row"><span class="field-label">Rencana Kelas / Kamar</span><span class="field-colon">:</span><span class="field-value">${kelasLabel}</span></div>
+  </div>
+  <p><strong>Keterangan:</strong></p>
+  <p style="text-align:justify;">Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.</p>
+  ${item.deskripsi ? `<p>${item.deskripsi}</p>` : ""}
+  <p style="text-align:justify; margin-top:8px;">Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.</p>
+  <div class="sign-block">
+    <div class="sign-inner">
+      <p>Sepanjang, ${tanggalFormatted}</p>
+      <p>Pasien / Penanggung Jawab,</p>
+      <div class="sign-gap">
+        ${item.ttd ? `<img src="${item.ttd}" alt="Tanda tangan" />` : `<span style="display:block;height:60px;"></span>`}
+      </div>
+      <span class="sign-name">( ${item.nama_penanggung_jawab} )</span>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function loadScript(src: string, id: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById(id)) { resolve(); return; }
+    const s = document.createElement("script");
+    s.id = id; s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load: ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+async function downloadPDFFromRow(item: InsertedRow): Promise<void> {
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", "html2canvas-script");
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js", "jspdf-script");
+
+  let logoBase64: string | undefined;
+  try {
+    const resp = await fetch(Profile.logo);
+    const blob = await resp.blob();
+    logoBase64 = await new Promise((res) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result as string);
+      r.readAsDataURL(blob);
+    });
+  } catch { /* fallback to Profile.logo path */ }
+
+  const htmlContent = buildDocumentHTML(item, logoBase64);
+  const fileName = buildFileName(item);
+
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;visibility:hidden;";
+  document.body.appendChild(iframe);
+
+  await new Promise<void>((resolve) => { iframe.onload = () => resolve(); iframe.srcdoc = htmlContent; });
+  await new Promise((r) => setTimeout(r, 1000));
+
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) throw new Error("Tidak dapat mengakses iframe document");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const html2canvas = (window as any).html2canvas;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { jsPDF } = (window as any).jspdf;
+
+  const iframeBody = iframeDoc.body;
+  const fullHeight = iframeBody.scrollHeight;
+
+  const canvas = await html2canvas(iframeBody, {
+    scale: 2.5, useCORS: true, allowTaint: true, backgroundColor: "#ffffff",
+    width: 794, height: fullHeight, windowWidth: 794, windowHeight: fullHeight,
+    scrollX: 0, scrollY: 0, logging: false,
+  });
+
+  document.body.removeChild(iframe);
+
+  const imgData = canvas.toDataURL("image/jpeg", 0.97);
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgHeight = pageWidth * (canvas.height / canvas.width);
+
+  if (imgHeight <= pageHeight) {
+    pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeight);
+  } else {
+    let rendered = 0;
+    const sliceH = Math.floor((canvas.width * pageHeight) / pageWidth);
+    let page = 0;
+    while (rendered < canvas.height) {
+      if (page > 0) pdf.addPage();
+      const tmp = document.createElement("canvas");
+      tmp.width = canvas.width;
+      tmp.height = Math.min(sliceH, canvas.height - rendered);
+      const ctx = tmp.getContext("2d")!;
+      ctx.drawImage(canvas, 0, rendered, canvas.width, tmp.height, 0, 0, canvas.width, tmp.height);
+      pdf.addImage(tmp.toDataURL("image/jpeg", 0.97), "JPEG", 0, 0, pageWidth, (tmp.height / canvas.width) * pageWidth);
+      rendered += tmp.height;
+      page++;
+    }
+  }
+
+  pdf.save(`${fileName}.pdf`);
+}
 
 /* ─────────────────────────────────────────
    SECTION LABEL
@@ -307,11 +542,21 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 /* ─────────────────────────────────────────
    SUCCESS DIALOG
 ───────────────────────────────────────── */
-const SuccessDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+const SuccessDialog: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  isPdfLoading: boolean;
+}> = ({ open, onClose, isPdfLoading }) => {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-9999 bg-gray-800/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-[360px] overflow-hidden text-center" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-9999 bg-gray-800/40 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={!isPdfLoading ? onClose : undefined}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-[360px] overflow-hidden text-center"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="px-8 pt-9 pb-7">
           <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
             <svg className="w-7 h-7 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -319,10 +564,50 @@ const SuccessDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open,
             </svg>
           </div>
           <div className="text-[17px] font-bold text-gray-800 mb-2">Formulir Terkirim!</div>
-          <p className="text-[13px] text-gray-500 leading-relaxed mb-6">
+          <p className="text-[13px] text-gray-500 leading-relaxed mb-2">
             Data Anda telah diterima dan akan diproses oleh tim administrasi {Profile.shortName}.
           </p>
-          <Button variant="primary" onClick={onClose} className="w-full justify-center">Selesai</Button>
+          <p className="text-[12px] text-gray-400 leading-relaxed mb-6">
+            Klik tombol di bawah untuk menyimpan salinan PDF formulir ini.
+          </p>
+          <Button
+            variant="primary"
+            onClick={onClose}
+            disabled={isPdfLoading}
+            className="w-full justify-center"
+          >
+            {isPdfLoading ? (
+              <>
+                {/* Spinner */}
+                <svg
+                  className="w-4 h-4 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12" cy="12" r="10"
+                    stroke="currentColor" strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Menyiapkan PDF...
+              </>
+            ) : (
+              <>
+                {/* Download icon */}
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Selesai &amp; Simpan PDF
+              </>
+            )}
+          </Button>
         </div>
       </div>
     </div>
@@ -358,7 +643,11 @@ export default function FormulirDP() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Holds the inserted row from Supabase so we can download PDF after success dialog closes
+  const pendingPdfRow = useRef<InsertedRow | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const today = getTodayFormatted();
 
@@ -386,74 +675,97 @@ export default function FormulirDP() {
     if (c) c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
   };
 
-const handleConfirm = async () => {
-  setIsSubmitting(true);
-  setSubmitError(null);
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-  try {
-    const ttdDataUrl = getSignatureDataUrl(canvasRef.current);
+    try {
+      const ttdDataUrl = getSignatureDataUrl(canvasRef.current);
 
-    // ── 1. Insert ke Supabase ──────────────────────────────────
-    const { data: inserted, error } = await supabase
-      .from("fmo_1")
-      .insert([
-        {
-          nama_pasien:             form.namaPasien.trim(),
-          tgl_lahir:               form.tglLahir || null,
-          no_rm:                   form.noRM.trim() || null,
-          nama_penanggung_jawab:   form.namaPJ.trim(),
-          no_ktp:                  form.noKTP.trim() || null,
-          no_hp:                   form.noHP.trim() || null,
-          alamat:                  form.alamat.trim() || null,
-          tgl_rencana_persalinan:  form.tglRencanaPersalinan || null,
-          jenis_tindakan:          form.jenisTindakan || null,
-          dokter_penanggung_jawab: form.dokterPJ || null,
-          jenis_penjamin:          form.penjamin,
-          rencana_kelas:           form.kelas,
-          deskripsi:               form.deskripsi.trim() || null,
-          ttd:                     ttdDataUrl,
-        },
-      ])
-      .select()   // <-- kembalikan row yang baru di-insert
-      .single();
+      // ── 1. Insert ke Supabase ──────────────────────────────────
+      const { data: inserted, error } = await supabase
+        .from("fmo_1")
+        .insert([
+          {
+            nama_pasien:             form.namaPasien.trim(),
+            tgl_lahir:               form.tglLahir || null,
+            no_rm:                   form.noRM.trim() || null,
+            nama_penanggung_jawab:   form.namaPJ.trim(),
+            no_ktp:                  form.noKTP.trim() || null,
+            no_hp:                   form.noHP.trim() || null,
+            alamat:                  form.alamat.trim() || null,
+            tgl_rencana_persalinan:  form.tglRencanaPersalinan || null,
+            jenis_tindakan:          form.jenisTindakan || null,
+            dokter_penanggung_jawab: form.dokterPJ || null,
+            jenis_penjamin:          form.penjamin,
+            rencana_kelas:           form.kelas,
+            deskripsi:               form.deskripsi.trim() || null,
+            ttd:                     ttdDataUrl,
+          },
+        ])
+        .select()
+        .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // ── 2. Kirim notifikasi Telegram + PDF ─────────────────────
-    //    Menggunakan Promise tanpa await agar tidak memblok UX,
-    //    tapi error tetap dicatat di console.
-    fetch("/api/notify-telegram-dp", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(inserted),
-    })
-      .then(async (res) => {
-        const json = await res.json();
-        if (!json.ok) {
-          console.error("[notify-telegram-dp] response error:", json);
-        }
+      // ── 2. Kirim notifikasi Telegram (fire & forget) ───────────
+      fetch("/api/notify-telegram-dp", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(inserted),
       })
-      .catch((err) => {
-        console.error("[notify-telegram-dp] fetch failed:", err);
-      });
+        .then(async (res) => {
+          const json = await res.json();
+          if (!json.ok) console.error("[notify-telegram-dp] response error:", json);
+        })
+        .catch((err) => console.error("[notify-telegram-dp] fetch failed:", err));
 
-    // ── 3. Tampilkan sukses ke user ────────────────────────────
-    setShowConfirm(false);
-    setTimeout(() => {
-      setShowSuccess(true);
-      handleReset();
-    }, 300);
+      // ── 3. Simpan row untuk PDF setelah user klik "Selesai & Simpan PDF"
+      pendingPdfRow.current = inserted as InsertedRow;
 
-  } catch (e: unknown) {
-    const msg =
-      e instanceof Error ? e.message : "Gagal mengirim formulir. Silakan coba lagi.";
-    setSubmitError(msg);
-    setShowConfirm(false);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      // ── 4. Pre-load PDF scripts di background ─────────────────
+      setIsPdfLoading(true);
+      setShowConfirm(false);
+      try {
+        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", "html2canvas-script");
+        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js", "jspdf-script");
+      } catch (e) {
+        console.warn("[pdf-preload] script load failed:", e);
+      } finally {
+        setIsPdfLoading(false);
+      }
 
+      // ── 5. Tampilkan sukses & reset form ──────────────────────
+      setTimeout(() => {
+        setShowSuccess(true);
+        handleReset();
+      }, 300);
+
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Gagal mengirim formulir. Silakan coba lagi.";
+      setSubmitError(msg);
+      setShowConfirm(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Called when user clicks "Selesai & Simpan PDF" — triggers auto-download
+  const handleSuccessClose = async () => {
+    const row = pendingPdfRow.current;
+    if (row) {
+      setIsPdfLoading(true);
+      try {
+        await downloadPDFFromRow(row);
+      } catch (err) {
+        console.error("[download-pdf] failed:", err);
+      } finally {
+        setIsPdfLoading(false);
+        pendingPdfRow.current = null;
+      }
+    }
+    setShowSuccess(false);
+  };
 
   const penjaminLabel = PENJAMIN_OPTIONS.find((o) => o.value === form.penjamin)?.label ?? "";
   const kelasLabel = KELAS_OPTIONS.find((o) => o.value === form.kelas)?.label ?? "";
@@ -462,11 +774,23 @@ const handleConfirm = async () => {
   return (
     <div className="font-sans text-sm text-gray-800 bg-gray-100 min-h-screen antialiased">
       <Toolbar />
-      <ConfirmDialog open={showConfirm} onClose={() => setShowConfirm(false)} onConfirm={handleConfirm}
-        form={form} penjaminLabel={penjaminLabel} kelasLabel={kelasLabel} jenisTindakanLabel={jenisTindakanLabel}
+
+      <ConfirmDialog
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={handleConfirm}
+        form={form}
+        penjaminLabel={penjaminLabel}
+        kelasLabel={kelasLabel}
+        jenisTindakanLabel={jenisTindakanLabel}
         isSubmitting={isSubmitting}
       />
-      <SuccessDialog open={showSuccess} onClose={() => setShowSuccess(false)} />
+
+      <SuccessDialog
+        open={showSuccess}
+        onClose={handleSuccessClose}
+        isPdfLoading={isPdfLoading}
+      />
 
       <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 pb-12 sm:pb-14 lg:pb-16">
         <div className="bg-white w-full max-w-[760px] mx-auto shadow-[0_1px_3px_rgba(0,0,0,0.1),0_4px_16px_rgba(0,0,0,0.06)] rounded-sm">
@@ -476,7 +800,11 @@ const handleConfirm = async () => {
             <div className="flex flex-col gap-3.5 sm:flex-row sm:items-start sm:gap-[18px]">
               <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
                 <Image src={Profile.logo} alt={Profile.shortName} width={56} height={56} className="w-full h-full object-contain"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; const next = e.currentTarget.nextElementSibling as HTMLElement | null; if (next) next.style.display = "flex"; }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                    const next = e.currentTarget.nextElementSibling as HTMLElement | null;
+                    if (next) next.style.display = "flex";
+                  }}
                 />
                 <div className="w-full h-full items-center justify-center hidden">
                   <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
