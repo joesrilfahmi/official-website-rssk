@@ -21,7 +21,6 @@ import {
   ExternalLink,
   Heart,
   MessageSquare,
-  Send,
   Star,
   User2,
   X,
@@ -156,7 +155,7 @@ interface TelegramPayload {
 
 const sendTelegramNotification = async (payload: TelegramPayload) => {
   try {
-    await fetch("/api/notify-telegram", {
+    await fetch("/api/notify-telegram-kritik-saran", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -433,7 +432,7 @@ const KritikSaran = () => {
   };
 
   /* ─────────────────────────────────────────
-     HANDLE CONFIRM — insert + kirim Telegram
+     HANDLE CONFIRM — insert → reset form → kirim Telegram (fire-and-forget)
   ───────────────────────────────────────── */
   const handleConfirm = async () => {
     setShowConfirmDialog(false);
@@ -453,21 +452,20 @@ const KritikSaran = () => {
       ]);
       if (error) throw error;
 
-      // ── Kirim notifikasi Telegram (fire-and-forget) ──
+      // Simpan data yang dibutuhkan sebelum form di-reset
       const unitLabel =
         unitPelayananList.find((u) => u.id === formData.unit_pelayanan_id)
           ?.title ?? "-";
-
-      sendTelegramNotification({
+      const snapshot = {
         nama: formData.nama.trim(),
         no_hp: formData.no_hp.trim(),
         unit_pelayanan: unitLabel,
         pesan: formData.pesan.trim(),
         rating: formData.rating,
         is_anonymus: formData.is_anonymus,
-      });
-      // ── selesai ──
+      };
 
+      // Reset form
       setFormData({
         nama: "",
         no_hp: "",
@@ -476,6 +474,9 @@ const KritikSaran = () => {
         rating: 0,
         is_anonymus: false,
       });
+
+      // Kirim notifikasi Telegram setelah form di-reset (fire-and-forget)
+      sendTelegramNotification(snapshot);
 
       setTimeout(() => setShowSuccessDialog(true), 320);
     } catch (e) {
@@ -710,7 +711,7 @@ const KritikSaran = () => {
               className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="h-2 w-full bg-linear-to-r from-greenfresh-400 via-mariner-400 to-greenfresh-500" />
+      
 
               <motion.button
                 whileHover={{
@@ -787,21 +788,6 @@ const KritikSaran = () => {
                   className="w-full h-px bg-gray-100 mb-6"
                   style={{ originX: 0.5 }}
                 />
-
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={
-                    { delay: 0.5, duration: 0.4, ease } satisfies Transition
-                  }
-                  className="flex items-start gap-2.5 bg-mariner-50 border border-mariner-100 rounded-2xl px-4 py-3 mb-6 w-full text-left"
-                >
-                  <Send className="w-3.5 h-3.5 text-mariner-500 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-mariner-700 leading-relaxed">
-                    Tim kami akan meninjau dan menindaklanjuti masukan Anda
-                    sesegera mungkin.
-                  </p>
-                </motion.div>
 
                 <motion.button
                   initial={{ opacity: 0, y: 8 }}

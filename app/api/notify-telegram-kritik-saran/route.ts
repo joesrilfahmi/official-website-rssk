@@ -1,4 +1,4 @@
-// app/api/notify-telegram/route.ts
+// app/api/notify-telegram-kritik-saran/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const TELEGRAM_TOKEN = process.env.TOKEN_TELEGRAM!;
