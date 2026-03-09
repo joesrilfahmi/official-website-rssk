@@ -7,7 +7,6 @@ import {
   ChevronDown,
   Database,
   File,
-  Folder,
   FolderTree,
   Form,
   Inbox,
@@ -50,6 +49,7 @@ import {
 } from "@/components/ui/sidebar";
 import Profile from "@/config/profile";
 import { getCurrentUser } from "@/lib/auth";
+import { useKritikSaranUnread } from "@/hooks/use-kritik-saran-count";
 import type { UserRole } from "@/types";
 
 const menuItems = [
@@ -170,6 +170,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const user = getCurrentUser();
   const { setOpenMobile } = useSidebar();
+  const { unreadCount } = useKritikSaranUnread();
 
   const userData = {
     name: user?.nama || "User",
@@ -199,9 +200,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">
-                    {Profile.shortName}
-                  </span>
+                  <span className="truncate font-semibold">{Profile.shortName}</span>
                   <span className="truncate text-xs">{Profile.subtitle}</span>
                 </div>
               </div>
@@ -217,7 +216,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {menuItems
                 .filter((item) => item.access.includes(user?.role || "user"))
                 .map((item) => {
-                  // Check if item has subItems (dropdown menu)
                   if (item.subItems) {
                     const isAnySubItemActive = item.subItems.some(
                       (subItem) => pathname === subItem.url,
@@ -231,10 +229,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       >
                         <SidebarMenuItem>
                           <CollapsibleTrigger asChild>
+                            {/* No badge on parent — ChevronDown always pushed to the right */}
                             <SidebarMenuButton tooltip={item.title}>
-                              <item.icon className="h-4 w-4" />
+                              <item.icon className="h-4 w-4 shrink-0" />
                               <span>{item.title}</span>
-                              <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                              <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                             </SidebarMenuButton>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
@@ -249,6 +248,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                     <Link href={subItem.url}>
                                       <subItem.icon className="h-4 w-4" />
                                       <span>{subItem.title}</span>
+                                      {/* Badge ONLY on "Pesan Masuk" */}
+                                      {subItem.title === "Pesan Masuk" && unreadCount > 0 && (
+                                        <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white leading-none">
+                                          {unreadCount > 99 ? "99+" : unreadCount}
+                                        </span>
+                                      )}
                                     </Link>
                                   </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>
@@ -260,7 +265,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     );
                   }
 
-                  // Regular menu item without dropdown
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton

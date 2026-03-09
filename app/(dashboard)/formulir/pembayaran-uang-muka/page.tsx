@@ -13,6 +13,7 @@ import {
   BreadcrumbPage, BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -21,6 +22,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select, SelectContent, SelectItem, SelectTrigger,
 } from "@/components/ui/select";
@@ -36,9 +40,9 @@ import { Profile } from "@/config/profile";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase/client";
 import {
-  ArrowUpDown, Download, Eye, Loader2, Search, Trash2, X,
+  ArrowUpDown, Calendar, Download, Filter, Loader2, Pencil, Search, Trash2, X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 /* ─────────────────────────────────────────
@@ -149,6 +153,20 @@ const formatTanggalLong = (dateStr: string | null) => {
 };
 
 /* ─────────────────────────────────────────
+   DATE HELPERS
+───────────────────────────────────────── */
+const strToDate = (s: string): Date | undefined => {
+  if (!s) return undefined;
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
+const dateToStr = (d: Date): string => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+/* ─────────────────────────────────────────
    FILENAME HELPER
 ───────────────────────────────────────── */
 function buildFileName(item: Fmo1): string {
@@ -181,76 +199,34 @@ function buildDocumentHTML(item: Fmo1, logoBase64?: string): string {
   html { background: #fff; }
   body {
     font-family: "Times New Roman", Times, serif;
-    font-size: 13px;
-    color: #000;
-    background: #fff;
-    width: 794px;
-    padding: 60px 72px 60px 72px;
-    line-height: 1.65;
+    font-size: 13px; color: #000; background: #fff;
+    width: 794px; padding: 60px 72px; line-height: 1.65;
   }
-  .letterhead {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding-bottom: 8px;
-    border-bottom: 3px double #000;
-    margin-bottom: 16px;
-  }
+  .letterhead { display: flex; align-items: center; gap: 14px; padding-bottom: 8px; border-bottom: 3px double #000; margin-bottom: 16px; }
   .lh-logo { width: 58px; height: 58px; object-fit: contain; flex-shrink: 0; }
   .lh-info { flex: 1; text-align: center; }
   .lh-name { font-size: 15px; font-weight: 700; text-transform: uppercase; line-height: 1.3; }
   .lh-sub  { font-size: 11px; margin-top: 2px; }
   .lh-addr { font-size: 10px; margin-top: 2px; }
-  .doc-title {
-    text-align: center;
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    text-decoration: underline;
-    line-height: 1.5;
-    margin-bottom: 16px;
-  }
+  .doc-title { text-align: center; font-size: 13px; font-weight: 700; text-transform: uppercase; text-decoration: underline; line-height: 1.5; margin-bottom: 16px; }
   p { margin-bottom: 5px; font-size: 13px; }
   .field-block { margin-bottom: 12px; }
-  .field-row {
-    display: flex;
-    align-items: flex-end;
-    margin-bottom: 3px;
-    font-size: 13px;
-  }
+  .field-row { display: flex; align-items: flex-end; margin-bottom: 3px; font-size: 13px; }
   .field-label { width: 195px; flex-shrink: 0; }
   .field-colon { width: 14px; flex-shrink: 0; }
-  .field-value {
-    flex: 1;
-    padding-bottom: 1px;
-    padding-left: 4px;
-  }
+  .field-value { flex: 1; padding-bottom: 1px; padding-left: 4px; }
   ol { margin: 3px 0 8px 20px; padding: 0; }
   ol li { font-size: 13px; margin-bottom: 2px; line-height: 1.55; }
-  .section-label {
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: underline;
-    margin-top: 10px;
-    margin-bottom: 4px;
-  }
+  .section-label { font-size: 13px; font-weight: 700; text-decoration: underline; margin-top: 10px; margin-bottom: 4px; }
   .sign-block { margin-top: 16px; display: flex; justify-content: flex-end; }
   .sign-inner { text-align: center; width: 220px; }
   .sign-inner p { font-size: 13px; margin-bottom: 3px; }
   .sign-gap { height: 64px; display: flex; align-items: center; justify-content: center; margin: 4px 0; }
   .sign-gap img { max-height: 60px; max-width: 190px; object-fit: contain; }
-  .sign-name {
-    font-size: 13px;
-    border-top: 1px solid #000;
-    padding-top: 4px;
-    display: inline-block;
-    min-width: 175px;
-    text-align: center;
-  }
+  .sign-name { font-size: 13px; border-top: 1px solid #000; padding-top: 4px; display: inline-block; min-width: 175px; text-align: center; }
 </style>
 </head>
 <body>
-
   <div class="letterhead">
     <img class="lh-logo" src="${logoSrc}" alt="Logo" />
     <div class="lh-info">
@@ -260,124 +236,50 @@ function buildDocumentHTML(item: Fmo1, logoBase64?: string): string {
       <div class="lh-addr">Telp: ${Profile.phone} &nbsp;|&nbsp; Email: ${Profile.email} &nbsp;|&nbsp; WhatsApp: ${Profile.whatsapp}</div>
     </div>
   </div>
-
   <div class="doc-title">
     Formulir Persetujuan Pembayaran Uang Muka (DP)<br/>
     Persalinan ${jenisTindakanLabel} di ${Profile.institusi} ${Profile.name}
   </div>
-
   <p>Yang bertanda tangan di bawah ini:</p>
-
   <div class="field-block">
-    <div class="field-row">
-      <span class="field-label">Nama Pasien</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${item.nama_pasien}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">Tanggal Lahir</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${item.tgl_lahir ? formatTanggalLong(item.tgl_lahir) : ""}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">No. RM</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${item.no_rm ?? ""}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">Nama Penanggung Jawab</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${item.nama_penanggung_jawab}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">No. KTP/Identitas</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${item.no_ktp ?? ""}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">No. HP</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${item.no_hp ?? ""}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">Alamat</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${item.alamat ?? ""}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">Tgl. Rencana Persalinan</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${item.tgl_rencana_persalinan ? formatTanggalLong(item.tgl_rencana_persalinan) : ""}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">Jenis Tindakan</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${jenisTindakanLabel}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">Dokter Penanggung Jawab</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${item.dokter_penanggung_jawab ?? ""}</span>
-    </div>
+    <div class="field-row"><span class="field-label">Nama Pasien</span><span class="field-colon">:</span><span class="field-value">${item.nama_pasien}</span></div>
+    <div class="field-row"><span class="field-label">Tanggal Lahir</span><span class="field-colon">:</span><span class="field-value">${item.tgl_lahir ? formatTanggalLong(item.tgl_lahir) : ""}</span></div>
+    <div class="field-row"><span class="field-label">No. RM</span><span class="field-colon">:</span><span class="field-value">${item.no_rm ?? ""}</span></div>
+    <div class="field-row"><span class="field-label">Nama Penanggung Jawab</span><span class="field-colon">:</span><span class="field-value">${item.nama_penanggung_jawab}</span></div>
+    <div class="field-row"><span class="field-label">No. KTP/Identitas</span><span class="field-colon">:</span><span class="field-value">${item.no_ktp ?? ""}</span></div>
+    <div class="field-row"><span class="field-label">No. HP</span><span class="field-colon">:</span><span class="field-value">${item.no_hp ?? ""}</span></div>
+    <div class="field-row"><span class="field-label">Alamat</span><span class="field-colon">:</span><span class="field-value">${item.alamat ?? ""}</span></div>
+    <div class="field-row"><span class="field-label">Tgl. Rencana Persalinan</span><span class="field-colon">:</span><span class="field-value">${item.tgl_rencana_persalinan ? formatTanggalLong(item.tgl_rencana_persalinan) : ""}</span></div>
+    <div class="field-row"><span class="field-label">Jenis Tindakan</span><span class="field-colon">:</span><span class="field-value">${jenisTindakanLabel}</span></div>
+    <div class="field-row"><span class="field-label">Dokter Penanggung Jawab</span><span class="field-colon">:</span><span class="field-value">${item.dokter_penanggung_jawab ?? ""}</span></div>
   </div>
-
-  <p style="text-align:justify;">
-    Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan mengenai rencana tindakan
-    persalinan yang akan dilakukan di ${Profile.institusi} ${Profile.name}, termasuk estimasi
-    biaya pelayanan medis, fasilitas perawatan, serta ketentuan administrasi yang berlaku.
-  </p>
-  <p>
-    Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka
-    (DP) persalinan sebesar: <strong>Rp1.000.000,- (Satu Juta Rupiah)</strong>
-  </p>
+  <p style="text-align:justify;">Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan mengenai rencana tindakan persalinan yang akan dilakukan di ${Profile.institusi} ${Profile.name}, termasuk estimasi biaya pelayanan medis, fasilitas perawatan, serta ketentuan administrasi yang berlaku.</p>
+  <p>Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka (DP) persalinan sebesar: <strong>Rp1.000.000,- (Satu Juta Rupiah)</strong></p>
   <p>Saya memahami dan menyetujui bahwa:</p>
   <ol>
     <li>Uang muka (DP) merupakan bagian dari total biaya persalinan.</li>
     <li>Pembayaran DP dilakukan sebagai bentuk konfirmasi dan komitmen pelayanan persalinan.</li>
-    <li>Uang muka (DP) yang telah dibayarkan tidak dapat dikembalikan (non-refundable)
-        dengan alasan apa pun, termasuk apabila terjadi pembatalan dari pihak pasien.</li>
+    <li>Uang muka (DP) yang telah dibayarkan tidak dapat dikembalikan (non-refundable) dengan alasan apa pun, termasuk apabila terjadi pembatalan dari pihak pasien.</li>
   </ol>
-
   <p class="section-label">Rencana Penjamin dan Kelas Perawatan</p>
   <div class="field-block">
-    <div class="field-row">
-      <span class="field-label">Jenis Penjamin</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${penjaminLabel}</span>
-    </div>
-    <div class="field-row">
-      <span class="field-label">Rencana Kelas / Kamar</span>
-      <span class="field-colon">:</span>
-      <span class="field-value">${kelasLabel}</span>
-    </div>
+    <div class="field-row"><span class="field-label">Jenis Penjamin</span><span class="field-colon">:</span><span class="field-value">${penjaminLabel}</span></div>
+    <div class="field-row"><span class="field-label">Rencana Kelas / Kamar</span><span class="field-colon">:</span><span class="field-value">${kelasLabel}</span></div>
   </div>
-
   <p><strong>Keterangan:</strong></p>
-  <p style="text-align:justify;">
-    Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung
-    jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.
-  </p>
+  <p style="text-align:justify;">Apabila terjadi perubahan kelas perawatan selama masa rawat inap, maka pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.</p>
   ${item.deskripsi ? `<p>${item.deskripsi}</p>` : ""}
-
-  <p style="text-align:justify; margin-top:8px;">
-    Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun,
-    dan dapat dipergunakan sebagaimana mestinya.
-  </p>
-
+  <p style="text-align:justify; margin-top:8px;">Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.</p>
   <div class="sign-block">
     <div class="sign-inner">
       <p>Sepanjang, ${tanggalFormatted}</p>
       <p>Pasien / Penanggung Jawab,</p>
       <div class="sign-gap">
-        ${item.ttd
-          ? `<img src="${item.ttd}" alt="Tanda tangan" />`
-          : `<span style="display:block;height:60px;"></span>`
-        }
+        ${item.ttd ? `<img src="${item.ttd}" alt="Tanda tangan" />` : `<span style="display:block;height:60px;"></span>`}
       </div>
       <span class="sign-name">( ${item.nama_penanggung_jawab} )</span>
     </div>
   </div>
-
 </body>
 </html>`;
 }
@@ -414,7 +316,7 @@ async function handleDownloadPDF(item: Fmo1): Promise<void> {
         r.onload = () => res(r.result as string);
         r.readAsDataURL(blob);
       });
-    } catch { /* fallback to path */ }
+    } catch { /* fallback */ }
 
     const htmlContent = buildDocumentHTML(item, logoBase64);
     const fileName = buildFileName(item);
@@ -479,107 +381,48 @@ async function handleDownloadPDF(item: Fmo1): Promise<void> {
 }
 
 /* ─────────────────────────────────────────
-   VIEW DIALOG  — PDF-viewer style modal
+   DATE PICKER FIELD
 ───────────────────────────────────────── */
-const ViewDialog: React.FC<{ open: boolean; item: Fmo1 | null; onClose: () => void }> = ({ open, item, onClose }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!open || !item) return;
-    setLoading(true);
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    const onLoad = () => {
-      try {
-        const doc = iframe.contentDocument;
-        if (doc?.body) iframe.style.height = doc.body.scrollHeight + "px";
-      } catch { /* guard */ }
-      setLoading(false);
-    };
-    iframe.addEventListener("load", onLoad, { once: true });
-    iframe.srcdoc = buildDocumentHTML(item);
-    return () => iframe.removeEventListener("load", onLoad);
-  }, [open, item]);
-
-  if (!open || !item) return null;
+const DatePickerField: React.FC<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+  id?: string;
+  required?: boolean;
+}> = ({ label, value, onChange, disabled, id, required }) => {
+  const selected = value ? strToDate(value) : undefined;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent
-        className="max-w-[95vw] w-full sm:max-w-4xl p-0 bg-[#525659] gap-0 overflow-hidden flex flex-col"
-        style={{ height: "92vh" }}
-      >
-        <div className="sr-only">
-          <DialogTitle>Preview Formulir DP</DialogTitle>
-          <DialogDescription>Preview dokumen formulir DP persalinan</DialogDescription>
-        </div>
-        {/* Header toolbar */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-[#323639] shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded bg-[#444] flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <p className="text-[13px] font-medium text-gray-100 truncate leading-tight">
-                Formulir DP — {item.nama_pasien}
-              </p>
-              <p className="text-[11px] text-gray-400 truncate">
-                FM-ADM-001 · {formatTanggal(item.tanggal)}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0 ml-3">
-            <Button
-              size="sm" variant="ghost"
-              className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 text-xs gap-1.5"
-              onClick={() => handleDownloadPDF(item)}
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Download PDF</span>
-            </Button>
-            <button
-              onClick={onClose}
-              className="w-7 h-7 rounded flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer bg-transparent border-none"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        {/* Document area */}
-        <div className="flex-1 overflow-auto bg-[#525659] flex justify-center py-6 px-4">
-          <div className="relative w-full" style={{ maxWidth: 794 }}>
-            {loading && (
-              <div className="absolute inset-0 bg-white rounded shadow-2xl z-10 flex items-center justify-center" style={{ minHeight: 900 }}>
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
-                  <span className="text-xs text-gray-400">Memuat dokumen...</span>
-                </div>
-              </div>
-            )}
-            <iframe
-              ref={iframeRef}
-              title="Preview Formulir DP"
-              className="w-full bg-white rounded shadow-2xl block"
-              style={{ border: "none", minHeight: 900, height: "auto" }}
-              scrolling="no"
-            />
-          </div>
-        </div>
-        {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-2 bg-[#323639] shrink-0 border-t border-black/20">
-          <span className="text-[11px] text-gray-500">FM-ADM-001 · Rev.01</span>
-          <Button size="sm" variant="ghost"
-            className="h-7 px-3 text-gray-400 hover:text-white hover:bg-white/10 text-xs"
-            onClick={onClose}>
-            Tutup
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+      </Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            variant="outline"
+            disabled={disabled}
+            className="w-full justify-start text-left font-normal"
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            {selected
+              ? formatTanggal(value)
+              : <span className="text-muted-foreground">Pilih tanggal</span>}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <CalendarComponent
+            mode="single"
+            selected={selected}
+            onSelect={(date) => onChange(date ? dateToStr(date) : "")}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 };
 
@@ -592,7 +435,8 @@ const EditDialog: React.FC<{
   const [form, setForm] = useState<EditFormState>({
     nama_pasien: "", tgl_lahir: "", no_rm: "", nama_penanggung_jawab: "",
     no_ktp: "", no_hp: "", alamat: "", tgl_rencana_persalinan: "",
-    jenis_tindakan: "", dokter_penanggung_jawab: "", jenis_penjamin: "", rencana_kelas: "", deskripsi: "",
+    jenis_tindakan: "", dokter_penanggung_jawab: "", jenis_penjamin: "",
+    rencana_kelas: "", deskripsi: "",
   });
   const [errors, setErrors] = useState<EditFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -662,9 +506,12 @@ const EditDialog: React.FC<{
     }
   };
 
-  const setF = (k: keyof EditFormState) => (v: string) => setForm((p) => ({ ...p, [k]: v }));
-  const setInputF = (k: keyof EditFormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF(k)(e.target.value);
-  const clearErr = (k: keyof EditFormState) => () => setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
+  const setF = (k: keyof EditFormState) => (v: string) =>
+    setForm((p) => ({ ...p, [k]: v }));
+  const setInputF = (k: keyof EditFormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF(k)(e.target.value);
+  const clearErr = (k: keyof EditFormState) => () =>
+    setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -684,48 +531,60 @@ const EditDialog: React.FC<{
               {errors.nama_pasien && <p className="text-xs text-red-500">{errors.nama_pasien}</p>}
             </div>
 
-            {/* Tgl Lahir */}
-            <div className="space-y-1.5">
-              <Label htmlFor="tgl_lahir">Tanggal Lahir</Label>
-              <Input id="tgl_lahir" type="date" value={form.tgl_lahir} onChange={setInputF("tgl_lahir")} disabled={submitting} />
-            </div>
+            {/* Tgl Lahir — Calendar Picker */}
+            <DatePickerField
+              id="tgl_lahir"
+              label="Tanggal Lahir"
+              value={form.tgl_lahir}
+              onChange={setF("tgl_lahir")}
+              disabled={submitting}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="no_rm">No. Rekam Medis</Label>
-                <Input id="no_rm" value={form.no_rm} onChange={setInputF("no_rm")} placeholder="No. rekam medis" disabled={submitting} />
+                <Input id="no_rm" value={form.no_rm} onChange={setInputF("no_rm")}
+                  placeholder="No. rekam medis" disabled={submitting} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="no_ktp">No. KTP / Identitas</Label>
-                <Input id="no_ktp" value={form.no_ktp} onChange={setInputF("no_ktp")} placeholder="No. KTP" disabled={submitting} />
+                <Input id="no_ktp" value={form.no_ktp} onChange={setInputF("no_ktp")}
+                  placeholder="No. KTP" disabled={submitting} />
               </div>
             </div>
 
             {/* Nama PJ */}
             <div className="space-y-1.5">
-              <Label htmlFor="nama_penanggung_jawab">Nama Penanggung Jawab <span className="text-red-500">*</span></Label>
-              <Input id="nama_penanggung_jawab" value={form.nama_penanggung_jawab} onChange={setInputF("nama_penanggung_jawab")}
-                onFocus={clearErr("nama_penanggung_jawab")} placeholder="Nama penanggung jawab" disabled={submitting}
+              <Label htmlFor="nama_penanggung_jawab">
+                Nama Penanggung Jawab <span className="text-red-500">*</span>
+              </Label>
+              <Input id="nama_penanggung_jawab" value={form.nama_penanggung_jawab}
+                onChange={setInputF("nama_penanggung_jawab")} onFocus={clearErr("nama_penanggung_jawab")}
+                placeholder="Nama penanggung jawab" disabled={submitting}
                 className={errors.nama_penanggung_jawab ? "border-red-500" : ""} />
               {errors.nama_penanggung_jawab && <p className="text-xs text-red-500">{errors.nama_penanggung_jawab}</p>}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="no_hp">No. HP</Label>
-              <Input id="no_hp" value={form.no_hp} onChange={setInputF("no_hp")} placeholder="No. HP" disabled={submitting} />
+              <Input id="no_hp" value={form.no_hp} onChange={setInputF("no_hp")}
+                placeholder="No. HP" disabled={submitting} />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="alamat">Alamat</Label>
-              <Textarea id="alamat" value={form.alamat} onChange={setInputF("alamat")} placeholder="Alamat lengkap" rows={3} disabled={submitting} />
+              <Textarea id="alamat" value={form.alamat} onChange={setInputF("alamat")}
+                placeholder="Alamat lengkap" rows={3} disabled={submitting} />
             </div>
 
-            {/* Tgl Rencana Persalinan */}
-            <div className="space-y-1.5">
-              <Label htmlFor="tgl_rencana_persalinan">Tgl. Rencana Persalinan</Label>
-              <Input id="tgl_rencana_persalinan" type="date" value={form.tgl_rencana_persalinan}
-                onChange={setInputF("tgl_rencana_persalinan")} disabled={submitting} />
-            </div>
+            {/* Tgl Rencana Persalinan — Calendar Picker */}
+            <DatePickerField
+              id="tgl_rencana_persalinan"
+              label="Tgl. Rencana Persalinan"
+              value={form.tgl_rencana_persalinan}
+              onChange={setF("tgl_rencana_persalinan")}
+              disabled={submitting}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Jenis Tindakan */}
@@ -800,6 +659,13 @@ const EditDialog: React.FC<{
               </Select>
               {errors.rencana_kelas && <p className="text-xs text-red-500">{errors.rencana_kelas}</p>}
             </div>
+
+            {/* Deskripsi */}
+            <div className="space-y-1.5">
+              <Label htmlFor="deskripsi">Keterangan Tambahan</Label>
+              <Textarea id="deskripsi" value={form.deskripsi} onChange={setInputF("deskripsi")}
+                placeholder="Keterangan tambahan (opsional)" rows={3} disabled={submitting} />
+            </div>
           </div>
 
           <DialogFooter>
@@ -823,8 +689,8 @@ export default function FormulirDPPage() {
   const [filtered, setFiltered] = useState<Fmo1[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAccessDenied, setShowAccessDenied] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const [viewItem, setViewItem] = useState<Fmo1 | null>(null);
   const [editItem, setEditItem] = useState<Fmo1 | null>(null);
   const [deleteItem, setDeleteItem] = useState<Fmo1 | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -835,8 +701,12 @@ export default function FormulirDPPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState<number | "all">(10);
-  const [sortField, setSortField] = useState<SortField>("tanggal");
+  const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  const [dokterFilter, setDokterFilter] = useState<string>("all");
+  const [tindakanFilter, setTindakanFilter] = useState<string>("all");
+  const [kelasFilter, setKelasFilter] = useState<string>("all");
 
   useEffect(() => {
     const t = setTimeout(() => { setDebouncedSearch(searchQuery); setCurrentPage(1); }, 300);
@@ -845,6 +715,7 @@ export default function FormulirDPPage() {
 
   const applyFilters = useCallback(() => {
     let f = [...data];
+
     if (debouncedSearch.trim()) {
       const q = debouncedSearch.toLowerCase();
       f = f.filter((r) =>
@@ -855,6 +726,11 @@ export default function FormulirDPPage() {
         (r.dokter_penanggung_jawab ?? "").toLowerCase().includes(q),
       );
     }
+
+    if (dokterFilter !== "all") f = f.filter((r) => r.dokter_penanggung_jawab === dokterFilter);
+    if (tindakanFilter !== "all") f = f.filter((r) => r.jenis_tindakan === tindakanFilter);
+    if (kelasFilter !== "all") f = f.filter((r) => r.rencana_kelas === kelasFilter);
+
     f.sort((a, b) => {
       let cmp = 0;
       if (sortField === "nama_pasien") cmp = a.nama_pasien.localeCompare(b.nama_pasien, "id");
@@ -862,16 +738,20 @@ export default function FormulirDPPage() {
       else if (sortField === "created_at") cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return sortOrder === "asc" ? cmp : -cmp;
     });
+
     setFiltered(f);
     setCurrentPage(1);
     setSelectedIds(new Set());
-  }, [data, debouncedSearch, sortField, sortOrder]);
+  }, [data, debouncedSearch, sortField, sortOrder, dokterFilter, tindakanFilter, kelasFilter]);
 
   useEffect(() => { applyFilters(); }, [applyFilters]);
 
   const fetchData = useCallback(async () => {
     try {
-      const { data: rows, error } = await supabase.from("fmo_1").select("*").order("tanggal", { ascending: false });
+      const { data: rows, error } = await supabase
+        .from("fmo_1")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       setData(rows ?? []);
     } catch (err) {
@@ -886,6 +766,7 @@ export default function FormulirDPPage() {
       try {
         const user = getCurrentUser();
         if (!user) { setShowAccessDenied(true); return; }
+        setIsAdmin(user.role === "administrator");
         await fetchData();
       } finally {
         setLoading(false);
@@ -946,17 +827,30 @@ export default function FormulirDPPage() {
     }
   };
 
+  const handleResetFilters = () => {
+    setSortField("created_at");
+    setSortOrder("desc");
+    setSearchQuery("");
+    setDokterFilter("all");
+    setTindakanFilter("all");
+    setKelasFilter("all");
+  };
+
   const sortOptions = [
-    { value: "tanggal-desc", label: "Terbaru" },
-    { value: "tanggal-asc", label: "Terlama" },
+    { value: "created_at-desc", label: "Terbaru Dibuat" },
+    { value: "created_at-asc", label: "Terlama Dibuat" },
+    { value: "tanggal-desc", label: "Tanggal Terbaru" },
+    { value: "tanggal-asc", label: "Tanggal Terlama" },
     { value: "nama_pasien-asc", label: "Nama (A-Z)" },
     { value: "nama_pasien-desc", label: "Nama (Z-A)" },
-    { value: "created_at-desc", label: "Dibuat Terbaru" },
-    { value: "created_at-asc", label: "Dibuat Terlama" },
   ];
+
   const getSortLabel = () =>
     sortOptions.find((o) => o.value === `${sortField}-${sortOrder}`)?.label ?? "Urutkan";
-  const showReset = sortField !== "tanggal" || sortOrder !== "desc" || searchQuery !== "";
+
+  const showReset =
+    sortField !== "created_at" || sortOrder !== "desc" || searchQuery !== "" ||
+    dokterFilter !== "all" || tindakanFilter !== "all" || kelasFilter !== "all";
 
   if (loading) {
     return (
@@ -1000,7 +894,8 @@ export default function FormulirDPPage() {
           <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Formulir DP Persalinan</h1>
           <p className="text-muted-foreground mt-1">Data formulir persetujuan pembayaran uang muka persalinan</p>
         </div>
-        {selectedIds.size > 0 && (
+        {/* Bulk delete button — admin only */}
+        {isAdmin && selectedIds.size > 0 && (
           <div className="self-end sm:self-auto">
             <Button variant="outline" onClick={() => setBulkDeleteOpen(true)} disabled={submitting}
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white">
@@ -1024,11 +919,16 @@ export default function FormulirDPPage() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-3">
+
+            <div className="flex flex-wrap gap-3">
+              {/* Sort */}
               <Select value={`${sortField}-${sortOrder}`}
                 onValueChange={(v) => {
-                  const [f, o] = v.split("-") as [SortField, SortOrder];
-                  setSortField(f); setSortOrder(o);
+                  const parts = v.split("-");
+                  // handle "created_at-desc" which has underscore
+                  const order = parts[parts.length - 1] as SortOrder;
+                  const field = parts.slice(0, -1).join("-") as SortField;
+                  setSortField(field); setSortOrder(order);
                 }}>
                 <SelectTrigger className="w-full sm:w-[200px]">
                   <div className="flex items-center gap-2">
@@ -1042,8 +942,61 @@ export default function FormulirDPPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Filter Tindakan */}
+              <Select value={tindakanFilter} onValueChange={setTindakanFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <span>{tindakanFilter === "all" ? "Semua Tindakan" : getJenisTindakanLabel(tindakanFilter)}</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Tindakan</SelectItem>
+                  {JENIS_TINDAKAN_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Filter Kelas */}
+              <Select value={kelasFilter} onValueChange={setKelasFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <span>{kelasFilter === "all" ? "Semua Kelas" : getKelasLabel(kelasFilter)}</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Kelas</SelectItem>
+                  {KELAS_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Filter Dokter */}
+              <Select value={dokterFilter} onValueChange={setDokterFilter}>
+                <SelectTrigger className="w-full sm:w-[220px]">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <span className="truncate">
+                      {dokterFilter === "all"
+                        ? "Semua Dokter"
+                        : dokterFilter.split(",")[0].trim()}
+                    </span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Dokter</SelectItem>
+                  {DOKTER_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               {showReset && (
-                <Button variant="outline" onClick={() => { setSortField("tanggal"); setSortOrder("desc"); setSearchQuery(""); }}>
+                <Button variant="outline" onClick={handleResetFilters}>
                   <X className="h-4 w-4 mr-2" />
                   Reset Filter
                 </Button>
@@ -1057,10 +1010,14 @@ export default function FormulirDPPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} aria-label="Select all"
-                      className={isSomeSelected ? "data-[state=checked]:bg-primary/50" : ""} />
-                  </TableHead>
+                  {/* Checkbox — admin only */}
+                  {isAdmin && (
+                    <TableHead className="w-12">
+                      <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll}
+                        aria-label="Select all"
+                        className={isSomeSelected ? "data-[state=checked]:bg-primary/50" : ""} />
+                    </TableHead>
+                  )}
                   <TableHead className="w-12">No</TableHead>
                   <TableHead>Nama Pasien</TableHead>
                   <TableHead className="hidden md:table-cell">Penanggung Jawab</TableHead>
@@ -1068,24 +1025,33 @@ export default function FormulirDPPage() {
                   <TableHead className="hidden lg:table-cell">Tindakan</TableHead>
                   <TableHead className="hidden lg:table-cell">Penjamin</TableHead>
                   <TableHead className="hidden lg:table-cell">Kelas</TableHead>
-                  <TableHead className="hidden sm:table-cell w-[130px]">Tanggal</TableHead>
-                  <TableHead className="text-right w-32">Aksi</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tgl Dibuat</TableHead>
+                  <TableHead className="hidden sm:table-cell w-[130px]">Tgl Rencana Tindakan</TableHead>
+                  <TableHead className="text-right w-28">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground h-32">
-                      {searchQuery ? "Tidak ada data yang sesuai dengan pencarian" : "Belum ada data formulir DP"}
+                    <TableCell
+                      colSpan={isAdmin ? 10 : 9}
+                      className="text-center text-muted-foreground h-32"
+                    >
+                      {searchQuery || dokterFilter !== "all" || tindakanFilter !== "all" || kelasFilter !== "all"
+                        ? "Tidak ada data yang sesuai dengan filter"
+                        : "Belum ada data formulir DP"}
                     </TableCell>
                   </TableRow>
                 ) : (
                   currentRows.map((row, idx) => (
                     <TableRow key={row.id}>
-                      <TableCell>
-                        <Checkbox checked={selectedIds.has(row.id)}
-                          onCheckedChange={(c) => handleSelectOne(row.id, c as boolean)} />
-                      </TableCell>
+                      {/* Checkbox — admin only */}
+                      {isAdmin && (
+                        <TableCell>
+                          <Checkbox checked={selectedIds.has(row.id)}
+                            onCheckedChange={(c) => handleSelectOne(row.id, c as boolean)} />
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium text-muted-foreground">{startIndex + idx + 1}</TableCell>
                       <TableCell>
                         <div className="font-medium">{row.nama_pasien}</div>
@@ -1103,38 +1069,57 @@ export default function FormulirDPPage() {
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         {row.jenis_tindakan ? (
-                          <Badge variant={row.jenis_tindakan === "sc" ? "destructive" : "default"} className="text-xs">
+                          <Badge variant="outline"
+                            className={
+                              row.jenis_tindakan === "sc"
+                                ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700"
+                                : "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700"
+                            }>
                             {getJenisTindakanLabel(row.jenis_tindakan)}
                           </Badge>
                         ) : "—"}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Badge variant="secondary" className="text-xs">{getPenjaminLabel(row.jenis_penjamin)}</Badge>
+                        <Badge variant="outline"
+                          className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                          {getPenjaminLabel(row.jenis_penjamin)}
+                        </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Badge variant="outline" className="text-xs">{getKelasLabel(row.rencana_kelas)}</Badge>
+                        <Badge variant="outline"
+                          className="bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
+                          {getKelasLabel(row.rencana_kelas)}
+                        </Badge>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
                         <div>{formatTanggal(row.tanggal)}</div>
+
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
                         {row.tgl_rencana_persalinan && (
-                          <div className="text-xs text-blue-500">
-                            Rencana: {formatTanggal(row.tgl_rencana_persalinan)}
+                          <div >
+                            {formatTanggal(row.tgl_rencana_persalinan)}
                           </div>
                         )}
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1.5">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="outline" size="icon" className="h-8 w-8"
-                                  onClick={() => setViewItem(row)}>
-                                  <Eye className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Preview Dokumen</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          {/* Edit — admin only */}
+                          {isAdmin && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="outline" size="icon" className="h-8 w-8"
+                                    onClick={() => setEditItem(row)} disabled={submitting}>
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Edit Data</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+
+                          {/* Download — semua role */}
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -1147,18 +1132,21 @@ export default function FormulirDPPage() {
                             </Tooltip>
                           </TooltipProvider>
 
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="outline" size="icon"
-                                  className="h-8 w-8 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
-                                  onClick={() => setDeleteItem(row)} disabled={submitting}>
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Hapus</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          {/* Hapus — admin only */}
+                          {isAdmin && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="outline" size="icon"
+                                    className="h-8 w-8 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
+                                    onClick={() => setDeleteItem(row)} disabled={submitting}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Hapus</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1181,48 +1169,56 @@ export default function FormulirDPPage() {
         </CardContent>
       </Card>
 
-      <ViewDialog open={!!viewItem} item={viewItem} onClose={() => setViewItem(null)} />
-      <EditDialog open={!!editItem} item={editItem} onClose={() => setEditItem(null)} onSaved={fetchData} />
+      {/* Edit Dialog — admin only */}
+      {isAdmin && (
+        <EditDialog open={!!editItem} item={editItem} onClose={() => setEditItem(null)} onSaved={fetchData} />
+      )}
 
-      <AlertDialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Data Formulir?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus data formulir atas nama{" "}
-              <strong>{deleteItem?.nama_pasien}</strong>? Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white">
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {submitting ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete Dialog — admin only */}
+      {isAdmin && (
+        <AlertDialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus Data Formulir?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Apakah Anda yakin ingin menghapus data formulir atas nama{" "}
+                <strong>{deleteItem?.nama_pasien}</strong>? Tindakan ini tidak dapat dibatalkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} disabled={submitting}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white">
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting ? "Menghapus..." : "Hapus"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
-      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus {selectedIds.size} Data Formulir?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus {selectedIds.size} data formulir yang dipilih?
-              Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white">
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {submitting ? "Menghapus..." : "Hapus Semua"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Bulk Delete Dialog — admin only */}
+      {isAdmin && (
+        <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus {selectedIds.size} Data Formulir?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Apakah Anda yakin ingin menghapus {selectedIds.size} data formulir yang dipilih?
+                Tindakan ini tidak dapat dibatalkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
+              <AlertDialogAction onClick={handleBulkDelete} disabled={submitting}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white">
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting ? "Menghapus..." : "Hapus Semua"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
     </div>
