@@ -67,6 +67,7 @@ import { validateImage } from "@/lib/validasi/validasiImage";
 import { KamarInapWithCreator } from "@/types/index";
 import {
   Calendar,
+  Clock,
   Eye,
   File,
   Loader2,
@@ -144,16 +145,13 @@ const SUGGESTED_FACILITIES = [
 
 export default function KamarInapPage() {
   const [kamarInap, setKamarInap] = useState<KamarInapWithCreator[]>([]);
-  const [filteredKamarInap, setFilteredKamarInap] = useState<
-    KamarInapWithCreator[]
-  >([]);
+  const [filteredKamarInap, setFilteredKamarInap] = useState<KamarInapWithCreator[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [selectedKamarInap, setSelectedKamarInap] =
-    useState<KamarInapWithCreator | null>(null);
+  const [selectedKamarInap, setSelectedKamarInap] = useState<KamarInapWithCreator | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
@@ -161,16 +159,11 @@ export default function KamarInapPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [recommendedFilter, setRecommendedFilter] = useState<
-    "all" | "recommended"
-  >("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">(
-    "newest",
-  );
+  const [recommendedFilter, setRecommendedFilter] = useState<"all" | "recommended">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
 
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
-  const [formErrors, setFormErrors] =
-    useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
+  const [formErrors, setFormErrors] = useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [facilityInput, setFacilityInput] = useState("");
@@ -205,20 +198,20 @@ export default function KamarInapPage() {
         .from("kamar_inap")
         .select(
           `
-                    *,
-                    created_by_user:users!kamar_inap_created_by_fkey(
-                        id,
-                        nama,
-                        username,
-                        avatar
-                    ),
-                    updated_by_user:users!kamar_inap_updated_by_fkey(
-                        id,
-                        nama,
-                        username,
-                        avatar
-                    )
-                `,
+          *,
+          created_by_user:users!kamar_inap_created_by_fkey(
+            id,
+            nama,
+            username,
+            avatar
+          ),
+          updated_by_user:users!kamar_inap_updated_by_fkey(
+            id,
+            nama,
+            username,
+            avatar
+          )
+        `,
         )
         .order("created_at", { ascending: false });
 
@@ -245,9 +238,7 @@ export default function KamarInapPage() {
       filtered = filtered.filter(
         (item) =>
           item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          item.description
-            .toLowerCase()
-            .includes(debouncedSearch.toLowerCase()) ||
+          item.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
           item.facilities.some((facility: string) =>
             facility.toLowerCase().includes(debouncedSearch.toLowerCase()),
           ),
@@ -258,17 +249,12 @@ export default function KamarInapPage() {
       filtered = filtered.filter((item) => item.is_recommended);
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "newest":
-          return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         case "oldest":
-          return (
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         case "a-z":
           return a.title.localeCompare(b.title, "id");
         case "z-a":
@@ -279,7 +265,7 @@ export default function KamarInapPage() {
     });
 
     setFilteredKamarInap(filtered);
-    setCurrentPage(1); // Reset to first page when filter changes
+    setCurrentPage(1);
   }, [kamarInap, debouncedSearch, recommendedFilter, sortBy]);
 
   // Pagination calculations
@@ -325,10 +311,7 @@ export default function KamarInapPage() {
           }
         }
 
-        const { error } = await supabase
-          .from("kamar_inap")
-          .delete()
-          .eq("id", id);
+        const { error } = await supabase.from("kamar_inap").delete().eq("id", id);
 
         if (error) throw error;
       }
@@ -442,10 +425,7 @@ export default function KamarInapPage() {
       let imageUrl = formData.image;
 
       if (formData.imageDeleted && selectedKamarInap?.image) {
-        const oldPath = getFilePathFromUrl(
-          selectedKamarInap.image,
-          "kamar-inap",
-        );
+        const oldPath = getFilePathFromUrl(selectedKamarInap.image, "kamar-inap");
         if (oldPath) {
           await deleteFile("kamar-inap", oldPath);
         }
@@ -454,10 +434,7 @@ export default function KamarInapPage() {
 
       if (formData.imageFile) {
         if (selectedKamarInap?.image) {
-          const oldPath = getFilePathFromUrl(
-            selectedKamarInap.image,
-            "kamar-inap",
-          );
+          const oldPath = getFilePathFromUrl(selectedKamarInap.image, "kamar-inap");
           if (oldPath) {
             await deleteFile("kamar-inap", oldPath);
           }
@@ -477,6 +454,7 @@ export default function KamarInapPage() {
       }
 
       if (selectedKamarInap) {
+        // ── UPDATE: simpan updated_by ──
         const { error } = await supabase
           .from("kamar_inap")
           .update({
@@ -486,7 +464,7 @@ export default function KamarInapPage() {
             facilities: formData.facilities,
             is_recommended: formData.is_recommended,
             image: imageUrl,
-            updated_by: currentUserId,
+            updated_by: currentUserId,          // ← simpan siapa yang update
             updated_at: new Date().toISOString(),
           })
           .eq("id", selectedKamarInap.id);
@@ -495,6 +473,7 @@ export default function KamarInapPage() {
 
         toast.success("Kamar inap berhasil diperbarui");
       } else {
+        // ── INSERT: simpan created_by ──
         const { error } = await supabase.from("kamar_inap").insert({
           title: formData.title,
           description: formData.description,
@@ -502,7 +481,7 @@ export default function KamarInapPage() {
           facilities: formData.facilities,
           is_recommended: formData.is_recommended,
           image: imageUrl,
-          created_by: currentUserId,
+          created_by: currentUserId,             // ← simpan siapa yang buat
         });
 
         if (error) throw error;
@@ -585,9 +564,7 @@ export default function KamarInapPage() {
   const handleRemoveFacility = (facilityToRemove: string) => {
     setFormData({
       ...formData,
-      facilities: formData.facilities.filter(
-        (facility) => facility !== facilityToRemove,
-      ),
+      facilities: formData.facilities.filter((facility) => facility !== facilityToRemove),
     });
   };
 
@@ -662,9 +639,7 @@ export default function KamarInapPage() {
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
-              Kamar Inap
-            </h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Kamar Inap</h1>
             <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">
               Kelola data kamar inap
             </p>
@@ -681,9 +656,7 @@ export default function KamarInapPage() {
                 <Trash2 className="h-4 w-4 sm:mr-2 shrink-0" />
                 <span className="hidden sm:inline truncate">Hapus</span>
                 <span className="sm:hidden">({selectedItems.length})</span>
-                <span className="hidden sm:inline">
-                  ({selectedItems.length})
-                </span>
+                <span className="hidden sm:inline">({selectedItems.length})</span>
               </Button>
             )}
             <Button
@@ -692,9 +665,7 @@ export default function KamarInapPage() {
               className="flex-1 sm:flex-initial min-w-0"
             >
               <Plus className="h-4 w-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline truncate">
-                Tambah Kamar Inap
-              </span>
+              <span className="hidden sm:inline truncate">Tambah Kamar Inap</span>
               <span className="sm:hidden truncate">Tambah</span>
             </Button>
           </div>
@@ -703,9 +674,7 @@ export default function KamarInapPage() {
 
       {/* Filter & Action Bar */}
       <div className="space-y-3">
-        {/* Row 1: Select All & Items Per Page (Mobile) / Full Controls (Desktop) */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Select All - Left side */}
           {paginatedKamarInap.length > 0 && (
             <div className="flex items-center gap-2">
               <Checkbox
@@ -725,9 +694,8 @@ export default function KamarInapPage() {
             </div>
           )}
 
-          {/* Desktop: All filters in one row */}
+          {/* Desktop filters */}
           <div className="hidden sm:flex sm:items-center sm:gap-2 sm:ml-auto">
-            {/* Sort Filter */}
             <Select
               value={sortBy}
               onValueChange={(value) =>
@@ -746,7 +714,6 @@ export default function KamarInapPage() {
               </SelectContent>
             </Select>
 
-            {/* Recommended Filter */}
             <Select
               value={recommendedFilter}
               onValueChange={(value) =>
@@ -762,7 +729,6 @@ export default function KamarInapPage() {
               </SelectContent>
             </Select>
 
-            {/* Search */}
             <div className="relative w-[200px] lg:w-[250px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -775,10 +741,9 @@ export default function KamarInapPage() {
           </div>
         </div>
 
-        {/* Mobile: Filters in separate rows */}
+        {/* Mobile filters */}
         <div className="flex sm:hidden flex-col gap-2">
           <div className="flex gap-2">
-            {/* Sort Filter */}
             <Select
               value={sortBy}
               onValueChange={(value) =>
@@ -797,7 +762,6 @@ export default function KamarInapPage() {
               </SelectContent>
             </Select>
 
-            {/* Recommended Filter */}
             <Select
               value={recommendedFilter}
               onValueChange={(value) =>
@@ -814,7 +778,6 @@ export default function KamarInapPage() {
             </Select>
           </div>
 
-          {/* Search - Full Width */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -830,14 +793,7 @@ export default function KamarInapPage() {
       {/* Content Section */}
       <div>
         {loading ? (
-          <div
-            className="grid grid-cols-1 gap-4
-sm:grid-cols-1
-md:grid-cols-2
-lg:grid-cols-3
-xl:grid-cols-4
-"
-          >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
               <Card key={i} className="overflow-hidden">
                 <Skeleton className="h-48 w-full" />
@@ -870,21 +826,14 @@ xl:grid-cols-4
           </Card>
         ) : (
           <>
-            <div
-              className="grid grid-cols-1 gap-4
-sm:grid-cols-1
-md:grid-cols-2
-lg:grid-cols-3
-xl:grid-cols-4
-"
-            >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedKamarInap.map((item) => (
                 <Card
                   key={item.id}
                   className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer relative"
                   onClick={() => handleOpenDetailDialog(item)}
                 >
-                  {/* Checkbox - Top Left - ALWAYS VISIBLE */}
+                  {/* Checkbox */}
                   <div
                     className="absolute top-3 left-3 z-10"
                     onClick={(e) => e.stopPropagation()}
@@ -892,7 +841,7 @@ xl:grid-cols-4
                     <Checkbox
                       checked={selectedItems.includes(item.id)}
                       onCheckedChange={() => handleSelectItem(item.id)}
-                      className=" shadow-md h-5 w-5"
+                      className="shadow-md h-5 w-5"
                     />
                   </div>
 
@@ -942,11 +891,7 @@ xl:grid-cols-4
                           {item.facilities
                             .slice(0, 2)
                             .map((facility: string, idx: number) => (
-                              <Badge
-                                key={idx}
-                                variant="secondary"
-                                className="text-xs"
-                              >
+                              <Badge key={idx} variant="secondary" className="text-xs">
                                 {facility}
                               </Badge>
                             ))}
@@ -961,7 +906,6 @@ xl:grid-cols-4
 
                     {/* Footer */}
                     <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
-                      {/* User info & Date */}
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <Avatar className="h-5 w-5 shrink-0">
                           <AvatarImage
@@ -969,27 +913,24 @@ xl:grid-cols-4
                             alt={item.created_by_user?.nama || "User"}
                           />
                           <AvatarFallback className="text-xs">
-                            {item.created_by_user?.nama
-                              ?.charAt(0)
-                              .toUpperCase() || "U"}
+                            {item.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
                         <span className="truncate text-xs text-muted-foreground">
                           {item.created_by_user?.nama}
                         </span>
-                        <span className="text-muted-foreground hidden sm:inline">
-                          •
-                        </span>
+                        <span className="text-muted-foreground hidden sm:inline">•</span>
                         <Calendar className="h-3 w-3 shrink-0 hidden sm:block" />
                         <span className="text-xs text-muted-foreground hidden sm:inline">
-                          {new Date(item.created_at).toLocaleDateString(
-                            "id-ID",
-                            { day: "numeric", month: "short", year: "numeric" },
-                          )}
+                          {new Date(item.created_at).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </span>
                       </div>
 
-                      {/* Action Buttons - ALWAYS VISIBLE */}
+                      {/* Action Buttons */}
                       <div className="flex gap-2 shrink-0">
                         <TooltipProvider>
                           <Tooltip>
@@ -1038,30 +979,21 @@ xl:grid-cols-4
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-4 sm:mt-6">
-                {/* Desktop: Info Text (kiri) + Pagination (kanan) dalam satu baris */}
+                {/* Desktop */}
                 <div className="hidden sm:flex items-center justify-between gap-4">
-                  {/* Info Text - Kiri */}
                   <div className="text-sm text-muted-foreground shrink-0">
-                    Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
-                    {Math.min(
-                      currentPage * itemsPerPage,
-                      filteredKamarInap.length,
-                    )}{" "}
-                    dari {filteredKamarInap.length} data kamar inap
+                    Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
+                    {Math.min(currentPage * itemsPerPage, filteredKamarInap.length)} dari{" "}
+                    {filteredKamarInap.length} data kamar inap
                   </div>
-
-                  {/* Spacer untuk mendorong pagination ke kanan */}
-                  <div className="flex-1"></div>
-
-                  {/* Pagination - Kanan */}
+                  <div className="flex-1" />
                   <div className="shrink-0">
                     <Pagination>
                       <PaginationContent className="gap-1">
                         <PaginationItem>
                           <PaginationPrevious
                             onClick={() =>
-                              currentPage > 1 &&
-                              handlePageChange(currentPage - 1)
+                              currentPage > 1 && handlePageChange(currentPage - 1)
                             }
                             className={`h-9 px-3 text-sm ${
                               currentPage === 1
@@ -1070,7 +1002,6 @@ xl:grid-cols-4
                             }`}
                           />
                         </PaginationItem>
-
                         {getPageNumbers().map((page, index) => (
                           <PaginationItem key={index}>
                             {page === "ellipsis" ? (
@@ -1086,7 +1017,6 @@ xl:grid-cols-4
                             )}
                           </PaginationItem>
                         ))}
-
                         <PaginationItem>
                           <PaginationNext
                             onClick={() =>
@@ -1105,19 +1035,13 @@ xl:grid-cols-4
                   </div>
                 </div>
 
-                {/* Mobile: Vertical Layout */}
+                {/* Mobile */}
                 <div className="flex sm:hidden flex-col gap-3">
-                  {/* Info Text */}
                   <div className="text-sm text-muted-foreground text-center">
-                    Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
-                    {Math.min(
-                      currentPage * itemsPerPage,
-                      filteredKamarInap.length,
-                    )}{" "}
-                    dari {filteredKamarInap.length}
+                    Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
+                    {Math.min(currentPage * itemsPerPage, filteredKamarInap.length)} dari{" "}
+                    {filteredKamarInap.length}
                   </div>
-
-                  {/* Pagination */}
                   <Pagination>
                     <PaginationContent className="gap-1">
                       <PaginationItem>
@@ -1132,7 +1056,6 @@ xl:grid-cols-4
                           }`}
                         />
                       </PaginationItem>
-
                       {getPageNumbers()
                         .slice(0, 5)
                         .map((page, index) => (
@@ -1150,7 +1073,6 @@ xl:grid-cols-4
                             )}
                           </PaginationItem>
                         ))}
-
                       <PaginationItem>
                         <PaginationNext
                           onClick={() =>
@@ -1173,7 +1095,9 @@ xl:grid-cols-4
         )}
       </div>
 
-      {/* Create/Edit Dialog */}
+      {/* ══════════════════════════════════════════════════════
+          FORM DIALOG
+      ══════════════════════════════════════════════════════ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -1187,106 +1111,98 @@ xl:grid-cols-4
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Gambar */}
             <div className="space-y-2">
               <Label htmlFor="image" className="text-sm">
                 Gambar <span className="text-red-500">*</span>
               </Label>
               {(formData.imageFile ||
                 (formData.image && !formData.imageDeleted)) && (
+                <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                  <Image
+                    src={
+                      formData.imageFile
+                        ? URL.createObjectURL(formData.imageFile)
+                        : formData.image
+                    }
+                    alt="Preview"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 600px"
+                    unoptimized
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        imageFile: null,
+                        image: "",
+                        imageDeleted: true,
+                      })
+                    }
+                    disabled={submitting}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              {!formData.imageFile && (!formData.image || formData.imageDeleted) && (
                 <>
-                  <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                    <Image
-                      src={
-                        formData.imageFile
-                          ? URL.createObjectURL(formData.imageFile)
-                          : formData.image
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${
+                      formErrors.image ? "border-red-500" : ""
+                    }`}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files[0];
+                      if (file) {
+                        const validation = validateImage(file);
+                        if (!validation.valid) {
+                          setFormErrors({ ...formErrors, image: validation.error || "" });
+                          toast.error(validation.error || "File tidak valid");
+                          return;
+                        }
+                        setFormData({ ...formData, imageFile: file, imageDeleted: false });
+                        setFormErrors({ ...formErrors, image: "" });
                       }
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 600px"
-                      unoptimized
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          imageFile: null,
-                          image: "",
-                          imageDeleted: true,
-                        })
-                      }
+                    }}
+                    onDragOver={(e) => e.preventDefault()}
+                  >
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/webp"
+                      onChange={handleImageChange}
                       disabled={submitting}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="image"
+                      className="flex flex-col items-center justify-center cursor-pointer"
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
+                      <div className="rounded-full bg-muted p-3 mb-2">
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium mb-1">
+                        Klik untuk upload atau drag & drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Format: WebP, Max: 300KB
+                      </p>
+                    </label>
                   </div>
+                  {formErrors.image && (
+                    <p className="text-sm text-red-500">{formErrors.image}</p>
+                  )}
                 </>
               )}
-              {!formData.imageFile &&
-                (!formData.image || formData.imageDeleted) && (
-                  <>
-                    <div
-                      className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${
-                        formErrors.image ? "border-red-500" : ""
-                      }`}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const file = e.dataTransfer.files[0];
-                        if (file) {
-                          const validation = validateImage(file);
-                          if (!validation.valid) {
-                            setFormErrors({
-                              ...formErrors,
-                              image: validation.error || "",
-                            });
-                            toast.error(validation.error || "File tidak valid");
-                            return;
-                          }
-                          setFormData({
-                            ...formData,
-                            imageFile: file,
-                            imageDeleted: false,
-                          });
-                          setFormErrors({ ...formErrors, image: "" });
-                        }
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                    >
-                      <Input
-                        id="image"
-                        type="file"
-                        accept="image/webp"
-                        onChange={handleImageChange}
-                        disabled={submitting}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="image"
-                        className="flex flex-col items-center justify-center cursor-pointer"
-                      >
-                        <div className="rounded-full bg-muted p-3 mb-2">
-                          <Upload className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm font-medium mb-1">
-                          Klik untuk upload atau drag & drop
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Format: WebP, Max: 300KB
-                        </p>
-                      </label>
-                    </div>
-                    {formErrors.image && (
-                      <p className="text-sm text-red-500">{formErrors.image}</p>
-                    )}
-                  </>
-                )}
             </div>
 
+            {/* Nama Kamar */}
             <div className="space-y-2">
               <Label htmlFor="title" className="text-sm">
                 Nama Kamar <span className="text-red-500">*</span>
@@ -1297,9 +1213,7 @@ xl:grid-cols-4
                 value={formData.title}
                 onChange={(e) => {
                   setFormData({ ...formData, title: e.target.value });
-                  if (formErrors.title) {
-                    setFormErrors({ ...formErrors, title: "" });
-                  }
+                  if (formErrors.title) setFormErrors({ ...formErrors, title: "" });
                 }}
                 disabled={submitting}
                 className={formErrors.title ? "border-red-500" : ""}
@@ -1309,6 +1223,7 @@ xl:grid-cols-4
               )}
             </div>
 
+            {/* Harga */}
             <div className="space-y-2">
               <Label htmlFor="price" className="text-sm">
                 Harga (Rp) <span className="text-red-500">*</span>
@@ -1320,9 +1235,7 @@ xl:grid-cols-4
                 value={formData.price}
                 onChange={(e) => {
                   setFormData({ ...formData, price: e.target.value });
-                  if (formErrors.price) {
-                    setFormErrors({ ...formErrors, price: "" });
-                  }
+                  if (formErrors.price) setFormErrors({ ...formErrors, price: "" });
                 }}
                 disabled={submitting}
                 className={formErrors.price ? "border-red-500" : ""}
@@ -1332,6 +1245,7 @@ xl:grid-cols-4
               )}
             </div>
 
+            {/* Deskripsi */}
             <div className="space-y-2">
               <Label htmlFor="description" className="text-sm">
                 Deskripsi <span className="text-red-500">*</span>
@@ -1345,9 +1259,8 @@ xl:grid-cols-4
                 value={formData.description}
                 onChange={(e) => {
                   setFormData({ ...formData, description: e.target.value });
-                  if (formErrors.description) {
+                  if (formErrors.description)
                     setFormErrors({ ...formErrors, description: "" });
-                  }
                 }}
                 disabled={submitting}
               />
@@ -1356,20 +1269,19 @@ xl:grid-cols-4
               )}
             </div>
 
+            {/* Fasilitas */}
             <div className="space-y-2">
               <Label htmlFor="facilities" className="text-sm">
                 Fasilitas
               </Label>
 
-              {/* Suggested Facilities */}
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
                   Pilih fasilitas yang tersedia:
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTED_FACILITIES.map((suggestedFacility) => {
-                    const isSelected =
-                      formData.facilities.includes(suggestedFacility);
+                    const isSelected = formData.facilities.includes(suggestedFacility);
                     return (
                       <Badge
                         key={suggestedFacility}
@@ -1393,7 +1305,6 @@ xl:grid-cols-4
                 </div>
               </div>
 
-              {/* Manual Facility Input */}
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
                   Atau tambahkan fasilitas manual:
@@ -1415,7 +1326,6 @@ xl:grid-cols-4
                 </div>
               </div>
 
-              {/* Selected Facilities Display */}
               {formData.facilities.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
@@ -1423,11 +1333,7 @@ xl:grid-cols-4
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {formData.facilities.map((facility, index) => (
-                      <Badge
-                        key={index}
-                        variant="secondary"
-                        className="gap-1 pr-1"
-                      >
+                      <Badge key={index} variant="secondary" className="gap-1 pr-1">
                         {facility}
                         <button
                           type="button"
@@ -1444,16 +1350,14 @@ xl:grid-cols-4
               )}
             </div>
 
+            {/* Rekomendasi */}
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="is_recommended"
                   checked={formData.is_recommended}
                   onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      is_recommended: checked as boolean,
-                    })
+                    setFormData({ ...formData, is_recommended: checked as boolean })
                   }
                   disabled={submitting}
                 />
@@ -1466,16 +1370,6 @@ xl:grid-cols-4
               </div>
             </div>
 
-            {selectedKamarInap && (
-              <div className="space-y-2">
-                <Label className="text-sm">Status</Label>
-                <p className="text-xs text-muted-foreground">
-                  Terakhir diperbarui:{" "}
-                  {formatDateTime(selectedKamarInap.updated_at)}
-                </p>
-              </div>
-            )}
-
             <DialogFooter className="gap-2">
               <Button
                 type="button"
@@ -1486,9 +1380,7 @@ xl:grid-cols-4
                 Batal
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
@@ -1496,16 +1388,17 @@ xl:grid-cols-4
         </DialogContent>
       </Dialog>
 
-      {/* Detail Dialog */}
+      {/* ══════════════════════════════════════════════════════
+          DETAIL DIALOG
+      ══════════════════════════════════════════════════════ */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">
-              Detail Kamar Inap
-            </DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Detail Kamar Inap</DialogTitle>
           </DialogHeader>
           {selectedKamarInap && (
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-4">
+              {/* Image */}
               {selectedKamarInap.image && (
                 <div className="relative w-full h-48 sm:h-56 md:h-64 rounded-lg overflow-hidden">
                   <Image
@@ -1519,6 +1412,8 @@ xl:grid-cols-4
                   />
                 </div>
               )}
+
+              {/* Judul + Badge + Fasilitas + Audit box */}
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold">
                   {selectedKamarInap.title}
@@ -1536,6 +1431,7 @@ xl:grid-cols-4
                     {formatPrice(Number(selectedKamarInap.price))}
                   </Badge>
                 </div>
+
                 {selectedKamarInap.facilities &&
                   selectedKamarInap.facilities.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
@@ -1548,24 +1444,62 @@ xl:grid-cols-4
                       )}
                     </div>
                   )}
-                <div className="flex items-center gap-2 mt-3 text-xs sm:text-sm text-muted-foreground">
-                  <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
-                    <AvatarImage
-                      src={selectedKamarInap.created_by_user?.avatar}
-                      alt={selectedKamarInap.created_by_user?.nama || "User"}
-                    />
-                    <AvatarFallback className="text-xs">
-                      {selectedKamarInap.created_by_user?.nama
-                        ?.charAt(0)
-                        .toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span>
-                    Dibuat oleh {selectedKamarInap.created_by_user?.nama} •{" "}
-                    {formatDateTime(selectedKamarInap.created_at)}
-                  </span>
+
+                {/* ── Audit box — identik dengan berita ── */}
+                <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-2 text-xs text-muted-foreground">
+                  {/* Dibuat oleh */}
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-5 w-5 shrink-0">
+                      <AvatarImage
+                        src={selectedKamarInap.created_by_user?.avatar}
+                        alt={selectedKamarInap.created_by_user?.nama || "User"}
+                      />
+                      <AvatarFallback className="text-[10px]">
+                        {selectedKamarInap.created_by_user?.nama
+                          ?.charAt(0)
+                          .toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>
+                      Dibuat oleh{" "}
+                      <span className="font-medium text-foreground">
+                        {selectedKamarInap.created_by_user?.nama ?? "-"}
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground/50">•</span>
+                    <Calendar className="h-3 w-3 shrink-0" />
+                    <span>{formatDateTime(selectedKamarInap.created_at)}</span>
+                  </div>
+
+                  {/* Diperbarui oleh — hanya tampil jika ada updated_by_user */}
+                  {selectedKamarInap.updated_by_user && (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-5 w-5 shrink-0">
+                        <AvatarImage
+                          src={selectedKamarInap.updated_by_user.avatar}
+                          alt={selectedKamarInap.updated_by_user.nama || "User"}
+                        />
+                        <AvatarFallback className="text-[10px]">
+                          {selectedKamarInap.updated_by_user.nama
+                            ?.charAt(0)
+                            .toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>
+                        Diperbarui oleh{" "}
+                        <span className="font-medium text-foreground">
+                          {selectedKamarInap.updated_by_user.nama}
+                        </span>
+                      </span>
+                      <span className="text-muted-foreground/50">•</span>
+                      <Clock className="h-3 w-3 shrink-0" />
+                      <span>{formatDateTime(selectedKamarInap.updated_at)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Deskripsi */}
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <p className="whitespace-pre-wrap text-sm sm:text-base">
                   {selectedKamarInap.description}
@@ -1577,11 +1511,21 @@ xl:grid-cols-4
             <Button variant="outline" onClick={handleCloseDetailDialog}>
               Tutup
             </Button>
+            {selectedKamarInap && (
+              <Button
+                onClick={() => {
+                  handleCloseDetailDialog();
+                  setTimeout(() => handleOpenDialog(selectedKamarInap), 200);
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-2" /> Edit
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
+      {/* ── Delete Dialog ── */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
@@ -1595,10 +1539,7 @@ xl:grid-cols-4
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel
-              disabled={submitting}
-              className="w-full sm:w-auto"
-            >
+            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -1613,11 +1554,8 @@ xl:grid-cols-4
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Dialog */}
-      <AlertDialog
-        open={bulkDeleteDialogOpen}
-        onOpenChange={setBulkDeleteDialogOpen}
-      >
+      {/* ── Bulk Delete Dialog ── */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base sm:text-lg">
@@ -1630,10 +1568,7 @@ xl:grid-cols-4
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel
-              disabled={submitting}
-              className="w-full sm:w-auto"
-            >
+            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -1650,10 +1585,7 @@ xl:grid-cols-4
         </AlertDialogContent>
       </AlertDialog>
 
-      <AccessDeniedDialog
-        open={showAccessDenied}
-        onOpenChange={setShowAccessDenied}
-      />
+      <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
     </div>
   );
 }

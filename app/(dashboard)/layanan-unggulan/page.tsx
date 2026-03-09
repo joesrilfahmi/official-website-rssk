@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -67,6 +68,8 @@ import { cn, formatDateTime } from "@/lib/utils";
 import * as Icons from "lucide-react";
 import {
   ArrowUpDown,
+  Calendar,
+  Clock,
   Eye,
   Loader2,
   Pencil,
@@ -83,6 +86,13 @@ import { toast } from "sonner";
 type SortField = "title" | "created_at" | "urutan";
 type SortOrder = "asc" | "desc";
 type StatusFilter = "all" | "active" | "inactive";
+
+interface AuditUser {
+  id: string;
+  nama: string;
+  username: string;
+  avatar?: string;
+}
 
 interface DokterResult {
   id: string;
@@ -120,6 +130,10 @@ interface LayananUnggulan {
   urutan: number;
   created_at: string;
   updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
+  created_by_user?: AuditUser;
+  updated_by_user?: AuditUser;
   layanan_unggulan_dokter: LayananDokter[];
   layanan_unggulan_kondisi: KondisiItem[];
   layanan_unggulan_teknologi: TeknologiItem[];
@@ -136,6 +150,10 @@ interface SupabaseLayananRow {
   urutan: number;
   created_at: string;
   updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
+  created_by_user?: AuditUser | null;
+  updated_by_user?: AuditUser | null;
   layanan_unggulan_dokter: {
     dokter_id: string;
     dokter: {
@@ -231,11 +249,10 @@ export default function LayananUnggulanPage() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<LayananUnggulan | null>(
-    null,
-  );
+  const [selectedItem, setSelectedItem] = useState<LayananUnggulan | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showAccessDenied, setShowAccessDenied] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   // Dokter
   const [dokterList, setDokterList] = useState<DokterResult[]>([]);
@@ -254,8 +271,7 @@ export default function LayananUnggulanPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
-  const [formErrors, setFormErrors] =
-    useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
+  const [formErrors, setFormErrors] = useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
 
   // Debounce search
   useEffect(() => {
@@ -325,6 +341,8 @@ export default function LayananUnggulanPage() {
         .from("layanan_unggulan")
         .select(
           `*,
+          created_by_user:users!layanan_unggulan_created_by_fkey(id, nama, username, avatar),
+          updated_by_user:users!layanan_unggulan_updated_by_fkey(id, nama, username, avatar),
           layanan_unggulan_dokter(
             dokter_id,
             dokter:dokter_id(id, nama, poli:poli_id(nama_poli))
@@ -339,6 +357,8 @@ export default function LayananUnggulanPage() {
       const rows = (result ?? []) as SupabaseLayananRow[];
       const mapped: LayananUnggulan[] = rows.map((row) => ({
         ...row,
+        created_by_user: row.created_by_user ?? undefined,
+        updated_by_user: row.updated_by_user ?? undefined,
         layanan_unggulan_dokter: row.layanan_unggulan_dokter.map((ld) => ({
           dokter_id: ld.dokter_id,
           dokter: ld.dokter
@@ -381,11 +401,12 @@ export default function LayananUnggulanPage() {
     const loadInitial = async () => {
       try {
         setLoading(true);
-        const currentUser = getCurrentUser();
+        const currentUser = await getCurrentUser();
         if (!currentUser) {
           setShowAccessDenied(true);
           return;
         }
+        setCurrentUserId(currentUser.id);
         await Promise.all([fetchData(), fetchDokter()]);
       } finally {
         setLoading(false);
@@ -444,10 +465,8 @@ export default function LayananUnggulanPage() {
   // ── Pagination ─────────────────────────────────────────────────────────
 
   const totalItems = filteredData.length;
-  const perPage =
-    itemsPerPage === "all" ? totalItems : (itemsPerPage as number);
-  const totalPages =
-    itemsPerPage === "all" ? 1 : Math.ceil(totalItems / perPage);
+  const perPage = itemsPerPage === "all" ? totalItems : (itemsPerPage as number);
+  const totalPages = itemsPerPage === "all" ? 1 : Math.ceil(totalItems / perPage);
   const startIndex = itemsPerPage === "all" ? 0 : (currentPage - 1) * perPage;
   const endIndex = itemsPerPage === "all" ? totalItems : startIndex + perPage;
   const currentData = filteredData.slice(startIndex, endIndex);
@@ -579,30 +598,41 @@ export default function LayananUnggulanPage() {
         (t) => t.title.trim() !== "",
       );
 
-      const payload = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        specializations: cleanedSpecializations,
-        additional_info: formData.additional_info.trim() || null,
-        icon: formData.icon.trim(),
-        status: formData.status,
-        urutan: formData.urutan,
-      };
-
       let layananId: string;
 
       if (selectedItem) {
+        // ── UPDATE: simpan updated_by ──
         const { error } = await supabase
           .from("layanan_unggulan")
-          .update(payload)
+          .update({
+            title: formData.title.trim(),
+            description: formData.description.trim(),
+            specializations: cleanedSpecializations,
+            additional_info: formData.additional_info.trim() || null,
+            icon: formData.icon.trim(),
+            status: formData.status,
+            urutan: formData.urutan,
+            updated_by: currentUserId,          // ← simpan siapa yang update
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", selectedItem.id);
         if (error) throw error;
         layananId = selectedItem.id;
         toast.success("Layanan unggulan berhasil diperbarui");
       } else {
+        // ── INSERT: simpan created_by ──
         const { data: inserted, error } = await supabase
           .from("layanan_unggulan")
-          .insert([payload])
+          .insert([{
+            title: formData.title.trim(),
+            description: formData.description.trim(),
+            specializations: cleanedSpecializations,
+            additional_info: formData.additional_info.trim() || null,
+            icon: formData.icon.trim(),
+            status: formData.status,
+            urutan: formData.urutan,
+            created_by: currentUserId,          // ← simpan siapa yang buat
+          }])
           .select("id")
           .single();
         if (error) throw error;
@@ -913,7 +943,6 @@ export default function LayananUnggulanPage() {
             </div>
 
             <div className="flex gap-3 flex-wrap items-center">
-              {/* Sort */}
               <Select
                 value={`${sortField}-${sortOrder}`}
                 onValueChange={handleSortChange}
@@ -933,7 +962,6 @@ export default function LayananUnggulanPage() {
                 </SelectContent>
               </Select>
 
-              {/* Status filter */}
               <Select
                 value={statusFilter}
                 onValueChange={(val) => setStatusFilter(val as StatusFilter)}
@@ -1032,9 +1060,7 @@ export default function LayananUnggulanPage() {
                             {item.layanan_unggulan_dokter.length} Dokter
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground text-sm">
-                            —
-                          </span>
+                          <span className="text-muted-foreground text-sm">—</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -1054,8 +1080,21 @@ export default function LayananUnggulanPage() {
                           {item.urutan}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTime(item.created_at)}
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Avatar className="h-5 w-5 shrink-0">
+                            <AvatarImage
+                              src={item.created_by_user?.avatar}
+                              alt={item.created_by_user?.nama || "User"}
+                            />
+                            <AvatarFallback className="text-[10px]">
+                              {item.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDateTime(item.created_at)}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
@@ -1167,13 +1206,60 @@ export default function LayananUnggulanPage() {
                 </Badge>
               </div>
 
+              {/* ── Audit box — identik dengan berita ── */}
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-2 text-xs text-muted-foreground">
+                {/* Dibuat oleh */}
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-5 w-5 shrink-0">
+                    <AvatarImage
+                      src={selectedItem.created_by_user?.avatar}
+                      alt={selectedItem.created_by_user?.nama || "User"}
+                    />
+                    <AvatarFallback className="text-[10px]">
+                      {selectedItem.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span>
+                    Dibuat oleh{" "}
+                    <span className="font-medium text-foreground">
+                      {selectedItem.created_by_user?.nama ?? "-"}
+                    </span>
+                  </span>
+                  <span className="text-muted-foreground/50">•</span>
+                  <Calendar className="h-3 w-3 shrink-0" />
+                  <span>{formatDateTime(selectedItem.created_at)}</span>
+                </div>
+
+                {/* Diperbarui oleh — hanya tampil jika ada */}
+                {selectedItem.updated_by_user && (
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-5 w-5 shrink-0">
+                      <AvatarImage
+                        src={selectedItem.updated_by_user.avatar}
+                        alt={selectedItem.updated_by_user.nama || "User"}
+                      />
+                      <AvatarFallback className="text-[10px]">
+                        {selectedItem.updated_by_user.nama?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>
+                      Diperbarui oleh{" "}
+                      <span className="font-medium text-foreground">
+                        {selectedItem.updated_by_user.nama}
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground/50">•</span>
+                    <Clock className="h-3 w-3 shrink-0" />
+                    <span>{formatDateTime(selectedItem.updated_at)}</span>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                   Deskripsi
                 </p>
-                <p className="text-sm leading-relaxed">
-                  {selectedItem.description}
-                </p>
+                <p className="text-sm leading-relaxed">{selectedItem.description}</p>
               </div>
 
               {selectedItem.additional_info && (
@@ -1191,8 +1277,7 @@ export default function LayananUnggulanPage() {
                 <div>
                   <Separator className="mb-3" />
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                    Layanan / Spesialisasi (
-                    {selectedItem.specializations.length})
+                    Layanan / Spesialisasi ({selectedItem.specializations.length})
                   </p>
                   <ul className="space-y-1">
                     {selectedItem.specializations.map((spec, i) => (
@@ -1235,8 +1320,7 @@ export default function LayananUnggulanPage() {
                 <div>
                   <Separator className="mb-3" />
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                    Kondisi Medis (
-                    {selectedItem.layanan_unggulan_kondisi.length})
+                    Kondisi Medis ({selectedItem.layanan_unggulan_kondisi.length})
                   </p>
                   <div className="space-y-2">
                     {[...selectedItem.layanan_unggulan_kondisi]
@@ -1257,8 +1341,7 @@ export default function LayananUnggulanPage() {
                 <div>
                   <Separator className="mb-3" />
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                    Teknologi Medis (
-                    {selectedItem.layanan_unggulan_teknologi.length})
+                    Teknologi Medis ({selectedItem.layanan_unggulan_teknologi.length})
                   </p>
                   <div className="space-y-2">
                     {[...selectedItem.layanan_unggulan_teknologi]
@@ -1278,10 +1361,7 @@ export default function LayananUnggulanPage() {
           )}
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDetailDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
               Tutup
             </Button>
             <Button
@@ -1304,9 +1384,7 @@ export default function LayananUnggulanPage() {
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader className="shrink-0">
             <DialogTitle>
-              {selectedItem
-                ? "Edit Layanan Unggulan"
-                : "Tambah Layanan Unggulan"}
+              {selectedItem ? "Edit Layanan Unggulan" : "Tambah Layanan Unggulan"}
             </DialogTitle>
             <DialogDescription>
               {selectedItem
@@ -1324,8 +1402,7 @@ export default function LayananUnggulanPage() {
                 <TabsTrigger value="info">Info Dasar</TabsTrigger>
                 <TabsTrigger value="spesialisasi">
                   Spesialisasi
-                  {formData.specializations.filter((s) => s.trim()).length >
-                    0 && (
+                  {formData.specializations.filter((s) => s.trim()).length > 0 && (
                     <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
                       {formData.specializations.filter((s) => s.trim()).length}
                     </span>
@@ -1333,8 +1410,7 @@ export default function LayananUnggulanPage() {
                 </TabsTrigger>
                 <TabsTrigger value="kondisi">
                   Kondisi
-                  {formData.kondisi.filter((k) => k.title.trim()).length >
-                    0 && (
+                  {formData.kondisi.filter((k) => k.title.trim()).length > 0 && (
                     <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
                       {formData.kondisi.filter((k) => k.title.trim()).length}
                     </span>
@@ -1342,8 +1418,7 @@ export default function LayananUnggulanPage() {
                 </TabsTrigger>
                 <TabsTrigger value="teknologi">
                   Teknologi
-                  {formData.teknologi.filter((t) => t.title.trim()).length >
-                    0 && (
+                  {formData.teknologi.filter((t) => t.title.trim()).length > 0 && (
                     <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
                       {formData.teknologi.filter((t) => t.title.trim()).length}
                     </span>
@@ -1422,9 +1497,7 @@ export default function LayananUnggulanPage() {
                     )}
                   />
                   {formErrors.description && (
-                    <p className="text-xs text-red-500">
-                      {formErrors.description}
-                    </p>
+                    <p className="text-xs text-red-500">{formErrors.description}</p>
                   )}
                 </div>
 
@@ -1434,10 +1507,7 @@ export default function LayananUnggulanPage() {
                     id="additional_info"
                     value={formData.additional_info}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        additional_info: e.target.value,
-                      })
+                      setFormData({ ...formData, additional_info: e.target.value })
                     }
                     placeholder="Informasi tambahan (opsional)..."
                     disabled={submitting}
@@ -1446,7 +1516,6 @@ export default function LayananUnggulanPage() {
                   />
                 </div>
 
-                {/* Status — hanya tampil saat edit */}
                 {selectedItem !== null && (
                   <div className="space-y-2">
                     <Label>Status</Label>
@@ -1507,16 +1576,12 @@ export default function LayananUnggulanPage() {
                           className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer"
                         >
                           <Checkbox
-                            checked={formData.selected_dokter_ids.includes(
-                              dokter.id,
-                            )}
+                            checked={formData.selected_dokter_ids.includes(dokter.id)}
                             onCheckedChange={() => toggleDokter(dokter.id)}
                             disabled={submitting}
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {dokter.nama}
-                            </p>
+                            <p className="text-sm font-medium truncate">{dokter.nama}</p>
                             {dokter.poli?.nama_poli && (
                               <p className="text-xs text-muted-foreground">
                                 {dokter.poli.nama_poli}
@@ -1557,17 +1622,12 @@ export default function LayananUnggulanPage() {
 
                 {formData.specializations.length === 0 ? (
                   <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      Belum ada spesialisasi
-                    </p>
+                    <p className="text-xs text-muted-foreground">Belum ada spesialisasi</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {formData.specializations.map((spec, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border rounded-lg bg-muted/30"
-                      >
+                      <div key={index} className="p-3 border rounded-lg bg-muted/30">
                         <div className="flex items-center justify-between mb-2">
                           <Label className="text-xs font-medium">
                             Spesialisasi #{index + 1}
@@ -1619,17 +1679,12 @@ export default function LayananUnggulanPage() {
 
                 {formData.kondisi.length === 0 ? (
                   <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      Belum ada kondisi medis
-                    </p>
+                    <p className="text-xs text-muted-foreground">Belum ada kondisi medis</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {formData.kondisi.map((k, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border rounded-lg space-y-2 bg-muted/30"
-                      >
+                      <div key={index} className="p-3 border rounded-lg space-y-2 bg-muted/30">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs font-medium">
                             Kondisi #{index + 1}
@@ -1691,17 +1746,12 @@ export default function LayananUnggulanPage() {
 
                 {formData.teknologi.length === 0 ? (
                   <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      Belum ada teknologi medis
-                    </p>
+                    <p className="text-xs text-muted-foreground">Belum ada teknologi medis</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {formData.teknologi.map((t, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border rounded-lg space-y-2 bg-muted/30"
-                      >
+                      <div key={index} className="p-3 border rounded-lg space-y-2 bg-muted/30">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs font-medium">
                             Teknologi #{index + 1}
@@ -1729,11 +1779,7 @@ export default function LayananUnggulanPage() {
                         <Textarea
                           value={t.description}
                           onChange={(e) =>
-                            updateTeknologi(
-                              index,
-                              "description",
-                              e.target.value,
-                            )
+                            updateTeknologi(index, "description", e.target.value)
                           }
                           placeholder="Deskripsi teknologi medis..."
                           disabled={submitting}
@@ -1757,9 +1803,7 @@ export default function LayananUnggulanPage() {
                 Batal
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
