@@ -31,6 +31,17 @@ import React, { useEffect, useRef, useState } from "react";
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 const easeOut: [number, number, number, number] = [0.0, 0.0, 0.2, 1];
 
+// Dipindahkan ke luar komponen agar tidak menjadi dependency baru tiap render
+const HARI_ORDER = [
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+  "Minggu",
+];
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface KondisiMedis {
@@ -174,8 +185,6 @@ function ContentSkeleton() {
   );
 }
 
-
-
 // ── TabList — native CSS horizontal scroll on mobile ──────────────────────
 
 const TAB_LIST = [
@@ -190,20 +199,39 @@ interface TabCarouselProps {
 }
 
 function TabCarousel({ activeTab, onTabChange }: TabCarouselProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const activeRef = useRef<HTMLButtonElement | null>(null);
+  // Guard: hanya scroll setelah user berinteraksi, bukan saat mount pertama
+  const hasInteracted = useRef(false);
 
   useEffect(() => {
-    activeRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-      inline: "center",
-    });
+    if (!hasInteracted.current) return;
+    const container = containerRef.current;
+    const activeBtn = activeRef.current;
+    if (!container || !activeBtn) return;
+    // Scroll horizontal manual di dalam container saja,
+    // tidak mempengaruhi scroll halaman (fix bug scrollIntoView di mobile)
+    const scrollTarget =
+      activeBtn.offsetLeft - container.offsetWidth / 2 + activeBtn.offsetWidth / 2;
+    container.scrollTo({ left: scrollTarget, behavior: "smooth" });
   }, [activeTab]);
+
+  const handleTabChange = (tab: "kondisi" | "teknologi" | "dokter") => {
+    hasInteracted.current = true;
+    onTabChange(tab);
+  };
 
   return (
     <div
-      className="flex mb-6 border-b border-gray-200 overflow-x-auto"
-      style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+      ref={containerRef}
+      className="flex mb-6 border-b border-gray-200"
+      style={{
+        overflowX: "auto",
+        overflowY: "visible",
+        WebkitOverflowScrolling: "touch",
+        msOverflowStyle: "none",
+        scrollbarWidth: "none",
+      } as React.CSSProperties}
     >
       {TAB_LIST.map((tab) => {
         const isActive = activeTab === tab.key;
@@ -211,7 +239,7 @@ function TabCarousel({ activeTab, onTabChange }: TabCarouselProps) {
           <button
             key={tab.key}
             ref={isActive ? activeRef : null}
-            onClick={() => onTabChange(tab.key)}
+            onClick={() => handleTabChange(tab.key)}
             className={`flex-none px-5 py-3 font-medium text-sm whitespace-nowrap transition-all ${
               isActive
                 ? "text-mariner-600 border-b-2 border-mariner-600"
@@ -286,16 +314,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
     router.push(`/detail-dokter/${dokter.id}`);
   };
 
-  const HARI_ORDER = [
-    "Senin",
-    "Selasa",
-    "Rabu",
-    "Kamis",
-    "Jumat",
-    "Sabtu",
-    "Minggu",
-  ];
-
   interface GroupedSlot {
     id: string;
     jam_mulai: string;
@@ -307,6 +325,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
     slots: GroupedSlot[];
   }
 
+  // HARI_ORDER kini diambil dari konstanta di luar komponen
   const grouped: GroupedJadwal[] = React.useMemo(() => {
     const map = new Map<string, GroupedJadwal>();
     const sorted = [...jadwalList].sort(
@@ -322,7 +341,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
       });
     }
     return Array.from(map.values());
-  }, [HARI_ORDER, jadwalList]);
+  }, [jadwalList]); // ✅ HARI_ORDER tidak perlu masuk dependency karena konstan di luar
 
   const groupedReguler = grouped
     .filter((g) => g.slots.some((s) => s.tipe_jadwal === "reguler"))
@@ -660,8 +679,17 @@ export default function LayananUnggulanSection() {
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
 
+  // ✅ FIX: Gunakan ref untuk melacak selectedId sebelumnya.
+  // Tab hanya di-reset ke "kondisi" ketika user MENGGANTI service,
+  // bukan saat halaman pertama kali dimuat.
+  const prevSelectedId = useRef<string>("");
+
   useEffect(() => {
-    setActiveTab("kondisi");
+    // Hanya reset tab jika sebelumnya sudah ada selectedId (bukan mount pertama)
+    if (prevSelectedId.current && prevSelectedId.current !== selectedId) {
+      setActiveTab("kondisi");
+    }
+    prevSelectedId.current = selectedId;
   }, [selectedId]);
 
   useEffect(() => {
@@ -860,13 +888,11 @@ export default function LayananUnggulanSection() {
                         temu sesuai dengan waktu yang tersedia.
                       </p>
 
-                      {/* Tab buttons — Embla carousel on mobile, flex on desktop */}
-                      <Animate type="growx" ready={dataReady} delay={0.05}>
-                        <TabCarousel
-                          activeTab={activeTab}
-                          onTabChange={setActiveTab}
-                        />
-                      </Animate>
+                      {/* Tab buttons — tanpa Animate wrapper agar selalu muncul di mobile */}
+                      <TabCarousel
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                      />
 
                       {/* Tab Content */}
                       <div>

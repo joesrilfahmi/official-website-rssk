@@ -165,7 +165,7 @@ interface JadwalDokter {
   jam_mulai: string;
   jam_selesai: string;
   tipe_jadwal: "reguler" | "eksekutif";
-  updated_at: string; // ← tambah untuk GREATEST
+  updated_at: string;
 }
 interface Dokter {
   id: string;
@@ -173,7 +173,7 @@ interface Dokter {
   poli_id: string;
   profile: string | null;
   status: string;
-  updated_at: string; // ← tambah untuk GREATEST
+  updated_at: string;
   poli: Poli;
   jadwal_dokter: JadwalDokter[];
 }
@@ -220,8 +220,7 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): JadwalGroup[] {
 }
 
 /* ─────────────────────────────────────────
-   GREATEST updated_at dari seluruh data
-   — dipakai 1x di atas filter, bukan per-card
+   GREATEST updated_at dari seluruh data dokter + jadwal
 ───────────────────────────────────────── */
 function getGlobalLastUpdated(dokterList: Dokter[]): string | null {
   if (dokterList.length === 0) return null;
@@ -336,6 +335,22 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
     router.push(`/detail-dokter/${dokter.id}`);
   };
 
+  /* ── Hitung last updated khusus dokter ini ── */
+  const dokterLastUpdated = useMemo(() => {
+    const dates: Date[] = [];
+    if (dokter.updated_at) dates.push(new Date(dokter.updated_at));
+    for (const j of dokter.jadwal_dokter) {
+      if (j.updated_at) dates.push(new Date(j.updated_at));
+    }
+    if (dates.length === 0) return null;
+    const latest = new Date(Math.max(...dates.map((d) => d.getTime())));
+    return latest.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }, [dokter]);
+
   const renderGrouped = (
     groups: JadwalGroup[],
     type: "reguler" | "eksekutif",
@@ -421,7 +436,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
           >
             {/* Hero image */}
             <div className="relative shrink-0 overflow-hidden">
-              {/* ── Tombol Lihat Profil — kiri atas, gaya pill transparan ── */}
+              {/* ── Tombol Lihat Profil — kiri atas ── */}
               <motion.button
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -547,6 +562,26 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                       </div>
                     </div>
                   )}
+
+                  {/* ── Last updated — di dalam dialog, setelah semua jadwal ── */}
+                  {dokterLastUpdated && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={
+                        { delay: 0.3, duration: 0.4, ease: easeOut } satisfies Transition
+                      }
+                      className="flex items-center justify-center gap-1.5 pt-1 pb-2"
+                    >
+                      <RefreshCw className="w-3 h-3 text-gray-300 shrink-0" />
+                      <span className="text-[11px] text-gray-300 leading-none">
+                        Diperbarui{" "}
+                        <span className="font-medium text-gray-400">
+                          {dokterLastUpdated}
+                        </span>
+                      </span>
+                    </motion.div>
+                  )}
                 </>
               )}
             </ScrollFadeWrapper>
@@ -567,7 +602,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
 };
 
 /* ─────────────────────────────────────────
-   DOKTER CARD — Professional large-image layout
+   DOKTER CARD
 ───────────────────────────────────────── */
 const cardWrapVariants = {
   hidden: { opacity: 0, y: 28, scale: 0.96 },
@@ -597,7 +632,7 @@ const DokterCard: React.FC<{
       onClick={() => onClick(dokter)}
       className="group bg-white rounded-3xl overflow-hidden shadow-sm ring-1 ring-gray-100 hover:shadow-xl hover:ring-mariner-100 transition-all duration-300 cursor-pointer flex flex-col"
     >
-      {/* ── Foto dokter — square aspect ratio ── */}
+      {/* ── Foto dokter ── */}
       <div
         className="relative w-full overflow-hidden"
         style={{ paddingBottom: "115%" }}
@@ -632,7 +667,7 @@ const DokterCard: React.FC<{
             </span>
           </div>
 
-          {/* Hover overlay: "Lihat Jadwal" CTA */}
+          {/* Hover overlay */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20">
             <div className="bg-white text-mariner-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shadow-lg">
               Lihat Jadwal
@@ -688,7 +723,9 @@ const SkeletonCard = () => (
 );
 
 /* ─────────────────────────────────────────
-   LAST UPDATED BADGE — ditampilkan 1x di atas filter
+   LAST UPDATED BADGE
+   Posisi: di antara Title dan Filter bar
+   — user melihat judul → tahu data sudah sync → baru filter
 ───────────────────────────────────────── */
 interface LastUpdatedBadgeProps {
   dokterList: Dokter[];
@@ -706,7 +743,9 @@ const LastUpdatedBadge: React.FC<LastUpdatedBadgeProps> = ({
 
   if (loading) {
     return (
-      <div className="h-7 w-56 bg-gray-100 rounded-full animate-pulse" />
+      <div className="flex justify-center">
+        <div className="h-7 w-52 bg-gray-100 rounded-full animate-pulse" />
+      </div>
     );
   }
 
@@ -717,11 +756,11 @@ const LastUpdatedBadge: React.FC<LastUpdatedBadgeProps> = ({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: easeOut } satisfies Transition}
+      className="flex justify-center"
     >
       <div className="inline-flex items-center gap-2 bg-white border border-gray-100 shadow-sm px-4 py-2 rounded-full">
-        <RefreshCw className="w-3.5 h-3.5 text-mariner-400 shrink-0" />
         <span className="text-[12px] text-gray-400 leading-none">
-          Jadwal terakhir diperbarui:{" "}
+          Jadwal diperbarui{" "}
           <span className="font-semibold text-gray-600">{lastUpdated}</span>
         </span>
       </div>
@@ -743,7 +782,6 @@ const DokterSpesialis = () => {
   const [selectedHari, setSelectedHari] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Ref to scroll back to grid top on page change
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -776,7 +814,6 @@ const DokterSpesialis = () => {
       const { data: dokterData, error } = await supabase
         .from("dokter")
         .select(
-          // ← tambahkan updated_at pada dokter dan jadwal_dokter
           `*, poli:poli_id (id, nama_poli), jadwal_dokter (id, hari, jam_mulai, jam_selesai, tipe_jadwal, updated_at)`,
         )
         .order("nama", { ascending: true });
@@ -825,7 +862,6 @@ const DokterSpesialis = () => {
     [dokterList, searchQuery, selectedPoli, selectedHari],
   );
 
-  // Reset ke halaman 1 setiap kali filter berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedPoli, selectedHari]);
@@ -887,7 +923,7 @@ const DokterSpesialis = () => {
             type="fadein"
             ready={dataReady}
             delay={0.05}
-            className="text-center mt-10 mb-12"
+            className="text-center mt-10 mb-4"
           >
             <Title
               title="Daftar Dokter Spesialis"
@@ -896,11 +932,36 @@ const DokterSpesialis = () => {
             />
           </Animate>
 
+          {/*
+           * ── LAST UPDATED BADGE ──────────────────────────────────
+           * Posisi: tepat di bawah Title, sebelum filter bar.
+           *
+           * Alasan pemilihan posisi ini:
+           *  1. User membaca judul section → badge muncul langsung
+           *     di bawahnya sebagai "freshness signal" sebelum
+           *     mereka mulai menyaring data.
+           *  2. Tidak mengganggu filter bar — badge bersifat
+           *     informatif, bukan interaktif.
+           *  3. Secara hierarki visual, badge ada di antara heading
+           *     dan kontrol, sehingga terasa sebagai metadata dari
+           *     section, bukan bagian dari filter.
+           *  4. Di mobile, posisi tengah ini tetap proporsional
+           *     tanpa membutuhkan perubahan layout.
+           * ──────────────────────────────────────────────────────── */}
+          <Animate
+            type="fadein"
+            ready={dataReady}
+            delay={0.07}
+            className="mb-8"
+          >
+            <LastUpdatedBadge dokterList={dokterList} loading={loading} />
+          </Animate>
+
           {/* Filters */}
           <Animate
             type="slideup"
             ready={dataReady}
-            delay={0.08}
+            delay={0.1}
             className="mb-8 space-y-5"
           >
             <div className="flex justify-center">
@@ -928,7 +989,7 @@ const DokterSpesialis = () => {
                   )}
                 </div>
 
-                {/* Filter Poli — searchable select */}
+                {/* Filter Poli */}
                 <div className="w-full sm:w-52 shrink-0">
                   <Select
                     icon={Stethoscope}
@@ -963,11 +1024,6 @@ const DokterSpesialis = () => {
                   />
                 </div>
               </div>
-            </div>
-
-            {/* ── Last Updated Badge — di bawah search & filter ── */}
-            <div className="flex justify-center">
-              <LastUpdatedBadge dokterList={dokterList} loading={loading} />
             </div>
           </Animate>
 
@@ -1010,10 +1066,9 @@ const DokterSpesialis = () => {
             </Animate>
           )}
 
-          {/* Grid — 2 cols mobile, 3 cols tablet, 4 cols desktop */}
+          {/* Grid */}
           {!loading && filteredDokter.length > 0 && (
             <>
-              {/* Anchor untuk scroll-to-top saat ganti halaman */}
               <div ref={gridRef} className="-mt-4 pt-4" />
 
               <Animate
