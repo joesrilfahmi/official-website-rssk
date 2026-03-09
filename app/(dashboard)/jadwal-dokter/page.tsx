@@ -206,46 +206,46 @@ function formatDateTime(dateStr: string | null | undefined) {
 
 // ── AuditFooter: reusable footer audit di bawah setiap tabel relasi ──────────
 
-type AuditItem = {
-  created_at?: string | null;
-  updated_at?: string | null;
-  created_by_user?: { nama?: string | null; avatar?: string | null } | null;
-  updated_by_user?: { nama?: string | null; avatar?: string | null } | null;
-};
+// type AuditItem = {
+//   created_at?: string | null;
+//   updated_at?: string | null;
+//   created_by_user?: { nama?: string | null; avatar?: string | null } | null;
+//   updated_by_user?: { nama?: string | null; avatar?: string | null } | null;
+// };
 
-function AuditFooter({ items }: { items: AuditItem[] }) {
-  const last = [...items]
-    .filter((i) => i.updated_by_user || i.created_by_user)
-    .sort(
-      (a, b) =>
-        new Date(b.updated_at ?? b.created_at ?? 0).getTime() -
-        new Date(a.updated_at ?? a.created_at ?? 0).getTime(),
-    )[0];
+// function AuditFooter({ items }: { items: AuditItem[] }) {
+//   const last = [...items]
+//     .filter((i) => i.updated_by_user || i.created_by_user)
+//     .sort(
+//       (a, b) =>
+//         new Date(b.updated_at ?? b.created_at ?? 0).getTime() -
+//         new Date(a.updated_at ?? a.created_at ?? 0).getTime(),
+//     )[0];
 
-  if (!last) return null;
+//   if (!last) return null;
 
-  const isUpdated = !!last.updated_by_user;
-  const user = isUpdated ? last.updated_by_user : last.created_by_user;
-  const date = last.updated_at ?? last.created_at;
+//   const isUpdated = !!last.updated_by_user;
+//   const user = isUpdated ? last.updated_by_user : last.created_by_user;
+//   const date = last.updated_at ?? last.created_at;
 
-  return (
-    <div className="px-4 py-2 border-t bg-muted/20 flex items-center gap-2 text-xs text-muted-foreground">
-      <Avatar className="h-4 w-4 shrink-0">
-        <AvatarImage src={user?.avatar ?? undefined} alt={user?.nama ?? ""} />
-        <AvatarFallback className="text-[9px]">
-          {user?.nama?.charAt(0).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-      <span>
-        {isUpdated ? "Diperbarui" : "Dibuat"} oleh{" "}
-        <span className="font-medium text-foreground">{user?.nama ?? "-"}</span>
-      </span>
-      <span className="text-muted-foreground/50">•</span>
-      <Clock className="h-3 w-3 shrink-0" />
-      <span>{formatDateTime(date)}</span>
-    </div>
-  );
-}
+//   return (
+//     <div className="px-4 py-2 border-t bg-muted/20 flex items-center gap-2 text-xs text-muted-foreground">
+//       <Avatar className="h-4 w-4 shrink-0">
+//         <AvatarImage src={user?.avatar ?? undefined} alt={user?.nama ?? ""} />
+//         <AvatarFallback className="text-[9px]">
+//           {user?.nama?.charAt(0).toUpperCase()}
+//         </AvatarFallback>
+//       </Avatar>
+//       <span>
+//         {isUpdated ? "Diperbarui" : "Dibuat"} oleh{" "}
+//         <span className="font-medium text-foreground">{user?.nama ?? "-"}</span>
+//       </span>
+//       <span className="text-muted-foreground/50">•</span>
+//       <Clock className="h-3 w-3 shrink-0" />
+//       <span>{formatDateTime(date)}</span>
+//     </div>
+//   );
+// }
 
 // ── Sub-komponen JADWAL di luar komponen utama ───────────────────────────────
 // Wajib di luar agar React tidak unmount/remount input saat state berubah
@@ -2191,7 +2191,6 @@ export default function JadwalDokterPage() {
                             ))}
                           </tbody>
                         </table>
-                        <AuditFooter items={selectedDokter.jadwal ?? []} />
                       </div>
                     );
                   })()}
@@ -2228,7 +2227,6 @@ export default function JadwalDokterPage() {
                           ))}
                       </tbody>
                     </table>
-                    <AuditFooter items={selectedDokter.pendidikan ?? []} />
                   </div>
                 </div>
               )}
@@ -2259,7 +2257,6 @@ export default function JadwalDokterPage() {
                           ))}
                       </tbody>
                     </table>
-                    <AuditFooter items={selectedDokter.organisasi ?? []} />
                   </div>
                 </div>
               )}
@@ -2294,7 +2291,6 @@ export default function JadwalDokterPage() {
                           ))}
                       </tbody>
                     </table>
-                    <AuditFooter items={selectedDokter.pelatihan ?? []} />
                   </div>
                 </div>
               )}
@@ -2325,7 +2321,6 @@ export default function JadwalDokterPage() {
                           ))}
                       </tbody>
                     </table>
-                    <AuditFooter items={selectedDokter.publikasi ?? []} />
                   </div>
                 </div>
               )}

@@ -126,10 +126,17 @@ export interface Berita {
   author: string;
   created_at: string;
   updated_at: string;
+  updated_by?: string | null; // ← tambah
 }
 
 export interface BeritaWithAuthor extends Berita {
   author_detail?: {
+    id: string;
+    nama: string;
+    username: string;
+    avatar?: string;
+  };
+  updated_by_user?: {   // ← tambah
     id: string;
     nama: string;
     username: string;
@@ -148,8 +155,8 @@ export interface Promo {
   title: string;
   description: string;
   status: PromoStatus;
-  start_date: string | null;  // ← tambah
-  end_date: string | null;    // ← tambah
+  start_date: string | null;
+  end_date: string | null;
   created_at: string;
   updated_at: string;
   created_by?: string | null;
@@ -170,6 +177,7 @@ export interface PromoWithCreator extends Promo {
     avatar?: string;
   };
 }
+
 // ============================================
 // POLI TYPES
 // ============================================
@@ -279,7 +287,6 @@ export interface PublikasiDokter {
   updated_by?: string | null;
 }
 
-// ✅ Tipe data Pelatihan Dokter (sesuai tabel pelatihan_dokter)
 export interface PelatihanDokter {
   id?: string;
   dokter_id?: string;
@@ -298,7 +305,7 @@ export interface DokterWithRelations extends Dokter {
   pendidikan?: PendidikanDokter[];
   organisasi?: OrganisasiDokter[];
   publikasi?: PublikasiDokter[];
-  pelatihan?: PelatihanDokter[]; // ✅ BARU
+  pelatihan?: PelatihanDokter[];
   created_by_user?: User;
   updated_by_user?: User;
 }
@@ -334,7 +341,6 @@ export interface PublikasiFormData {
   _temp_id: string;
 }
 
-// ✅ Form data Pelatihan (sesuai tabel pelatihan_dokter)
 export interface PelatihanFormData {
   id?: string;
   tahun: string;
@@ -354,7 +360,7 @@ export interface DokterFormData {
   pendidikan: PendidikanFormData[];
   organisasi: OrganisasiFormData[];
   publikasi: PublikasiFormData[];
-  pelatihan: PelatihanFormData[]; // ✅ BARU
+  pelatihan: PelatihanFormData[];
 }
 
 export interface DokterFormErrors {
@@ -364,7 +370,7 @@ export interface DokterFormErrors {
   pendidikan: string;
   organisasi: string;
   publikasi: string;
-  pelatihan: string; // ✅ BARU
+  pelatihan: string;
 }
 
 // ============================================
