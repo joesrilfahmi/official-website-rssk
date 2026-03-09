@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Clock,
   ExternalLink,
+  RefreshCw,
   Search,
   Stethoscope,
   UserRound,
@@ -164,6 +165,7 @@ interface JadwalDokter {
   jam_mulai: string;
   jam_selesai: string;
   tipe_jadwal: "reguler" | "eksekutif";
+  updated_at: string; // ← tambah untuk GREATEST
 }
 interface Dokter {
   id: string;
@@ -171,6 +173,7 @@ interface Dokter {
   poli_id: string;
   profile: string | null;
   status: string;
+  updated_at: string; // ← tambah untuk GREATEST
   poli: Poli;
   jadwal_dokter: JadwalDokter[];
 }
@@ -214,6 +217,33 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): JadwalGroup[] {
     });
   }
   return Array.from(map.values());
+}
+
+/* ─────────────────────────────────────────
+   GREATEST updated_at dari seluruh data
+   — dipakai 1x di atas filter, bukan per-card
+───────────────────────────────────────── */
+function getGlobalLastUpdated(dokterList: Dokter[]): string | null {
+  if (dokterList.length === 0) return null;
+
+  const allDates: Date[] = [];
+
+  for (const dokter of dokterList) {
+    if (dokter.updated_at) allDates.push(new Date(dokter.updated_at));
+    for (const jadwal of dokter.jadwal_dokter) {
+      if (jadwal.updated_at) allDates.push(new Date(jadwal.updated_at));
+    }
+  }
+
+  if (allDates.length === 0) return null;
+
+  const latest = new Date(Math.max(...allDates.map((d) => d.getTime())));
+
+  return latest.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 /* ─────────────────────────────────────────
@@ -457,7 +487,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                 <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
                   Jadwal Praktek
                 </p>
-                {/* Nama dokter — plain text, tidak bisa diklik */}
                 <p className="text-white font-bold text-xl leading-snug drop-shadow-sm">
                   {dokter.nama}
                 </p>
@@ -659,6 +688,48 @@ const SkeletonCard = () => (
 );
 
 /* ─────────────────────────────────────────
+   LAST UPDATED BADGE — ditampilkan 1x di atas filter
+───────────────────────────────────────── */
+interface LastUpdatedBadgeProps {
+  dokterList: Dokter[];
+  loading: boolean;
+}
+
+const LastUpdatedBadge: React.FC<LastUpdatedBadgeProps> = ({
+  dokterList,
+  loading,
+}) => {
+  const lastUpdated = useMemo(
+    () => getGlobalLastUpdated(dokterList),
+    [dokterList],
+  );
+
+  if (loading) {
+    return (
+      <div className="h-7 w-56 bg-gray-100 rounded-full animate-pulse" />
+    );
+  }
+
+  if (!lastUpdated) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: easeOut } satisfies Transition}
+    >
+      <div className="inline-flex items-center gap-2 bg-white border border-gray-100 shadow-sm px-4 py-2 rounded-full">
+        <RefreshCw className="w-3.5 h-3.5 text-mariner-400 shrink-0" />
+        <span className="text-[12px] text-gray-400 leading-none">
+          Jadwal terakhir diperbarui:{" "}
+          <span className="font-semibold text-gray-600">{lastUpdated}</span>
+        </span>
+      </div>
+    </motion.div>
+  );
+};
+
+/* ─────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────── */
 const DokterSpesialis = () => {
@@ -705,7 +776,8 @@ const DokterSpesialis = () => {
       const { data: dokterData, error } = await supabase
         .from("dokter")
         .select(
-          `*, poli:poli_id (id, nama_poli), jadwal_dokter (id, hari, jam_mulai, jam_selesai, tipe_jadwal)`,
+          // ← tambahkan updated_at pada dokter dan jadwal_dokter
+          `*, poli:poli_id (id, nama_poli), jadwal_dokter (id, hari, jam_mulai, jam_selesai, tipe_jadwal, updated_at)`,
         )
         .order("nama", { ascending: true });
       if (error) throw error;
@@ -771,7 +843,6 @@ const DokterSpesialis = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll halus ke atas grid
     gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -894,6 +965,10 @@ const DokterSpesialis = () => {
               </div>
             </div>
 
+            {/* ── Last Updated Badge — di bawah search & filter ── */}
+            <div className="flex justify-center">
+              <LastUpdatedBadge dokterList={dokterList} loading={loading} />
+            </div>
           </Animate>
 
           {/* Loading skeleton */}

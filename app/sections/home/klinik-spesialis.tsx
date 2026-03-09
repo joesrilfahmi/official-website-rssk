@@ -183,7 +183,7 @@ interface Dokter {
   nama: string;
   poli_id: string;
   profile: string | null;
-  status: string; // ← ditambahkan
+  status: string;
 }
 
 interface JadwalDokter {
@@ -390,7 +390,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         >
           {/* Hero foto */}
           <div className="relative shrink-0 overflow-hidden">
-            {/* ── Tombol Lihat Profil — kiri atas ── */}
             <motion.button
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -410,7 +409,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
               Lihat Profil
             </motion.button>
 
-            {/* ── Tombol tutup — kanan atas ── */}
             <button
               onClick={onClose}
               aria-label="Tutup"
@@ -420,9 +418,9 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
             </button>
 
             <motion.div
-              initial={{ scale: 1.06, opacity: 0 }}
+              initial={{ opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.6, ease } satisfies Transition}
+              transition={{ duration: 0.2, ease } satisfies Transition}
               className="relative w-full"
               style={{ paddingBottom: "min(56%, 280px)" }}
             >
@@ -458,7 +456,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
               <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
                 {dokter.nama}
               </h3>
-              {/* ── Status badge + poli ── */}
               <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
                 <span className="inline-block text-xs font-medium text-bittersweet-200 bg-bittersweet-900/40 px-3 py-0.5 rounded-full">
                   {poliNama}
@@ -472,7 +469,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
             </motion.div>
           </div>
 
-          {/* Jadwal content */}
           <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
             {loading ? (
               <div className="space-y-3">
@@ -531,7 +527,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
         </motion.div>
       </motion.div>
 
-      {/* DialogPendaftaran — terpisah di atas dialog jadwal */}
       {pendaftaranPrefill && (
         <DialogPendaftaran
           open={!!pendaftaranPrefill}
@@ -556,24 +551,14 @@ const DokterRow: React.FC<{
     transition={{ duration: 0.35, ease } satisfies Transition}
     className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3.5 ring-1 ring-gray-100"
   >
-    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-bittersweet-100 shrink-0 bg-bittersweet-50 flex items-center justify-center">
-      {dokter.profile ? (
-        <Image
-          src={dokter.profile}
-          alt={dokter.nama}
-          width={40}
-          height={40}
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <User className="w-5 h-5 text-bittersweet-400" />
-      )}
+    {/* Icon User — tidak menampilkan foto */}
+    <div className="w-10 h-10 rounded-full ring-2 ring-bittersweet-100 shrink-0 bg-bittersweet-50 flex items-center justify-center">
+      <User className="w-5 h-5 text-bittersweet-400" />
     </div>
     <div className="flex-1 min-w-0">
       <p className="text-gray-800 font-semibold text-sm truncate">
         {dokter.nama}
       </p>
-      {/* Status badge di DokterRow */}
       <span
         className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${getStatusConfig(dokter.status).className}`}
       >
@@ -843,7 +828,7 @@ const LayananCard: React.FC<LayananCardProps> = ({
       onClick={() => onClick(layanan)}
       className="group relative bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-100 hover:shadow-lg transition-shadow duration-300 h-full flex flex-col overflow-hidden cursor-pointer"
     >
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-bittersweet-400 to-bittersweet-300 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-t-2xl" />
+      {/* Garis atas dihapus */}
       <div className="absolute top-6 right-6 text-7xl font-bold text-gray-200/50 select-none pointer-events-none">
         {numberString}
       </div>

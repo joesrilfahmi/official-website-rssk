@@ -413,9 +413,9 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
             </button>
 
             <motion.div
-              initial={{ scale: 1.06, opacity: 0 }}
+              initial={{ opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.6, ease } satisfies Transition}
+              transition={{ duration: 0.2, ease } satisfies Transition}
               className="relative w-full"
               style={{ paddingBottom: "min(56%, 280px)" }}
             >
@@ -546,18 +546,9 @@ const DokterRow: React.FC<{
     transition={{ duration: 0.35, ease } satisfies Transition}
     className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3.5 ring-1 ring-gray-100"
   >
-    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-bittersweet-100 shrink-0 bg-bittersweet-50 flex items-center justify-center">
-      {dokter.profile ? (
-        <Image
-          src={dokter.profile}
-          alt={dokter.nama}
-          width={40}
-          height={40}
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <User className="w-5 h-5 text-bittersweet-400" />
-      )}
+    {/* Icon User — tidak menampilkan foto */}
+    <div className="w-10 h-10 rounded-full ring-2 ring-bittersweet-100 shrink-0 bg-bittersweet-50 flex items-center justify-center">
+      <User className="w-5 h-5 text-bittersweet-400" />
     </div>
     <div className="flex-1 min-w-0">
       <p className="text-gray-800 font-semibold text-sm truncate">
@@ -832,7 +823,7 @@ const LayananCard: React.FC<LayananCardProps> = ({
       onClick={() => onClick(layanan)}
       className="group relative bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-100 hover:shadow-lg transition-shadow duration-300 h-full flex flex-col overflow-hidden cursor-pointer"
     >
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-bittersweet-400 to-bittersweet-300 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-t-2xl" />
+      {/* Garis atas dihapus */}
       <div className="absolute top-6 right-6 text-7xl font-bold text-gray-200/50 select-none pointer-events-none">
         {numberString}
       </div>
@@ -917,7 +908,7 @@ const SkeletonCard = () => (
 /* ─────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────── */
-const LayananUnggulan = () => {
+const KlinikSpesialis = () => {
   const router = useRouter();
   const [layananList, setLayananList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1110,7 +1101,6 @@ const LayananUnggulan = () => {
                 ))}
               </Animate>
 
-              {/* ── Pagination ── */}
               {filteredLayanan.length > ITEMS_PER_PAGE && (
                 <Animate
                   type="fadein"
@@ -1137,4 +1127,4 @@ const LayananUnggulan = () => {
   );
 };
 
-export default LayananUnggulan;
+export default KlinikSpesialis;

@@ -21,6 +21,7 @@ import {
   FileText,
   Heart,
   Stethoscope,
+  User,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -456,9 +457,9 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
             </button>
 
             <motion.div
-              initial={{ scale: 1.06, opacity: 0 }}
+              initial={{ opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.6, ease } satisfies Transition}
+              transition={{ duration: 0.2, ease } satisfies Transition}
               className="relative w-full"
               style={{ paddingBottom: "min(56%, 280px)" }}
             >
@@ -612,17 +613,7 @@ const DokterCard: React.FC<DokterCardProps> = ({ item, poliId, poliNama }) => {
       <div className="bg-mariner-50 border border-mariner-100 rounded-lg p-4 flex items-center gap-3">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full bg-mariner-50 overflow-hidden ring-2 ring-mariner-100 shrink-0 flex items-center justify-center">
-          {item.dokter.profile ? (
-            <Image
-              src={item.dokter.profile}
-              alt={item.dokter.nama}
-              width={40}
-              height={40}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <Stethoscope className="w-5 h-5 text-mariner-400" />
-          )}
+          <User className="w-5 h-5 text-mariner-400" />
         </div>
 
         <div className="flex-1 min-w-0">
