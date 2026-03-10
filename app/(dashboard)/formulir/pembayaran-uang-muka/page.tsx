@@ -115,13 +115,14 @@ const JENIS_TINDAKAN_OPTIONS = [
 ];
 
 const DOKTER_OPTIONS = [
-  { value: "dr. AMIK YULIATI, Sp.OG", label: "dr. AMIK YULIATI, Sp.OG" },
-  { value: "dr. ANDI BUDI HERIANTO, Sp.OG", label: "dr. ANDI BUDI HERIANTO, Sp.OG" },
-  { value: "dr. PRASTI SULANJARI, Sp.OG", label: "dr. PRASTI SULANJARI, Sp.OG" },
-  { value: "dr. RODIYAH, Sp.OG", label: "dr. RODIYAH, Sp.OG" },
-  { value: "dr. WAHYU WIDOYOKO, Sp.OG", label: "dr. WAHYU WIDOYOKO, Sp.OG" },
-  { value: "dr. SETYO BUDI PAMUNGKAS, Sp.OG", label: "dr. SETYO BUDI PAMUNGKAS, Sp.OG" },
-  { value: "dr. ADITYA HERLAMBANG, Sp.OG", label: "dr. ADITYA HERLAMBANG, Sp.OG" },
+  { value: "dr. ADITYA HERLAMBANG, SP.OG", label: "dr. ADITYA HERLAMBANG, SP.OG" },
+  { value: "dr. AMIK YULIATI, SP.OG", label: "dr. AMIK YULIATI, SP.OG" },
+  { value: "dr. ANDI BUDI HERIANTO, SP.OG", label: "dr. ANDI BUDI HERIANTO, SP.OG" },
+  { value: "dr. IKA MARET TANIA, SP.OG", label: "dr. IKA MARET TANIA, SP.OG" },
+  { value: "dr. PRASTI SULANJARI, SP.OG", label: "dr. PRASTI SULANJARI, SP.OG" },
+  { value: "dr. RODIYAH, SP.OG", label: "dr. RODIYAH, SP.OG" },
+  { value: "dr. SETYO BUDI PAMUNGKAS, SP.OG", label: "dr. SETYO BUDI PAMUNGKAS, SP.OG" },
+  { value: "dr. WAHYU WIDOYOKO, SP.OG", label: "dr. WAHYU WIDOYOKO, SP.OG" },
 ];
 
 const getPenjaminLabel = (val: string) =>
