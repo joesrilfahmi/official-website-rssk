@@ -422,7 +422,7 @@ const Blog = () => {
               </Animate>
             )}
 
-            {/* Loading skeleton */}
+            {/* Loading skeleton — card artikel */}
             <AnimatePresence>
               {loading && (
                 <motion.div
@@ -437,12 +437,37 @@ const Blog = () => {
                       key={i}
                       className="bg-white rounded-2xl ring-1 ring-gray-100 animate-pulse overflow-hidden flex flex-col"
                     >
-                      <div className="w-full h-56 bg-gray-100" />
-                      <div className="p-5 space-y-3">
-                        <div className="h-3 w-32 bg-gray-100 rounded-full" />
-                        <div className="h-6 w-full bg-gray-100 rounded" />
-                        <div className="h-4 w-4/5 bg-gray-100 rounded" />
-                        <div className="h-4 w-2/3 bg-gray-100 rounded" />
+                      {/* Thumbnail */}
+                      <div className="w-full h-56 bg-gray-200" />
+
+                      <div className="flex flex-col flex-1 p-5 space-y-3">
+                        {/* Meta: tanggal | penulis */}
+                        <div className="flex items-center gap-3">
+                          <div className="h-3.5 w-28 bg-gray-100 rounded" />
+                          <div className="h-3.5 w-px bg-gray-200" />
+                          <div className="h-3.5 w-24 bg-gray-100 rounded" />
+                        </div>
+
+                        {/* Title — 2 baris */}
+                        <div className="space-y-2">
+                          <div className="h-6 w-full bg-gray-100 rounded" />
+                          <div className="h-6 w-4/5 bg-gray-100 rounded" />
+                        </div>
+
+                        {/* Description — 2 baris */}
+                        <div className="space-y-2">
+                          <div className="h-4 w-full bg-gray-100 rounded" />
+                          <div className="h-4 w-3/4 bg-gray-100 rounded" />
+                        </div>
+
+                        {/* Footer: tags + Baca */}
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="flex gap-1.5">
+                            <div className="h-6 w-16 bg-gray-100 rounded" />
+                            <div className="h-6 w-16 bg-gray-100 rounded" />
+                          </div>
+                          <div className="h-4 w-12 bg-gray-100 rounded" />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -522,12 +547,18 @@ const Blog = () => {
               >
                 {loading ? (
                   <div className="space-y-4">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="flex gap-3 animate-pulse">
+                    {[...Array(5)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex gap-3 items-start animate-pulse"
+                      >
+                        {/* Thumbnail */}
                         <div className="w-14 h-14 bg-gray-100 rounded-xl shrink-0" />
-                        <div className="flex-1 space-y-2 pt-1">
+                        {/* Title + date */}
+                        <div className="flex-1 space-y-2 pt-0.5">
                           <div className="h-3.5 w-full bg-gray-100 rounded" />
-                          <div className="h-3 w-20 bg-gray-100 rounded" />
+                          <div className="h-3.5 w-4/5 bg-gray-100 rounded" />
+                          <div className="h-3 w-24 bg-gray-100 rounded" />
                         </div>
                       </div>
                     ))}
@@ -581,10 +612,12 @@ const Blog = () => {
               >
                 {loading ? (
                   <div className="flex flex-wrap gap-2">
-                    {[...Array(8)].map((_, i) => (
+                    {/* Lebar bervariasi menyerupai tag asli */}
+                    {[20, 16, 24, 14, 18, 22, 16, 20].map((w, i) => (
                       <div
                         key={i}
-                        className="h-7 w-16 bg-gray-100 rounded-full animate-pulse"
+                        className="h-7 bg-gray-100 rounded-full animate-pulse"
+                        style={{ width: `${w * 4}px` }}
                       />
                     ))}
                   </div>

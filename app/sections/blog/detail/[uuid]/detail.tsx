@@ -29,7 +29,6 @@ const BeritaDetailPage = () => {
 
   const [berita, setBerita] = useState<BeritaWithAuthor | null>(null);
   const [popularPosts, setPopularPosts] = useState<BeritaWithAuthor[]>([]);
-  const [relatedBerita, setRelatedBerita] = useState<BeritaWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -53,18 +52,6 @@ const BeritaDetailPage = () => {
         .order("created_at", { ascending: false })
         .limit(5);
       if (popularData) setPopularPosts(popularData);
-
-      if (beritaData) {
-        const { data: relatedData } = await supabase
-          .from("berita")
-          .select(`*, author_detail:author (id, nama, username, avatar)`)
-          .eq("category", beritaData.category)
-          .eq("status", "active")
-          .neq("id", uuid)
-          .order("created_at", { ascending: false })
-          .limit(4);
-        if (relatedData) setRelatedBerita(relatedData);
-      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -140,7 +127,7 @@ const BeritaDetailPage = () => {
     </div>
   );
 
-  /* ── Loading ── */
+  /* ── Loading skeleton ── */
   if (loading)
     return (
       <div className="min-h-screen bg-gray-50 pt-24 py-16 px-4 sm:px-6 lg:px-8">
@@ -153,44 +140,58 @@ const BeritaDetailPage = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Skeleton artikel utama */}
-            <div className="lg:col-span-2 animate-pulse space-y-0">
+            <div className="lg:col-span-2 animate-pulse">
               <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
-                {/* Hero image skeleton */}
+                {/* Hero image */}
                 <div className="h-72 sm:h-96 bg-gray-200" />
-                <div className="p-7 sm:p-10 space-y-4">
+
+                <div className="p-7 sm:p-10 space-y-5">
                   {/* Category badge */}
                   <div className="h-6 w-24 bg-gray-100 rounded-full" />
-                  {/* Title */}
-                  <div className="space-y-2">
-                    <div className="h-9 w-full bg-gray-100 rounded" />
-                    <div className="h-9 w-3/4 bg-gray-100 rounded" />
+
+                  {/* Title — 2 baris seperti h1 artikel */}
+                  <div className="space-y-3">
+                    <div className="h-8 w-full bg-gray-100 rounded-lg" />
+                    <div className="h-8 w-3/4 bg-gray-100 rounded-lg" />
                   </div>
-                  {/* Meta bar */}
-                  <div className="flex items-center gap-4 py-4 border-b border-gray-100">
+
+                  {/* Meta bar: avatar + nama + tanggal + waktu baca + share */}
+                  <div className="flex flex-wrap items-center gap-4 py-4 border-y border-gray-100">
+                    {/* Author */}
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-full bg-gray-100" />
-                      <div className="space-y-1">
-                        <div className="h-3.5 w-24 bg-gray-100 rounded" />
-                        <div className="h-3 w-12 bg-gray-100 rounded" />
+                      <div className="w-9 h-9 rounded-full bg-gray-200" />
+                      <div className="space-y-1.5">
+                        <div className="h-3.5 w-28 bg-gray-100 rounded" />
+                        <div className="h-3 w-10 bg-gray-100 rounded" />
                       </div>
                     </div>
+                    {/* Divider */}
+                    <div className="hidden sm:block w-px h-8 bg-gray-100" />
+                    {/* Date + reading time */}
                     <div className="flex items-center gap-4">
                       <div className="h-3.5 w-32 bg-gray-100 rounded" />
                       <div className="h-3.5 w-24 bg-gray-100 rounded" />
                     </div>
+                    {/* Share button */}
+                    <div className="ml-auto h-7 w-20 bg-gray-100 rounded-lg" />
                   </div>
-                  {/* Body */}
-                  <div className="space-y-3 pt-2">
-                    {[...Array(6)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-4 bg-gray-100 rounded"
-                        style={{ width: i % 3 === 2 ? "75%" : "100%" }}
-                      />
-                    ))}
+
+                  {/* Article body — paragraf panjang */}
+                  <div className="space-y-3 pt-1">
+                    {[100, 100, 100, 100, 75, 100, 100, 85, 100, 60].map(
+                      (w, i) => (
+                        <div
+                          key={i}
+                          className="h-4 bg-gray-100 rounded"
+                          style={{ width: `${w}%` }}
+                        />
+                      ),
+                    )}
                   </div>
+
                   {/* Tags */}
-                  <div className="flex gap-2 pt-4">
+                  <div className="flex gap-2 pt-4 border-t border-gray-100">
+                    <div className="h-3.5 w-8 bg-gray-100 rounded" />
                     {[...Array(4)].map((_, i) => (
                       <div
                         key={i}
@@ -202,44 +203,24 @@ const BeritaDetailPage = () => {
               </div>
             </div>
 
-            {/* Skeleton sidebar */}
-            <div className="space-y-5">
-              {/* Popular posts widget skeleton */}
+            {/* Skeleton sidebar — Popular Posts */}
+            <div className="lg:col-span-1 space-y-5">
               <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden animate-pulse">
+                {/* Widget header */}
                 <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
                   <div className="w-7 h-7 rounded-lg bg-gray-100" />
-                  <div className="h-4 w-28 bg-gray-100 rounded" />
+                  <div className="h-3.5 w-28 bg-gray-100 rounded" />
                 </div>
+                {/* 5 post items */}
                 <div className="p-5 space-y-4">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="flex gap-3 items-start">
-                      <div className="relative shrink-0">
-                        <div className="w-14 h-14 rounded-xl bg-gray-100" />
-                      </div>
+                      <div className="w-14 h-14 rounded-xl bg-gray-100 shrink-0" />
+                      {/* Title + date */}
                       <div className="flex-1 space-y-2">
                         <div className="h-3.5 w-full bg-gray-100 rounded" />
                         <div className="h-3.5 w-4/5 bg-gray-100 rounded" />
                         <div className="h-3 w-24 bg-gray-100 rounded" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Related articles widget skeleton */}
-              <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden animate-pulse">
-                <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
-                  <div className="w-7 h-7 rounded-lg bg-gray-100" />
-                  <div className="h-4 w-28 bg-gray-100 rounded" />
-                </div>
-                <div className="p-5 space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex gap-3 items-start">
-                      <div className="w-14 h-14 rounded-xl bg-gray-100 shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3.5 w-full bg-gray-100 rounded" />
-                        <div className="h-3.5 w-3/4 bg-gray-100 rounded" />
-                        <div className="h-3 w-20 bg-gray-100 rounded" />
                       </div>
                     </div>
                   ))}
@@ -269,7 +250,7 @@ const BeritaDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-24 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        {/* Tombol Kembali — konsisten dengan halaman Partner & DetailDokter */}
+        {/* Tombol Kembali */}
         <Animate type="fadein" duration={0.5} ready={!loading}>
           <motion.button
             onClick={handleBackToBlog}
@@ -483,29 +464,24 @@ const BeritaDetailPage = () => {
                   title="Popular Post"
                 >
                   <div className="space-y-4">
-                    {popularPosts.map((post, i) => (
+                    {popularPosts.map((post) => (
                       <div
                         key={post.id}
                         onClick={() => handleArticleClick(post.id)}
                         className="flex gap-3 cursor-pointer group items-start"
                       >
-                        <div className="relative shrink-0">
-                          <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100">
-                            {post.thumbnail ? (
-                              <Image
-                                src={post.thumbnail}
-                                alt={post.title}
-                                fill
-                                className="object-cover group-hover:scale-110 transition-transform duration-300"
-                                sizes="56px"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-linear-to-br from-mariner-200 to-mariner-400" />
-                            )}
-                          </div>
-                          <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-mariner-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">
-                            {i + 1}
-                          </span>
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                          {post.thumbnail ? (
+                            <Image
+                              src={post.thumbnail}
+                              alt={post.title}
+                              fill
+                              className="object-cover group-hover:scale-110 transition-transform duration-300"
+                              sizes="56px"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-linear-to-br from-mariner-200 to-mariner-400" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-semibold text-gray-800 line-clamp-2 group-hover:text-mariner-500 transition-colors leading-snug mb-1">
@@ -520,52 +496,6 @@ const BeritaDetailPage = () => {
                   </div>
                 </Widget>
               </Animate>
-
-              {relatedBerita.length > 0 && (
-                <Animate
-                  type="slideleft"
-                  duration={0.8}
-                  delay={0.25}
-                  ready={!loading}
-                >
-                  <Widget
-                    icon={<Tag className="w-4 h-4 text-mariner-500" />}
-                    title="Artikel Terkait"
-                  >
-                    <div className="space-y-4">
-                      {relatedBerita.map((related) => (
-                        <div
-                          key={related.id}
-                          onClick={() => handleArticleClick(related.id)}
-                          className="flex gap-3 cursor-pointer group items-start"
-                        >
-                          <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-100">
-                            {related.thumbnail ? (
-                              <Image
-                                src={related.thumbnail}
-                                alt={related.title}
-                                fill
-                                className="object-cover group-hover:scale-110 transition-transform duration-300"
-                                sizes="56px"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-linear-to-br from-mariner-200 to-mariner-400" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-semibold text-gray-800 line-clamp-2 group-hover:text-mariner-500 transition-colors leading-snug mb-1">
-                              {related.title}
-                            </h4>
-                            <p className="text-xs text-gray-400">
-                              {formatDate(related.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Widget>
-                </Animate>
-              )}
             </div>
           </div>
         </div>
