@@ -181,7 +181,7 @@ export default function RegisterPage() {
     await performRegistration();
   };
 
-  const performRegistration = async () => {
+const performRegistration = async () => {
     setLoading(true);
 
     try {
@@ -201,6 +201,20 @@ export default function RegisterPage() {
       };
 
       await register(registrationData);
+
+      // Kirim notifikasi Telegram ke admin
+      await fetch("/api/notify-telegram-new-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama: registrationData.nama,
+          username: registrationData.username,
+          email: registrationData.email,
+          nomor_telepon: registrationData.nomor_telepon,
+          id_telegram: registrationData.id_telegram,
+        }),
+      });
+
       toast.success("Registrasi berhasil! Silakan login.");
       router.push("/login");
     } catch (error) {

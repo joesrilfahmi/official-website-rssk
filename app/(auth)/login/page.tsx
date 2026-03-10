@@ -14,7 +14,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/password-input';
 import { login } from '@/lib/auth';
-import { toast } from 'sonner';
 import { AuthHeader } from '@/components/auth/auth-header';
 import { AuthBranding } from '@/components/auth/auth-branding';
 
@@ -82,7 +81,6 @@ export default function LoginPage() {
 
         try {
             await login(formData);
-            toast.success('Login berhasil!');
             router.push('/dashboard');
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan saat login';
