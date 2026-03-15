@@ -335,22 +335,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
     router.push(`/detail-dokter/${dokter.id}`);
   };
 
-  /* ── Hitung last updated khusus dokter ini ── */
-  const dokterLastUpdated = useMemo(() => {
-    const dates: Date[] = [];
-    if (dokter.updated_at) dates.push(new Date(dokter.updated_at));
-    for (const j of dokter.jadwal_dokter) {
-      if (j.updated_at) dates.push(new Date(j.updated_at));
-    }
-    if (dates.length === 0) return null;
-    const latest = new Date(Math.max(...dates.map((d) => d.getTime())));
-    return latest.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  }, [dokter]);
-
   const renderGrouped = (
     groups: JadwalGroup[],
     type: "reguler" | "eksekutif",
@@ -518,7 +502,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
               </motion.div>
             </div>
 
-            {/* Jadwal content */}
+            {/* Jadwal content — tanpa last updated di sini */}
             <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
               {dokter.jadwal_dokter.length === 0 ? (
                 <div className="text-center py-10">
@@ -561,26 +545,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                         {renderGrouped(groupedEksekutif, "eksekutif")}
                       </div>
                     </div>
-                  )}
-
-                  {/* ── Last updated — di dalam dialog, setelah semua jadwal ── */}
-                  {dokterLastUpdated && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={
-                        { delay: 0.3, duration: 0.4, ease: easeOut } satisfies Transition
-                      }
-                      className="flex items-center justify-center gap-1.5 pt-1 pb-2"
-                    >
-                      <RefreshCw className="w-3 h-3 text-gray-300 shrink-0" />
-                      <span className="text-[11px] text-gray-300 leading-none">
-                        Diperbarui{" "}
-                        <span className="font-medium text-gray-400">
-                          {dokterLastUpdated}
-                        </span>
-                      </span>
-                    </motion.div>
                   )}
                 </>
               )}
@@ -725,7 +689,6 @@ const SkeletonCard = () => (
 /* ─────────────────────────────────────────
    LAST UPDATED BADGE
    Posisi: di antara Title dan Filter bar
-   — user melihat judul → tahu data sudah sync → baru filter
 ───────────────────────────────────────── */
 interface LastUpdatedBadgeProps {
   dokterList: Dokter[];
@@ -759,6 +722,7 @@ const LastUpdatedBadge: React.FC<LastUpdatedBadgeProps> = ({
       className="flex justify-center"
     >
       <div className="inline-flex items-center gap-2 bg-white border border-gray-100 shadow-sm px-4 py-2 rounded-full">
+        <RefreshCw className="w-3 h-3 text-gray-400 shrink-0" />
         <span className="text-[12px] text-gray-400 leading-none">
           Jadwal diperbarui{" "}
           <span className="font-semibold text-gray-600">{lastUpdated}</span>
@@ -934,19 +898,8 @@ const DokterSpesialis = () => {
 
           {/*
            * ── LAST UPDATED BADGE ──────────────────────────────────
-           * Posisi: tepat di bawah Title, sebelum filter bar.
-           *
-           * Alasan pemilihan posisi ini:
-           *  1. User membaca judul section → badge muncul langsung
-           *     di bawahnya sebagai "freshness signal" sebelum
-           *     mereka mulai menyaring data.
-           *  2. Tidak mengganggu filter bar — badge bersifat
-           *     informatif, bukan interaktif.
-           *  3. Secara hierarki visual, badge ada di antara heading
-           *     dan kontrol, sehingga terasa sebagai metadata dari
-           *     section, bukan bagian dari filter.
-           *  4. Di mobile, posisi tengah ini tetap proporsional
-           *     tanpa membutuhkan perubahan layout.
+           * Satu-satunya tempat info "diperbarui" ditampilkan.
+           * Tidak ada duplikasi di card maupun di dalam dialog.
            * ──────────────────────────────────────────────────────── */}
           <Animate
             type="fadein"

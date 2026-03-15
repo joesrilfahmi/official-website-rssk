@@ -180,7 +180,7 @@ const openWhatsApp = ({
   ].join("\n");
 
   // Normalisasi nomor: hilangkan non-digit, ganti awalan 0 → 62
-  const rawNumber = Profile.whatsapp.replace(/\D/g, "");
+  const rawNumber = Profile.whatsappHumas.replace(/\D/g, "");
   const formattedNumber = rawNumber.startsWith("0")
     ? `62${rawNumber.slice(1)}`
     : rawNumber;

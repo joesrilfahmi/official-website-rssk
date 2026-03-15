@@ -10,6 +10,7 @@ export interface Profile {
   address: string;
   phone: string;
   whatsapp: string;
+  whatsappHumas: string;
   ambulance: string;
   pusatPanggilan: string;
   email: string;
@@ -44,6 +45,7 @@ export const Profile: Profile = {
     "Jl. Raya Bebekan, RT.02/ RW.01, Bebekan, Kec. Taman, Kabupaten Sidoarjo, Jawa Timur 61257",
   phone: "0317883980",
   whatsapp: "08113015001",
+  whatsappHumas: "08113422330",
   ambulance: "08113087119",
   pusatPanggilan: "0317881130",
   email: "humas@sitikhodijah.com",
