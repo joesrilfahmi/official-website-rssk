@@ -524,70 +524,55 @@ export default function PendaftaranSection() {
   /* ─────────────────────────────────────────
      SEARCH PASIEN
   ───────────────────────────────────────── */
-  const handleSearch = async () => {
-    if (!searchNik.trim() || !/^\d{16}$/.test(searchNik.trim())) {
-      setSearchError("Masukkan NIK yang valid (16 digit angka).");
+const handleSearch = async () => {
+  if (!searchNik.trim() || !/^\d{16}$/.test(searchNik.trim())) {
+    setSearchError("Masukkan NIK yang valid (16 digit angka).");
+    return;
+  }
+  setSearching(true);
+  setSearchError("");
+  setSearchResult(null);
+  try {
+    // Sekarang fetch ke proxy route, bukan langsung ke IP eksternal
+    const res = await fetch(`/api/cari-pasien?nik=${searchNik.trim()}`);
+    if (!res.ok) throw new Error("Gagal menghubungi server");
+    const json = await res.json();
+
+    let rawItem: Record<string, string> | null = null;
+    if (json?.status === true && Array.isArray(json?.data) && json.data.length > 0) {
+      rawItem = json.data[0];
+    } else if (Array.isArray(json) && json.length > 0) {
+      rawItem = json[0];
+    } else if (json && typeof json === "object" && !Array.isArray(json)) {
+      rawItem = json;
+    }
+
+    const noRm   = rawItem?.px_norm ?? rawItem?.no_rm  ?? "";
+    const nama   = rawItem?.px_name ?? rawItem?.nama   ?? "";
+    const email  = rawItem?.email   ?? "";
+    const noTelp = rawItem?.no_telp ?? rawItem?.telepon ?? "";
+
+    if (!noRm) {
+      setSearchError("Pasien dengan NIK tersebut tidak ditemukan. Silakan daftar sebagai pasien baru.");
       return;
     }
-    setSearching(true);
-    setSearchError("");
-    setSearchResult(null);
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_EHOS_MASTER_PASIEN;
-      if (!apiUrl)
-        throw new Error("NEXT_PUBLIC_API_EHOS_MASTER_PASIEN tidak dikonfigurasi");
-      const res = await fetch(`${apiUrl}&px_noktp=${searchNik.trim()}`);
-      if (!res.ok) throw new Error("Gagal menghubungi server");
-      const json = await res.json();
 
-      /*
-       * Format API: { status: true, data: [{ px_norm: "...", px_name: "..." }] }
-       * Fallback   : objek langsung { no_rm, nama } (format lama)
-       */
-      let rawItem: Record<string, string> | null = null;
-
-      if (json?.status === true && Array.isArray(json?.data) && json.data.length > 0) {
-        // Format baru
-        rawItem = json.data[0];
-      } else if (Array.isArray(json) && json.length > 0) {
-        // Array langsung
-        rawItem = json[0];
-      } else if (json && typeof json === "object" && !Array.isArray(json)) {
-        // Objek tunggal (format lama)
-        rawItem = json;
-      }
-
-      // Normalise field names: px_norm → no_rm, px_name → nama
-      const noRm  = rawItem?.px_norm ?? rawItem?.no_rm  ?? "";
-      const nama  = rawItem?.px_name ?? rawItem?.nama   ?? "";
-      const email = rawItem?.email   ?? "";
-      const noTelp = rawItem?.no_telp ?? rawItem?.telepon ?? "";
-
-      if (!noRm) {
-        setSearchError(
-          "Pasien dengan NIK tersebut tidak ditemukan. Silakan daftar sebagai pasien baru.",
-        );
-        return;
-      }
-
-      const pasien: PasienData = { no_rm: noRm, nama, email, no_telp: noTelp };
-      setSearchResult(pasien);
-      setForm((p) => ({
-        ...p,
-        noRm:   pasien.no_rm,
-        nik:    searchNik.trim(),
-        nama:   pasien.nama,
-        email:  pasien.email  ?? "",
-        noTelp: pasien.no_telp ?? "",
-      }));
-    } catch {
-      setSearchError(
-        "Gagal menghubungi server. Periksa koneksi atau coba beberapa saat lagi.",
-      );
-    } finally {
-      setSearching(false);
-    }
-  };
+    const pasien: PasienData = { no_rm: noRm, nama, email, no_telp: noTelp };
+    setSearchResult(pasien);
+    setForm((p) => ({
+      ...p,
+      noRm:   pasien.no_rm,
+      nik:    searchNik.trim(),
+      nama:   pasien.nama,
+      email:  pasien.email  ?? "",
+      noTelp: pasien.no_telp ?? "",
+    }));
+  } catch {
+    setSearchError("Gagal menghubungi server. Periksa koneksi atau coba beberapa saat lagi.");
+  } finally {
+    setSearching(false);
+  }
+};
 
   /* ─────────────────────────────────────────
      FIELD HELPERS
@@ -1065,7 +1050,7 @@ export default function PendaftaranSection() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-9999 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowTimeExpired(false)}
           >
             <motion.div
@@ -1077,7 +1062,7 @@ export default function PendaftaranSection() {
               onClick={(e) => e.stopPropagation()}
               className="relative w-full sm:max-w-sm bg-white sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl"
             >
-              <div className="h-1 w-full bg-gradient-to-r from-amber-400 via-orange-400 to-bittersweet-500" />
+              <div className="h-1 w-full bg-linear-to-r from-amber-400 via-orange-400 to-bittersweet-500" />
               <div className="px-6 pt-5 pb-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-11 h-11 rounded-2xl bg-amber-50 flex items-center justify-center">
@@ -1128,7 +1113,7 @@ export default function PendaftaranSection() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-9999 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowConfirm(false)}
           >
             <motion.div
@@ -1387,7 +1372,7 @@ export default function PendaftaranSection() {
                           <p className="text-lg font-extrabold text-gray-900">
                             Sudah Punya RM
                           </p>
-                          <p className="text-xs leading-relaxed text-gray-500 max-w-[10rem] mx-auto">
+                          <p className="text-xs leading-relaxed text-gray-500 max-w-40 mx-auto">
                             Pernah berobat di {Profile.shortName} dan sudah memiliki nomor rekam medis.
                           </p>
                         </div>
@@ -1423,7 +1408,7 @@ export default function PendaftaranSection() {
                           <p className="text-lg font-extrabold text-gray-900">
                             Pasien Baru
                           </p>
-                          <p className="text-xs leading-relaxed text-gray-500 max-w-[10rem] mx-auto">
+                          <p className="text-xs leading-relaxed text-gray-500 max-w-40 mx-auto">
                             Belum pernah berobat di {Profile.shortName} dan belum punya nomor rekam medis.
                           </p>
                         </div>
