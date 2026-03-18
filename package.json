@@ -39,6 +39,7 @@
     "filepond-plugin-image-transform": "^3.8.7",
     "filepond-plugin-image-validate-size": "^1.2.7",
     "framer-motion": "^12.23.26",
+    "indonesia-nodejs": "^1.1.0",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.561.0",

@@ -35,6 +35,7 @@
         "filepond-plugin-image-transform": "^3.8.7",
         "filepond-plugin-image-validate-size": "^1.2.7",
         "framer-motion": "^12.23.26",
+        "indonesia-nodejs": "^1.1.0",
         "jspdf": "^3.0.4",
         "jspdf-autotable": "^5.0.2",
         "lucide-react": "^0.561.0",
@@ -971,6 +972,8 @@
     "import-fresh": ["import-fresh@3.3.1", "", { "dependencies": { "parent-module": "^1.0.0", "resolve-from": "^4.0.0" } }, "sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ=="],
 
     "imurmurhash": ["imurmurhash@0.1.4", "", {}, "sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA=="],
+
+    "indonesia-nodejs": ["indonesia-nodejs@1.1.0", "", {}, "sha512-q/Zhj1IdCPFjec4TnjGi4a2zwZTuyiJyaam2Z2kvu9RvGVPscyk3c6xghDdiXQKmoS/ETuZP53ATOUt0Dy3ZEA=="],
 
     "inherits": ["inherits@2.0.4", "", {}, "sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ=="],
 

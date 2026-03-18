@@ -157,7 +157,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
       setCursorYear(selectedDate.getFullYear());
       setCursorMonth(selectedDate.getMonth());
     }
-  }, [value]);
+  }, [selectedDate]);
 
   /* ── auto-scroll year into view ── */
   useEffect(() => {

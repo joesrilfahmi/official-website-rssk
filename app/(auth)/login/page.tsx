@@ -100,9 +100,9 @@ export default function LoginPage() {
                     <div className="w-full max-w-xs">
                         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                             <div className="flex flex-col items-center gap-2 text-center">
-                                <h1 className="text-2xl font-bold">Login ke Akun Anda</h1>
+                                <h1 className="text-2xl font-bold">Login Admin</h1>
                                 <p className="text-balance text-sm text-muted-foreground">
-                                    Masukkan username dan password untuk melanjutkan
+                                    Masukkan username dan password
                                 </p>
                             </div>
 
@@ -164,12 +164,12 @@ export default function LoginPage() {
                                 </Button>
                             </div>
 
-                            <div className="text-center text-sm">
+                            {/* <div className="text-center text-sm">
                                 Belum punya akun?{' '}
                                 <Link href="/register" className="underline underline-offset-4">
                                     Daftar
                                 </Link>
-                            </div>
+                            </div> */}
                         </form>
                     </div>
                 </div>
