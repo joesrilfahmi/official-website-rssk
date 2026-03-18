@@ -886,6 +886,8 @@ export default function PendaftaranSection() {
     const e: Partial<Record<keyof FormData, string>> = {};
 
     if (mode === "lama") {
+      if (!form.noTelp?.trim()) e.noTelp = "Nomor telepon wajib diisi";
+      else if (!/^[\d\s\-+()]+$/.test(form.noTelp)) e.noTelp = "Format nomor telepon tidak valid";
       if (!form.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
         e.email = "Email wajib diisi dengan format yang valid";
       if (!form.poli) e.poli = "Poli wajib dipilih";
@@ -1193,7 +1195,7 @@ export default function PendaftaranSection() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-9999 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowTimeExpired(false)}
           >
             <motion.div
@@ -1205,7 +1207,7 @@ export default function PendaftaranSection() {
               onClick={(e) => e.stopPropagation()}
               className="relative w-full sm:max-w-sm bg-white sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl"
             >
-              <div className="h-1 w-full bg-gradient-to-r from-amber-400 via-orange-400 to-bittersweet-500" />
+              <div className="h-1 w-full bg-linear-to-r from-amber-400 via-orange-400 to-bittersweet-500" />
               <div className="px-6 pt-5 pb-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-11 h-11 rounded-2xl bg-amber-50 flex items-center justify-center">
@@ -1256,7 +1258,7 @@ export default function PendaftaranSection() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-9999 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowConfirm(false)}
           >
             <motion.div
@@ -1543,7 +1545,7 @@ export default function PendaftaranSection() {
             )}
 
             {/* ─────────────────────────────────────────
-                STEP 1 (LAMA): Cari Pasien by NIK
+                STEP 1 (LAMA): Cari NIK → Form Kunjungan
             ───────────────────────────────────────── */}
             {mode === "lama" && (
               <motion.div
@@ -1554,155 +1556,226 @@ export default function PendaftaranSection() {
                 transition={{ duration: 0.35, ease }}
               >
                 <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 xl:gap-8 items-start">
-                  {/* ── Left: search + kunjungan (xl: 3/5) ── */}
-                  <div className="xl:col-span-3 space-y-5">
-                    {/* Search card */}
-                    <Animate type="slideup" ready>
-                      <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
-                        <div className="p-5 sm:p-8">
-                          <BackButton
-                            onClick={() => {
-                              setMode(null);
-                              setSearchResult(null);
-                              setSearchError("");
-                              setSearchNik("");
-                              setForm({ ...EMPTY });
-                            }}
-                          />
+                  {/* ── Main column (xl: 3/5) ── */}
+                  <div className="xl:col-span-3">
+                    <AnimatePresence mode="wait">
+                      {/* ── STATE A: Belum ditemukan → tampilkan pencarian ── */}
+                      {!searchResult ? (
+                        <motion.div
+                          key="lama-search"
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -16, scale: 0.98 }}
+                          transition={{ duration: 0.35, ease }}
+                        >
+                          <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
+                            <div className="p-5 sm:p-8">
+                              <BackButton
+                                onClick={() => {
+                                  setMode(null);
+                                  setSearchResult(null);
+                                  setSearchError("");
+                                  setSearchNik("");
+                                  setForm({ ...EMPTY });
+                                }}
+                              />
 
-                          <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-mariner-50 flex items-center justify-center shrink-0">
-                              <Search className="w-5 h-5 text-mariner-500" />
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-mariner-400">
-                                Pasien Lama
-                              </p>
-                              <h2 className="text-lg font-extrabold text-gray-900">
-                                Cari Data dengan NIK
-                              </h2>
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 rounded-xl bg-mariner-50 flex items-center justify-center shrink-0">
+                                  <Search className="w-5 h-5 text-mariner-500" />
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-mariner-400">
+                                    Pasien Lama
+                                  </p>
+                                  <h2 className="text-lg font-extrabold text-gray-900">
+                                    Cari Data dengan NIK
+                                  </h2>
+                                </div>
+                              </div>
+                              <div className="mb-6 h-0.5 w-10 bg-mariner-500 rounded-full ml-[52px]" />
+
+                              <div className="space-y-3">
+                                <Input
+                                  label="Nomor Induk Kependudukan (NIK)"
+                                  icon={CreditCard}
+                                  placeholder="Masukkan 16 digit NIK"
+                                  value={searchNik}
+                                  onChange={(e) => {
+                                    setSearchNik(
+                                      e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 16),
+                                    );
+                                    setSearchError("");
+                                  }}
+                                  error={searchError}
+                                  maxLength={16}
+                                  type="tel"
+                                  inputMode="numeric"
+                                  onKeyDown={(e) =>
+                                    e.key === "Enter" && handleSearch()
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleSearch}
+                                  disabled={searching}
+                                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-mariner-500 hover:bg-mariner-600 active:bg-mariner-700 text-white font-bold text-sm transition-all disabled:opacity-60"
+                                >
+                                  {searching ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Search className="w-4 h-4" />
+                                  )}
+                                  {searching ? "Mencari..." : "Cari Pasien"}
+                                </button>
+                              </div>
                             </div>
                           </div>
+                        </motion.div>
+                      ) : (
+                        /* ── STATE B: Data ditemukan → form terpadu mirip pasien baru ── */
+                        <motion.div
+                          key="lama-form"
+                          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -16 }}
+                          transition={{ duration: 0.4, ease }}
+                        >
+                          <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
+                            <div className="p-5 sm:p-8">
+                              {/* Back button → kembali ke pencarian */}
+                              <BackButton
+                                onClick={() => {
+                                  setSearchResult(null);
+                                  setSearchError("");
+                                  setSearchNik("");
+                                  setForm({ ...EMPTY });
+                                  setErrors({});
+                                  setFilteredDokter([]);
+                                  jadwalDokterRef.current = [];
+                                  setJadwalDokter([]);
+                                  setAvailableDates([]);
+                                  setAvailableTimes([]);
+                                }}
+                              />
 
-                          <div className="space-y-3">
-                            <Input
-                              label="Nomor Induk Kependudukan (NIK)"
-                              icon={CreditCard}
-                              placeholder="Masukkan 16 digit NIK"
-                              value={searchNik}
-                              onChange={(e) => {
-                                setSearchNik(
-                                  e.target.value
-                                    .replace(/\D/g, "")
-                                    .slice(0, 16),
-                                );
-                                setSearchError("");
-                              }}
-                              error={searchError}
-                              maxLength={16}
-                              type="tel"
-                              inputMode="numeric"
-                              onKeyDown={(e) =>
-                                e.key === "Enter" && handleSearch()
-                              }
-                            />
-                            <button
-                              type="button"
-                              onClick={handleSearch}
-                              disabled={searching}
-                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-mariner-500 hover:bg-mariner-600 active:bg-mariner-700 text-white font-bold text-sm transition-all disabled:opacity-60"
-                            >
-                              {searching ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Search className="w-4 h-4" />
-                              )}
-                              {searching ? "Mencari..." : "Cari Pasien"}
-                            </button>
-                          </div>
+                              {/* Header mirip pasien baru */}
+                              <div className="mb-7">
+                                <div className="inline-flex items-center gap-2 bg-mariner-50 text-mariner-500 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest mb-3">
+                                  <span className="w-1 h-1 rounded-full bg-mariner-500 inline-block" />
+                                  Pasien Lama
+                                </div>
+                                <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-1">
+                                  Pendaftaran Kunjungan
+                                </h2>
+                                <div className="mt-2 mb-5 h-0.5 w-10 bg-mariner-500 rounded-full" />
 
-                          <AnimatePresence>
-                            {searchResult && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -4 }}
-                                transition={{ duration: 0.3, ease }}
-                                className="mt-4 bg-mariner-50 border border-mariner-200 rounded-2xl p-4"
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-mariner-100 flex items-center justify-center shrink-0 mt-0.5">
-                                    <User className="w-5 h-5 text-mariner-600" />
+                                {/* Info badge pasien ditemukan */}
+                                <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3">
+                                  <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                                    <User className="w-4 h-4 text-teal-600" />
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <p className="text-sm font-bold text-mariner-800 truncate">
-                                        {searchResult.nama}
-                                      </p>
-                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full shrink-0">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block" />
-                                        Ditemukan
-                                      </span>
-                                    </div>
-                                    <p className="text-xs text-mariner-500 mt-0.5">
+                                    <p className="text-sm font-bold text-teal-800 truncate">
+                                      {searchResult.nama}
+                                    </p>
+                                    <p className="text-xs text-teal-500">
                                       No. RM:{" "}
                                       <span className="font-semibold">
                                         {searchResult.no_rm}
                                       </span>
                                     </p>
                                   </div>
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-100 px-2.5 py-1 rounded-full shrink-0">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block" />
+                                    Terverifikasi
+                                  </span>
                                 </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                    </Animate>
-
-                    {/* Kunjungan form — only shown after patient found */}
-                    <AnimatePresence>
-                      {searchResult && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 16 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -8 }}
-                          transition={{ duration: 0.4, ease }}
-                        >
-                          <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
-                            <div className="p-5 sm:p-8">
-                              <div className="flex items-start gap-3 bg-bittersweet-50 border border-bittersweet-200/70 rounded-xl px-4 py-3 mb-6">
-                                <ShieldCheck className="w-4 h-4 text-bittersweet-500 shrink-0 mt-0.5" />
-                                <p className="text-xs text-bittersweet-700 leading-relaxed">
-                                  Data pasien berhasil ditemukan. Lengkapi
-                                  detail kunjungan di bawah ini.
-                                </p>
                               </div>
 
                               <form onSubmit={handleSubmit} className="space-y-4">
-                                {/* ── Email (wajib diisi pasien lama) ── */}
-                                <SectionDivider
-                                  icon={<User2 className="w-3.5 h-3.5" />}
-                                  label="Kontak Pasien"
-                                />
-                                <Input
-                                  label="Email"
-                                  icon={Mail}
-                                  type="email"
-                                  placeholder="nama@email.com"
-                                  value={form.email}
-                                  onChange={(e) =>
-                                    setField("email", e.target.value)
-                                  }
-                                  error={errors.email}
-                                  required
-                                />
+                                <Animate
+                                  type="stagger"
+                                  staggerChildren={0.055}
+                                  delayChildren={0.05}
+                                  ready
+                                >
+                                  {/* ══ DATA PASIEN ══ */}
+                                  <Animate type="fielditem">
+                                    <SectionDivider
+                                      icon={<User2 className="w-3.5 h-3.5" />}
+                                      label="Data Pasien"
+                                    />
+                                  </Animate>
 
-                                <SectionDivider
-                                  icon={<Stethoscope className="w-3.5 h-3.5" />}
-                                  label="Data Kunjungan"
-                                />
-                                {/* ⚠️ Called as function, NOT as JSX component */}
-                                {kunjunganFields()}
+                                  {/* No. RM — readonly */}
+                                  <Animate type="fielditem">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <Input
+                                        label="No. Rekam Medis"
+                                        icon={CreditCard}
+                                        value={form.noRm}
+                                        readOnly
+                                        disabled
+                                        className="bg-gray-50 cursor-not-allowed"
+                                      />
+                                      {/* Nama — readonly */}
+                                      <Input
+                                        label="Nama Lengkap"
+                                        icon={User}
+                                        value={form.nama}
+                                        readOnly
+                                        disabled
+                                        className="bg-gray-50 cursor-not-allowed"
+                                      />
+                                    </div>
+                                  </Animate>
+
+                                  <Animate type="fielditem">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      {/* Nomor Telepon — editable */}
+                                      <Input
+                                        label="Nomor Telepon"
+                                        icon={Phone}
+                                        type="tel"
+                                        placeholder="08xx-xxxx-xxxx"
+                                        value={form.noTelp}
+                                        onChange={(e) =>
+                                          setField("noTelp", e.target.value)
+                                        }
+                                        error={errors.noTelp}
+                                        required
+                                      />
+                                      {/* Email — editable */}
+                                      <Input
+                                        label="Email"
+                                        icon={Mail}
+                                        type="email"
+                                        placeholder="nama@email.com"
+                                        value={form.email}
+                                        onChange={(e) =>
+                                          setField("email", e.target.value)
+                                        }
+                                        error={errors.email}
+                                        required
+                                      />
+                                    </div>
+                                  </Animate>
+
+                                  {/* ══ DATA KUNJUNGAN ══ */}
+                                  <Animate type="fielditem">
+                                    <SectionDivider
+                                      icon={<Stethoscope className="w-3.5 h-3.5" />}
+                                      label="Data Kunjungan"
+                                    />
+                                  </Animate>
+
+                                  <Animate type="fielditem">
+                                    {kunjunganFields()}
+                                  </Animate>
+                                </Animate>
 
                                 <div className="flex justify-end pt-2">
                                   <Button
@@ -1712,9 +1785,7 @@ export default function PendaftaranSection() {
                                     disabled={loading}
                                     className="justify-center"
                                   >
-                                    {loading
-                                      ? "Mengirim..."
-                                      : "Daftar via WhatsApp"}
+                                    {loading ? "Mengirim..." : "Daftar via WhatsApp"}
                                     <ArrowRight className="w-4 h-4" />
                                   </Button>
                                 </div>

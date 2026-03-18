@@ -163,7 +163,6 @@ interface NotificationPayload {
   unit_pelayanan: string;
   pesan: string;
   rating: number;
-  is_anonymus: boolean;
 }
 
 const openWhatsApp = ({
@@ -172,9 +171,8 @@ const openWhatsApp = ({
   unit_pelayanan,
   pesan,
   rating,
-  is_anonymus,
 }: NotificationPayload) => {
-  const pengirim = is_anonymus ? `Anonim (${no_hp})` : `${nama} (${no_hp})`;
+  const pengirim = `${nama} (${no_hp})`;
   const ratingText =
     rating > 0 ? `${rating}/5 - ${ratingLabels[rating]}` : "Tidak diisi";
 
@@ -398,7 +396,6 @@ const KritikSaran = () => {
     unit_pelayanan_id: "",
     pesan: "",
     rating: 0,
-    is_anonymus: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -436,12 +433,8 @@ const KritikSaran = () => {
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
@@ -453,22 +446,15 @@ const KritikSaran = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.is_anonymus) {
-      // Non-anonim: nama & no HP wajib
-      if (!formData.nama.trim()) newErrors.nama = "Nama wajib diisi";
-      if (!formData.no_hp.trim()) newErrors.no_hp = "No HP wajib diisi";
-      else if (!/^[0-9]{10,15}$/.test(formData.no_hp))
-        newErrors.no_hp = "No HP tidak valid (10-15 digit)";
-    } else {
-      // Anonim: hanya no HP wajib
-      if (!formData.no_hp.trim()) newErrors.no_hp = "No HP wajib diisi";
-      else if (!/^[0-9]{10,15}$/.test(formData.no_hp))
-        newErrors.no_hp = "No HP tidak valid (10-15 digit)";
-    }
+    if (!formData.nama.trim()) newErrors.nama = "Nama wajib diisi";
+    if (!formData.no_hp.trim()) newErrors.no_hp = "No HP wajib diisi";
+    else if (!/^[0-9]{10,15}$/.test(formData.no_hp))
+      newErrors.no_hp = "No HP tidak valid (10-15 digit)";
 
     if (!formData.unit_pelayanan_id)
       newErrors.unit_pelayanan_id = "Unit pelayanan wajib dipilih";
     if (!formData.pesan.trim()) newErrors.pesan = "Pesan wajib diisi";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -484,12 +470,11 @@ const KritikSaran = () => {
     try {
       const { error } = await supabase.from("kritik_saran").insert([
         {
-          nama: formData.is_anonymus ? "Anonim" : formData.nama.trim(),
+          nama: formData.nama.trim(),
           no_hp: formData.no_hp.trim(),
           unit_pelayanan_id: formData.unit_pelayanan_id,
           pesan: formData.pesan.trim(),
           rating: formData.rating > 0 ? formData.rating : null,
-          is_anonymus: formData.is_anonymus,
           status: "unread",
           is_readed: false,
         },
@@ -506,7 +491,6 @@ const KritikSaran = () => {
         unit_pelayanan: unitLabel,
         pesan: formData.pesan.trim(),
         rating: formData.rating,
-        is_anonymus: formData.is_anonymus,
       };
 
       setFormData({
@@ -515,7 +499,6 @@ const KritikSaran = () => {
         unit_pelayanan_id: "",
         pesan: "",
         rating: 0,
-        is_anonymus: false,
       });
 
       sendTelegramNotification(snapshot);
@@ -608,39 +591,19 @@ const KritikSaran = () => {
                     <User2 className="w-3 h-3" /> Identitas Pengirim
                   </p>
                   <div className="bg-gray-50 rounded-xl p-3.5 space-y-2.5">
-                    {formData.is_anonymus ? (
-                      <>
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-xs text-gray-500 shrink-0">Pengirim</span>
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
-                            🕵️ Anonim
-                          </span>
-                        </div>
-                        <div className="h-px bg-gray-100" />
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-xs text-gray-500 shrink-0">No HP</span>
-                          <span className="text-xs font-semibold text-gray-900 text-right truncate">
-                            {formData.no_hp}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-xs text-gray-500 shrink-0">Nama</span>
-                          <span className="text-xs font-semibold text-gray-900 text-right truncate">
-                            {formData.nama}
-                          </span>
-                        </div>
-                        <div className="h-px bg-gray-100" />
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-xs text-gray-500 shrink-0">No HP</span>
-                          <span className="text-xs font-semibold text-gray-900 text-right truncate">
-                            {formData.no_hp}
-                          </span>
-                        </div>
-                      </>
-                    )}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-xs text-gray-500 shrink-0">Nama</span>
+                      <span className="text-xs font-semibold text-gray-900 text-right truncate">
+                        {formData.nama}
+                      </span>
+                    </div>
+                    <div className="h-px bg-gray-100" />
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-xs text-gray-500 shrink-0">No HP</span>
+                      <span className="text-xs font-semibold text-gray-900 text-right truncate">
+                        {formData.no_hp}
+                      </span>
+                    </div>
                   </div>
                 </motion.div>
 
@@ -1414,121 +1377,33 @@ const KritikSaran = () => {
                               ready={dataReady}
                               className="space-y-4 sm:space-y-5"
                             >
-                              {/* ── TOGGLE ANONIM ── */}
+                              {/* ── NAMA & NO HP ── */}
                               <Animate type="fielditem">
-                                <button
-                                  type="button"
-                                  disabled={isSubmitting}
-                                  onClick={() =>
-                                    setFormData((p) => ({
-                                      ...p,
-                                      is_anonymus: !p.is_anonymus,
-                                      // clear nama when switching to anonim
-                                      nama: !p.is_anonymus ? "" : p.nama,
-                                    }))
-                                  }
-                                  className={[
-                                    "w-full flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer text-left transition-all duration-200",
-                                    formData.is_anonymus
-                                      ? "border-gray-300 bg-gray-50 hover:border-gray-400"
-                                      : "border-mariner-200 bg-mariner-50 hover:border-mariner-400",
-                                  ].join(" ")}
-                                >
-                                  {/* Toggle pill */}
-                                  <div className={[
-                                    "relative w-10 h-6 rounded-full transition-colors duration-300 shrink-0",
-                                    formData.is_anonymus ? "bg-gray-400" : "bg-mariner-500",
-                                  ].join(" ")}>
-                                    <motion.div
-                                      className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                                      animate={{ x: formData.is_anonymus ? 18 : 2 }}
-                                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                                    />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className={[
-                                      "text-sm font-semibold leading-tight",
-                                      formData.is_anonymus ? "text-gray-700" : "text-mariner-700",
-                                    ].join(" ")}>
-                                      {formData.is_anonymus ? "Mode Anonim Aktif" : "Tampilkan Identitas"}
-                                    </p>
-                                    <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">
-                                      {formData.is_anonymus
-                                        ? "Nama Anda tidak akan ditampilkan — hanya No HP untuk verifikasi"
-                                        : "Nama dan No HP Anda akan dicantumkan pada laporan"}
-                                    </p>
-                                  </div>
-                                  <span className={[
-                                    "text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0",
-                                    formData.is_anonymus
-                                      ? "bg-gray-200 text-gray-500"
-                                      : "bg-mariner-100 text-mariner-600",
-                                  ].join(" ")}>
-                                    {formData.is_anonymus ? "Anonim" : "Publik"}
-                                  </span>
-                                </button>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                  <Input
+                                    label="Nama Lengkap"
+                                    name="nama"
+                                    placeholder="Masukkan nama lengkap"
+                                    value={formData.nama}
+                                    onChange={handleInputChange}
+                                    error={errors.nama}
+                                    required
+                                    disabled={isSubmitting}
+                                  />
+                                  <Input
+                                    label="Nomor HP"
+                                    name="no_hp"
+                                    type="tel"
+                                    placeholder="08123456789"
+                                    value={formData.no_hp}
+                                    onChange={handleInputChange}
+                                    error={errors.no_hp}
+                                    icon={Phone}
+                                    required
+                                    disabled={isSubmitting}
+                                  />
+                                </div>
                               </Animate>
-
-                              {/* ── IDENTITAS FIELDS ── */}
-                              <AnimatePresence mode="wait">
-                                {formData.is_anonymus ? (
-                                  /* Anonim: only No HP */
-                                  <motion.div
-                                    key="anonim-fields"
-                                    initial={{ opacity: 0, y: -8, filter: "blur(3px)" }}
-                                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                                    exit={{ opacity: 0, y: 8, filter: "blur(3px)" }}
-                                    transition={{ duration: 0.3, ease }}
-                                  >
-                                    <Input
-                                      label="Nomor HP"
-                                      name="no_hp"
-                                      type="tel"
-                                      placeholder="08123456789"
-                                      value={formData.no_hp}
-                                      onChange={handleInputChange}
-                                      error={errors.no_hp}
-                                      icon={Phone}
-                                      required
-                                      disabled={isSubmitting}
-                                      helperText="Digunakan untuk verifikasi saja, tidak ditampilkan"
-                                    />
-                                  </motion.div>
-                                ) : (
-                                  /* Non-anonim: Nama + No HP */
-                                  <motion.div
-                                    key="publik-fields"
-                                    initial={{ opacity: 0, y: -8, filter: "blur(3px)" }}
-                                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                                    exit={{ opacity: 0, y: 8, filter: "blur(3px)" }}
-                                    transition={{ duration: 0.3, ease }}
-                                    className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"
-                                  >
-                                    <Input
-                                      label="Nama Lengkap"
-                                      name="nama"
-                                      placeholder="Masukkan nama lengkap"
-                                      value={formData.nama}
-                                      onChange={handleInputChange}
-                                      error={errors.nama}
-                                      required
-                                      disabled={isSubmitting}
-                                    />
-                                    <Input
-                                      label="Nomor HP"
-                                      name="no_hp"
-                                      type="tel"
-                                      placeholder="08123456789"
-                                      value={formData.no_hp}
-                                      onChange={handleInputChange}
-                                      error={errors.no_hp}
-                                      icon={Phone}
-                                      required
-                                      disabled={isSubmitting}
-                                    />
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
 
                               {/* ── UNIT PELAYANAN ── */}
                               <Animate type="fielditem">
@@ -1660,14 +1535,14 @@ const KritikSaran = () => {
                               desc: "Masukan Anda hanya digunakan untuk keperluan evaluasi internal.",
                             },
                             {
-                              icon: "🕵️",
-                              title: "Mode Anonim",
-                              desc: "Aktifkan mode anonim agar nama Anda tidak ditampilkan.",
-                            },
-                            {
                               icon: "📋",
                               title: "Tindak Lanjut",
                               desc: "Setiap masukan kami tinjau dan tindak lanjuti.",
+                            },
+                            {
+                              icon: "🤝",
+                              title: "Kerahasiaan",
+                              desc: "Identitas Anda dijaga dan tidak disebarluaskan.",
                             },
                           ].map((item) => (
                             <div key={item.title} className="flex items-start gap-3">
