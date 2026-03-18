@@ -2,9 +2,6 @@
 import Animate from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
 import Button from "@/components/ui/custom/button";
-import DialogPendaftaran, {
-  type PendaftaranPrefill,
-} from "@/components/ui/custom/dialog-pendaftaran";
 import { supabase } from "@/lib/supabase/client";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
 
@@ -31,7 +28,6 @@ import React, { useEffect, useRef, useState } from "react";
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 const easeOut: [number, number, number, number] = [0.0, 0.0, 0.2, 1];
 
-// Dipindahkan ke luar komponen agar tidak menjadi dependency baru tiap render
 const HARI_ORDER = [
   "Senin",
   "Selasa",
@@ -185,7 +181,7 @@ function ContentSkeleton() {
   );
 }
 
-// ── TabList — native CSS horizontal scroll on mobile ──────────────────────
+// ── TabList ────────────────────────────────────────────────────────────────
 
 const TAB_LIST = [
   { key: "kondisi" as const, label: "Kondisi Medis" },
@@ -201,7 +197,6 @@ interface TabCarouselProps {
 function TabCarousel({ activeTab, onTabChange }: TabCarouselProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const activeRef = useRef<HTMLButtonElement | null>(null);
-  // Guard: hanya scroll setelah user berinteraksi, bukan saat mount pertama
   const hasInteracted = useRef(false);
 
   useEffect(() => {
@@ -209,8 +204,6 @@ function TabCarousel({ activeTab, onTabChange }: TabCarouselProps) {
     const container = containerRef.current;
     const activeBtn = activeRef.current;
     if (!container || !activeBtn) return;
-    // Scroll horizontal manual di dalam container saja,
-    // tidak mempengaruhi scroll halaman (fix bug scrollIntoView di mobile)
     const scrollTarget =
       activeBtn.offsetLeft - container.offsetWidth / 2 + activeBtn.offsetWidth / 2;
     container.scrollTo({ left: scrollTarget, behavior: "smooth" });
@@ -255,6 +248,7 @@ function TabCarousel({ activeTab, onTabChange }: TabCarouselProps) {
 }
 
 // ── JadwalDialog per dokter ────────────────────────────────────────────────
+// PERUBAHAN: tombol "Daftar" eksekutif → redirect ke /sections/pendaftaran
 
 interface JadwalDialogProps {
   dokter: DokterItem["dokter"] & { id: string };
@@ -272,8 +266,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
   const router = useRouter();
   const [jadwalList, setJadwalList] = useState<JadwalDokter[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pendaftaranPrefill, setPendaftaranPrefill] =
-    useState<PendaftaranPrefill | null>(null);
 
   useEffect(() => {
     const fetchJadwal = async () => {
@@ -325,7 +317,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
     slots: GroupedSlot[];
   }
 
-  // HARI_ORDER kini diambil dari konstanta di luar komponen
   const grouped: GroupedJadwal[] = React.useMemo(() => {
     const map = new Map<string, GroupedJadwal>();
     const sorted = [...jadwalList].sort(
@@ -341,7 +332,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
       });
     }
     return Array.from(map.values());
-  }, [jadwalList]); // ✅ HARI_ORDER tidak perlu masuk dependency karena konstan di luar
+  }, [jadwalList]);
 
   const groupedReguler = grouped
     .filter((g) => g.slots.some((s) => s.tipe_jadwal === "reguler"))
@@ -357,17 +348,20 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
       slots: g.slots.filter((s) => s.tipe_jadwal === "eksekutif"),
     }));
 
+  /* ── PERUBAHAN: redirect ke /sections/pendaftaran ── */
   const handleDaftar = (hari: string, jamMulai: string, jamSelesai: string) => {
-    setPendaftaranPrefill({
+    const params = new URLSearchParams({
       poliId,
       poliNama,
       dokterId: dokter.id,
       dokterNama: dokter.nama,
-      dokterProfile: dokter.profile,
       hari,
       jamMulai,
       jamSelesai,
     });
+    if (dokter.profile) params.set("dokterProfile", dokter.profile);
+    onClose();
+    router.push(`/sections/pendaftaran?${params.toString()}`);
   };
 
   const renderGrouped = (
@@ -427,181 +421,168 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
     ));
 
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
+      className="fixed inset-0 z-150 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
-        className="fixed inset-0 z-150 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
+        initial={{ opacity: 0, y: 60, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.97 }}
+        transition={{ duration: 0.45, ease } satisfies Transition}
+        className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 60, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 40, scale: 0.97 }}
-          transition={{ duration: 0.45, ease } satisfies Transition}
-          className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Hero foto */}
-          <div className="relative shrink-0 overflow-hidden">
-            {/* ── Tombol Lihat Profil — kiri atas ── */}
-            <motion.button
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={
-                { delay: 0.3, duration: 0.4, ease } satisfies Transition
-              }
-              whileHover={{
-                scale: 1.05,
-                backgroundColor: "rgba(255,255,255,0.28)",
-              }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleNavigateToDetail}
-              aria-label="Lihat profil lengkap"
-              className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Lihat Profil
-            </motion.button>
+        {/* Hero foto */}
+        <div className="relative shrink-0 overflow-hidden">
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={
+              { delay: 0.3, duration: 0.4, ease } satisfies Transition
+            }
+            whileHover={{
+              scale: 1.05,
+              backgroundColor: "rgba(255,255,255,0.28)",
+            }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleNavigateToDetail}
+            aria-label="Lihat profil lengkap"
+            className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Lihat Profil
+          </motion.button>
 
-            {/* ── Tombol tutup — kanan atas ── */}
-            <button
-              onClick={onClose}
-              aria-label="Tutup"
-              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
+          <button
+            onClick={onClose}
+            aria-label="Tutup"
+            className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.2, ease } satisfies Transition}
-              className="relative w-full"
-              style={{ paddingBottom: "min(56%, 280px)" }}
-            >
-              <div className="absolute inset-0 bg-gray-100">
-                {dokter.profile ? (
-                  <Image
-                    src={dokter.profile}
-                    alt={dokter.nama}
-                    fill
-                    className="object-cover"
-                    style={{ objectPosition: "center 55%" }}
-                    sizes="(max-width: 640px) 100vw, 512px"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-mariner-50">
-                    <Stethoscope className="w-24 h-24 text-mariner-200" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
-              </div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={
-                { delay: 0.2, duration: 0.45, ease } satisfies Transition
-              }
-              className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
-            >
-              <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
-                Jadwal Praktek
-              </p>
-              <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
-                {dokter.nama}
-              </h3>
-              {/* ── Poli + Status badges ── */}
-              <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
-                {dokter.poli?.nama_poli && (
-                  <span className="inline-block text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
-                    {dokter.poli.nama_poli}
-                  </span>
-                )}
-                <span
-                  className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status ?? "active").className}`}
-                >
-                  {getStatusConfig(dokter.status ?? "active").label}
-                </span>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Jadwal content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-14 bg-gray-100 rounded-2xl animate-pulse"
-                  />
-                ))}
-              </div>
-            ) : jadwalList.length === 0 ? (
-              <div className="text-center py-10">
-                <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
-                  <Calendar className="w-8 h-8 text-gray-400" />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.2, ease } satisfies Transition}
+            className="relative w-full"
+            style={{ paddingBottom: "min(56%, 280px)" }}
+          >
+            <div className="absolute inset-0 bg-gray-100">
+              {dokter.profile ? (
+                <Image
+                  src={dokter.profile}
+                  alt={dokter.nama}
+                  fill
+                  className="object-cover"
+                  style={{ objectPosition: "center 55%" }}
+                  sizes="(max-width: 640px) 100vw, 512px"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-mariner-50">
+                  <Stethoscope className="w-24 h-24 text-mariner-200" />
                 </div>
-                <p className="text-gray-500 font-medium">
-                  Belum ada jadwal tersedia
-                </p>
-              </div>
-            ) : (
-              <>
-                {groupedReguler.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
-                        BPJS / Reguler
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {renderGrouped(groupedReguler, "reguler")}
-                    </div>
-                  </div>
-                )}
-                {groupedEksekutif.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
-                        Eksekutif
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        Klik{" "}
-                        <span className="font-semibold text-mariner-500">
-                          Daftar
-                        </span>{" "}
-                        untuk membuat janji
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {renderGrouped(groupedEksekutif, "eksekutif")}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
+              )}
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={
+              { delay: 0.2, duration: 0.45, ease } satisfies Transition
+            }
+            className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
+          >
+            <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+              Jadwal Praktek
+            </p>
+            <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
+              {dokter.nama}
+            </h3>
+            <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
+              {dokter.poli?.nama_poli && (
+                <span className="inline-block text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
+                  {dokter.poli.nama_poli}
+                </span>
+              )}
+              <span
+                className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status ?? "active").className}`}
+              >
+                {getStatusConfig(dokter.status ?? "active").label}
+              </span>
+            </div>
+          </motion.div>
+        </div>
 
-      {/* DialogPendaftaran */}
-      {pendaftaranPrefill && (
-        <DialogPendaftaran
-          open={!!pendaftaranPrefill}
-          onClose={() => setPendaftaranPrefill(null)}
-          prefill={pendaftaranPrefill}
-        />
-      )}
-    </>
+        {/* Jadwal content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-14 bg-gray-100 rounded-2xl animate-pulse"
+                />
+              ))}
+            </div>
+          ) : jadwalList.length === 0 ? (
+            <div className="text-center py-10">
+              <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
+                <Calendar className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 font-medium">
+                Belum ada jadwal tersedia
+              </p>
+            </div>
+          ) : (
+            <>
+              {groupedReguler.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
+                      BPJS / Reguler
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {renderGrouped(groupedReguler, "reguler")}
+                  </div>
+                </div>
+              )}
+              {groupedEksekutif.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
+                      Eksekutif
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      Klik{" "}
+                      <span className="font-semibold text-mariner-500">
+                        Daftar
+                      </span>{" "}
+                      untuk membuat janji
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {renderGrouped(groupedEksekutif, "eksekutif")}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
 // ── DokterCard ─────────────────────────────────────────────────────────────
+// PERUBAHAN: tampilkan foto dokter jika ada, fallback ke icon User
 
 interface DokterCardProps {
   item: DokterItem;
@@ -630,9 +611,19 @@ const DokterCard: React.FC<DokterCardProps> = ({ item, poliId, poliNama }) => {
       </AnimatePresence>
 
       <div className="bg-mariner-50 border border-mariner-100 rounded-lg p-4 flex items-center gap-3">
-        {/* Avatar */}
+        {/* Avatar: foto dokter jika ada, fallback icon */}
         <div className="w-10 h-10 rounded-full bg-mariner-50 overflow-hidden ring-2 ring-mariner-100 shrink-0 flex items-center justify-center">
-          <User className="w-5 h-5 text-mariner-400" />
+          {item.dokter.profile ? (
+            <Image
+              src={item.dokter.profile}
+              alt={item.dokter.nama}
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="w-5 h-5 text-mariner-400" />
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -645,7 +636,6 @@ const DokterCard: React.FC<DokterCardProps> = ({ item, poliId, poliNama }) => {
                 {item.dokter.poli.nama_poli}
               </p>
             )}
-            {/* Status badge */}
             <span
               className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full leading-none ${getStatusConfig(item.dokter.status ?? "active").className}`}
             >
@@ -679,13 +669,9 @@ export default function LayananUnggulanSection() {
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
 
-  // ✅ FIX: Gunakan ref untuk melacak selectedId sebelumnya.
-  // Tab hanya di-reset ke "kondisi" ketika user MENGGANTI service,
-  // bukan saat halaman pertama kali dimuat.
   const prevSelectedId = useRef<string>("");
 
   useEffect(() => {
-    // Hanya reset tab jika sebelumnya sudah ada selectedId (bukan mount pertama)
     if (prevSelectedId.current && prevSelectedId.current !== selectedId) {
       setActiveTab("kondisi");
     }
@@ -888,7 +874,6 @@ export default function LayananUnggulanSection() {
                         temu sesuai dengan waktu yang tersedia.
                       </p>
 
-                      {/* Tab buttons — tanpa Animate wrapper agar selalu muncul di mobile */}
                       <TabCarousel
                         activeTab={activeTab}
                         onTabChange={setActiveTab}

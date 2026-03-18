@@ -5,9 +5,6 @@ import Animate, {
   type BezierEase,
 } from "@/components/animations/animate";
 import Button from "@/components/ui/custom/button";
-import DialogPendaftaran, {
-  type PendaftaranPrefill,
-} from "@/components/ui/custom/dialog-pendaftaran";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import useEmblaCarousel from "embla-carousel-react";
@@ -252,6 +249,9 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): GroupedJadwal[] {
 
 /* ─────────────────────────────────────────
    JADWAL DIALOG
+   PERUBAHAN:
+   - Tombol "Daftar" eksekutif → redirect ke /sections/pendaftaran
+     dengan query params (poliId, dokterId, hari, jamMulai, jamSelesai)
 ───────────────────────────────────────── */
 interface JadwalDialogProps {
   dokter: Dokter;
@@ -271,8 +271,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
   onClose,
 }) => {
   const router = useRouter();
-  const [pendaftaranPrefill, setPendaftaranPrefill] =
-    useState<PendaftaranPrefill | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -296,17 +294,20 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
   const groupedReguler = groupJadwalByHari(jadwalReguler);
   const groupedEksekutif = groupJadwalByHari(jadwalEksekutif);
 
+  /* ── PERUBAHAN: redirect ke /sections/pendaftaran ── */
   const handleDaftar = (hari: string, jamMulai: string, jamSelesai: string) => {
-    setPendaftaranPrefill({
+    const params = new URLSearchParams({
       poliId,
       poliNama,
       dokterId: dokter.id,
       dokterNama: dokter.nama,
-      dokterProfile: dokter.profile,
       hari,
       jamMulai,
       jamSelesai,
     });
+    if (dokter.profile) params.set("dokterProfile", dokter.profile);
+    onClose();
+    router.push(`/sections/pendaftaran?${params.toString()}`);
   };
 
   const handleNavigateToDetail = () => {
@@ -371,175 +372,167 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
     ));
 
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
+      className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
-        className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
+        initial={{ opacity: 0, y: 60, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.97 }}
+        transition={{ duration: 0.45, ease } satisfies Transition}
+        className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 60, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 40, scale: 0.97 }}
-          transition={{ duration: 0.45, ease } satisfies Transition}
-          className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Hero foto */}
-          <div className="relative shrink-0 overflow-hidden">
-            <motion.button
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={
-                { delay: 0.3, duration: 0.4, ease } satisfies Transition
-              }
-              whileHover={{
-                scale: 1.05,
-                backgroundColor: "rgba(255,255,255,0.28)",
-              }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleNavigateToDetail}
-              aria-label="Lihat profil lengkap"
-              className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Lihat Profil
-            </motion.button>
+        {/* Hero foto */}
+        <div className="relative shrink-0 overflow-hidden">
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={
+              { delay: 0.3, duration: 0.4, ease } satisfies Transition
+            }
+            whileHover={{
+              scale: 1.05,
+              backgroundColor: "rgba(255,255,255,0.28)",
+            }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleNavigateToDetail}
+            aria-label="Lihat profil lengkap"
+            className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Lihat Profil
+          </motion.button>
 
-            <button
-              onClick={onClose}
-              aria-label="Tutup"
-              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
+          <button
+            onClick={onClose}
+            aria-label="Tutup"
+            className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.2, ease } satisfies Transition}
-              className="relative w-full"
-              style={{ paddingBottom: "min(56%, 280px)" }}
-            >
-              <div className="absolute inset-0 bg-gray-100">
-                {dokter.profile ? (
-                  <Image
-                    src={dokter.profile}
-                    alt={dokter.nama}
-                    fill
-                    className="object-cover"
-                    style={{ objectPosition: "center 55%" }}
-                    sizes="(max-width: 640px) 100vw, 512px"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-bittersweet-50">
-                    <User className="w-24 h-24 text-bittersweet-200" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
-              </div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={
-                { delay: 0.2, duration: 0.45, ease } satisfies Transition
-              }
-              className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
-            >
-              <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
-                Jadwal Praktek
-              </p>
-              <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
-                {dokter.nama}
-              </h3>
-              <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
-                <span className="inline-block text-xs font-medium text-bittersweet-200 bg-bittersweet-900/40 px-3 py-0.5 rounded-full">
-                  {poliNama}
-                </span>
-                <span
-                  className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status).className}`}
-                >
-                  {getStatusConfig(dokter.status).label}
-                </span>
-              </div>
-            </motion.div>
-          </div>
-
-          <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-14 bg-gray-100 rounded-2xl animate-pulse"
-                  />
-                ))}
-              </div>
-            ) : jadwalList.length === 0 ? (
-              <div className="text-center py-10">
-                <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
-                  <Calendar className="w-8 h-8 text-gray-400" />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.2, ease } satisfies Transition}
+            className="relative w-full"
+            style={{ paddingBottom: "min(56%, 280px)" }}
+          >
+            <div className="absolute inset-0 bg-gray-100">
+              {dokter.profile ? (
+                <Image
+                  src={dokter.profile}
+                  alt={dokter.nama}
+                  fill
+                  className="object-cover"
+                  style={{ objectPosition: "center 55%" }}
+                  sizes="(max-width: 640px) 100vw, 512px"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-bittersweet-50">
+                  <User className="w-24 h-24 text-bittersweet-200" />
                 </div>
-                <p className="text-gray-500 font-medium">
-                  Belum ada jadwal tersedia
-                </p>
-              </div>
-            ) : (
-              <>
-                {groupedReguler.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
-                        Reguler
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {renderGrouped(groupedReguler, "reguler")}
-                    </div>
-                  </div>
-                )}
-                {groupedEksekutif.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
-                        Eksekutif
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        Klik{" "}
-                        <span className="font-semibold text-bittersweet-500">
-                          Daftar
-                        </span>{" "}
-                        untuk membuat janji
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {renderGrouped(groupedEksekutif, "eksekutif")}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </ScrollFadeWrapper>
-        </motion.div>
-      </motion.div>
+              )}
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={
+              { delay: 0.2, duration: 0.45, ease } satisfies Transition
+            }
+            className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
+          >
+            <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+              Jadwal Praktek
+            </p>
+            <h3 className="text-white font-bold text-xl leading-snug drop-shadow-sm">
+              {dokter.nama}
+            </h3>
+            <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
+              <span className="inline-block text-xs font-medium text-bittersweet-200 bg-bittersweet-900/40 px-3 py-0.5 rounded-full">
+                {poliNama}
+              </span>
+              <span
+                className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status).className}`}
+              >
+                {getStatusConfig(dokter.status).label}
+              </span>
+            </div>
+          </motion.div>
+        </div>
 
-      {pendaftaranPrefill && (
-        <DialogPendaftaran
-          open={!!pendaftaranPrefill}
-          onClose={() => setPendaftaranPrefill(null)}
-          prefill={pendaftaranPrefill}
-        />
-      )}
-    </>
+        <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-14 bg-gray-100 rounded-2xl animate-pulse"
+                />
+              ))}
+            </div>
+          ) : jadwalList.length === 0 ? (
+            <div className="text-center py-10">
+              <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
+                <Calendar className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 font-medium">
+                Belum ada jadwal tersedia
+              </p>
+            </div>
+          ) : (
+            <>
+              {groupedReguler.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
+                      Reguler
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {renderGrouped(groupedReguler, "reguler")}
+                  </div>
+                </div>
+              )}
+              {groupedEksekutif.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
+                      Eksekutif
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      Klik{" "}
+                      <span className="font-semibold text-bittersweet-500">
+                        Daftar
+                      </span>{" "}
+                      untuk membuat janji
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {renderGrouped(groupedEksekutif, "eksekutif")}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </ScrollFadeWrapper>
+      </motion.div>
+    </motion.div>
   );
 };
 
 /* ─────────────────────────────────────────
    DOKTER ROW
+   PERUBAHAN: tampilkan foto dokter jika ada,
+   fallback ke icon User
 ───────────────────────────────────────── */
 const DokterRow: React.FC<{
   dokter: Dokter;
@@ -551,9 +544,19 @@ const DokterRow: React.FC<{
     transition={{ duration: 0.35, ease } satisfies Transition}
     className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3.5 ring-1 ring-gray-100"
   >
-    {/* Icon User — tidak menampilkan foto */}
-    <div className="w-10 h-10 rounded-full ring-2 ring-bittersweet-100 shrink-0 bg-bittersweet-50 flex items-center justify-center">
-      <User className="w-5 h-5 text-bittersweet-400" />
+    {/* Avatar: foto dokter jika ada, fallback icon */}
+    <div className="w-10 h-10 rounded-full ring-2 ring-bittersweet-100 shrink-0 overflow-hidden bg-bittersweet-50 flex items-center justify-center">
+      {dokter.profile ? (
+        <Image
+          src={dokter.profile}
+          alt={dokter.nama}
+          width={40}
+          height={40}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <User className="w-5 h-5 text-bittersweet-400" />
+      )}
     </div>
     <div className="flex-1 min-w-0">
       <p className="text-gray-800 font-semibold text-sm truncate">
@@ -828,7 +831,6 @@ const LayananCard: React.FC<LayananCardProps> = ({
       onClick={() => onClick(layanan)}
       className="group relative bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-100 hover:shadow-lg transition-shadow duration-300 h-full flex flex-col overflow-hidden cursor-pointer"
     >
-      {/* Garis atas dihapus */}
       <div className="absolute top-6 right-6 text-7xl font-bold text-gray-200/50 select-none pointer-events-none">
         {numberString}
       </div>
