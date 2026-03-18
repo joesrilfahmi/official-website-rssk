@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
   ArrowRight,
@@ -68,14 +68,12 @@ interface SelectOption {
   label: string;
   disabled?: boolean;
 }
-
 interface PasienData {
   no_rm: string;
   nama: string;
   email?: string;
   no_telp?: string;
 }
-
 interface FormData {
   noRm: string;
   nik: string;
@@ -200,13 +198,6 @@ const HARI_MAP: Record<number, string> = {
   6: "Sabtu",
 };
 
-const EMPTY_KUNJUNGAN = {
-  poli: "",
-  dokter: "",
-  tglBerkunjung: "",
-  waktuBerkunjung: "",
-  keluhan: "",
-};
 const EMPTY: FormData = {
   noRm: "",
   nik: "",
@@ -232,7 +223,11 @@ const EMPTY: FormData = {
   kecamatanCode: 0,
   kelurahan: "",
   kelurahanCode: 0,
-  ...EMPTY_KUNJUNGAN,
+  poli: "",
+  dokter: "",
+  tglBerkunjung: "",
+  waktuBerkunjung: "",
+  keluhan: "",
 };
 
 /* ─────────────────────────────────────────
@@ -307,7 +302,7 @@ function ConfirmRow({ label, value }: { label: string; value: string }) {
 }
 
 /* ─────────────────────────────────────────
-   BACK BUTTON (styled like KritikSaran)
+   BACK BUTTON
 ───────────────────────────────────────── */
 function BackButton({ onClick }: { onClick: () => void }) {
   return (
@@ -328,14 +323,146 @@ function BackButton({ onClick }: { onClick: () => void }) {
         stroke="currentColor"
         strokeWidth={2.5}
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 5l7 7-7 7"
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
       </svg>
       Kembali
     </motion.button>
+  );
+}
+
+/* ─────────────────────────────────────────
+   INFO SIDEBAR PANEL
+   (extracted so it can be reused in both lama & baru)
+───────────────────────────────────────── */
+function InfoSidebarPanel({ mode }: { mode: "lama" | "baru" }) {
+  const steps =
+    mode === "lama"
+      ? [
+          { num: "01", title: "Cari NIK", desc: "Masukkan NIK 16 digit Anda", color: "bg-mariner-500" },
+          { num: "02", title: "Pilih Jadwal", desc: "Tentukan poli, dokter & waktu kunjungan", color: "bg-teal-500" },
+          { num: "03", title: "Kirim via WA", desc: "Data pendaftaran dikirim ke WhatsApp", color: "bg-bittersweet-500" },
+        ]
+      : [
+          { num: "01", title: "Isi Data Diri", desc: "Lengkapi formulir sesuai KTP", color: "bg-bittersweet-500" },
+          { num: "02", title: "Pilih Poli & Dokter", desc: "Tentukan poli, dokter & jadwal", color: "bg-teal-500" },
+          { num: "03", title: "Konfirmasi via WA", desc: "Data dikirim otomatis ke WhatsApp", color: "bg-mariner-500" },
+        ];
+
+  return (
+    <div className="flex flex-col gap-4 lg:sticky lg:top-8">
+      {/* Cara daftar */}
+      <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm p-5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">
+          Cara Daftar
+        </p>
+        <div className="space-y-3">
+          {steps.map((step, i) => (
+            <motion.div
+              key={step.num}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.12 + 0.08 * i, ease }}
+              className="flex items-center gap-3"
+            >
+              <div
+                className={`w-9 h-9 ${step.color} rounded-xl flex items-center justify-center shrink-0 shadow-sm`}
+              >
+                <span className="text-white text-[10px] font-extrabold">
+                  {step.num}
+                </span>
+              </div>
+              <div>
+                <p className="text-gray-800 font-semibold text-xs">
+                  {step.title}
+                </p>
+                <p className="text-gray-400 text-[11px] mt-0.5 leading-tight">
+                  {step.desc}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Kontak */}
+      <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm p-5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+          Hubungi Kami
+        </p>
+        <div className="space-y-1">
+          {[
+            {
+              icon: Phone,
+              label: "WhatsApp",
+              value: Profile.whatsapp,
+              href: `https://wa.me/${Profile.whatsapp.replace(/\D/g, "")}`,
+              color: "bg-bittersweet-500",
+            },
+            {
+              icon: Mail,
+              label: "Email",
+              value: Profile.email,
+              href: `mailto:${Profile.email}`,
+              color: "bg-teal-500",
+            },
+            {
+              icon: Phone,
+              label: "Telepon",
+              value: Profile.pusatPanggilan,
+              href: `tel:${Profile.pusatPanggilan}`,
+              color: "bg-mariner-500",
+            },
+          ].map((c) => (
+            <a
+              key={c.label}
+              href={c.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              <div
+                className={`w-8 h-8 ${c.color} rounded-lg flex items-center justify-center shrink-0`}
+              >
+                <c.icon className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">
+                  {c.label}
+                </p>
+                <p className="text-gray-800 font-semibold text-xs group-hover:text-mariner-500 transition-colors truncate">
+                  {c.value}
+                </p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Jam pelayanan */}
+      <div className="bg-mariner-50 rounded-2xl p-5 ring-1 ring-mariner-100">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-mariner-400 mb-3">
+          Jam Pelayanan
+        </p>
+        <div className="space-y-2">
+          {(
+            [
+              ["Senin – Jumat", "07.00 – 16.00", false],
+              ["Sabtu", "07.00 – 13.00", false],
+              ["UGD", "24 jam", true],
+            ] as [string, string, boolean][]
+          ).map(([hari, jam, isUgd]) => (
+            <div key={hari} className="flex items-center justify-between">
+              <span className="text-xs text-mariner-600">{hari}</span>
+              <span
+                className={`text-xs font-bold ${isUgd ? "text-bittersweet-500" : "text-mariner-700"}`}
+              >
+                {jam}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -352,9 +479,7 @@ export default function PendaftaranSection() {
   const [searchError, setSearchError] = useState("");
 
   const [form, setForm] = useState<FormData>({ ...EMPTY });
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
-    {},
-  );
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTimeExpired, setShowTimeExpired] = useState(false);
@@ -376,6 +501,9 @@ export default function PendaftaranSection() {
   const [loadingKec, setLoadingKec] = useState(false);
   const [loadingKel, setLoadingKel] = useState(false);
   const [regionError, setRegionError] = useState("");
+
+  /* ── Stable refs for jadwal state (avoid stale closure in callbacks) ── */
+  const jadwalDokterRef = useRef<JadwalDokter[]>([]);
 
   /* ── Today for DatePicker min ── */
   const todayStr = (() => {
@@ -492,10 +620,12 @@ export default function PendaftaranSection() {
           .order("hari", { ascending: true });
         if (error) throw error;
         const jadwal = data || [];
+        jadwalDokterRef.current = jadwal;
         setJadwalDokter(jadwal);
         generateAvailableDates(jadwal);
         setAvailableTimes([]);
       } catch {
+        jadwalDokterRef.current = [];
         setJadwalDokter([]);
         setAvailableDates([]);
         setAvailableTimes([]);
@@ -509,6 +639,7 @@ export default function PendaftaranSection() {
   useEffect(() => {
     if (form.dokter) fetchJadwalDokter(form.dokter);
     else {
+      jadwalDokterRef.current = [];
       setJadwalDokter([]);
       setAvailableDates([]);
       setAvailableTimes([]);
@@ -524,55 +655,62 @@ export default function PendaftaranSection() {
   /* ─────────────────────────────────────────
      SEARCH PASIEN
   ───────────────────────────────────────── */
-const handleSearch = async () => {
-  if (!searchNik.trim() || !/^\d{16}$/.test(searchNik.trim())) {
-    setSearchError("Masukkan NIK yang valid (16 digit angka).");
-    return;
-  }
-  setSearching(true);
-  setSearchError("");
-  setSearchResult(null);
-  try {
-    // Sekarang fetch ke proxy route, bukan langsung ke IP eksternal
-    const res = await fetch(`/api/cari-pasien?nik=${searchNik.trim()}`);
-    if (!res.ok) throw new Error("Gagal menghubungi server");
-    const json = await res.json();
-
-    let rawItem: Record<string, string> | null = null;
-    if (json?.status === true && Array.isArray(json?.data) && json.data.length > 0) {
-      rawItem = json.data[0];
-    } else if (Array.isArray(json) && json.length > 0) {
-      rawItem = json[0];
-    } else if (json && typeof json === "object" && !Array.isArray(json)) {
-      rawItem = json;
-    }
-
-    const noRm   = rawItem?.px_norm ?? rawItem?.no_rm  ?? "";
-    const nama   = rawItem?.px_name ?? rawItem?.nama   ?? "";
-    const email  = rawItem?.email   ?? "";
-    const noTelp = rawItem?.no_telp ?? rawItem?.telepon ?? "";
-
-    if (!noRm) {
-      setSearchError("Pasien dengan NIK tersebut tidak ditemukan. Silakan daftar sebagai pasien baru.");
+  const handleSearch = async () => {
+    if (!searchNik.trim() || !/^\d{16}$/.test(searchNik.trim())) {
+      setSearchError("Masukkan NIK yang valid (16 digit angka).");
       return;
     }
+    setSearching(true);
+    setSearchError("");
+    setSearchResult(null);
+    try {
+      const res = await fetch(`/api/cari-pasien?nik=${searchNik.trim()}`);
+      if (!res.ok) throw new Error("Gagal menghubungi server");
+      const json = await res.json();
 
-    const pasien: PasienData = { no_rm: noRm, nama, email, no_telp: noTelp };
-    setSearchResult(pasien);
-    setForm((p) => ({
-      ...p,
-      noRm:   pasien.no_rm,
-      nik:    searchNik.trim(),
-      nama:   pasien.nama,
-      email:  pasien.email  ?? "",
-      noTelp: pasien.no_telp ?? "",
-    }));
-  } catch {
-    setSearchError("Gagal menghubungi server. Periksa koneksi atau coba beberapa saat lagi.");
-  } finally {
-    setSearching(false);
-  }
-};
+      let rawItem: Record<string, string> | null = null;
+      if (
+        json?.status === true &&
+        Array.isArray(json?.data) &&
+        json.data.length > 0
+      ) {
+        rawItem = json.data[0];
+      } else if (Array.isArray(json) && json.length > 0) {
+        rawItem = json[0];
+      } else if (json && typeof json === "object" && !Array.isArray(json)) {
+        rawItem = json;
+      }
+
+      const noRm = rawItem?.px_norm ?? rawItem?.no_rm ?? "";
+      const nama = rawItem?.px_name ?? rawItem?.nama ?? "";
+      const email = rawItem?.email ?? "";
+      const noTelp = rawItem?.no_telp ?? rawItem?.telepon ?? "";
+
+      if (!noRm) {
+        setSearchError(
+          "Pasien dengan NIK tersebut tidak ditemukan. Silakan daftar sebagai pasien baru.",
+        );
+        return;
+      }
+
+      const pasien: PasienData = { no_rm: noRm, nama, email, no_telp: noTelp };
+      setSearchResult(pasien);
+      setForm((p) => ({
+        ...p,
+        noRm: pasien.no_rm,
+        nik: searchNik.trim(),
+        nama: pasien.nama,
+        email: pasien.email ?? "",
+        noTelp: pasien.no_telp ?? "",
+      }));
+    } catch {
+      setSearchError(
+        "Gagal menghubungi server. Periksa koneksi atau coba beberapa saat lagi.",
+      );
+    } finally {
+      setSearching(false);
+    }
+  };
 
   /* ─────────────────────────────────────────
      FIELD HELPERS
@@ -670,9 +808,7 @@ const handleSearch = async () => {
     setKelurahanOpts([]);
     setLoadingKab(true);
     try {
-      setKabupatenOpts(
-        toSelectOptions(await getRegenciesOfProvinceCode(code)),
-      );
+      setKabupatenOpts(toSelectOptions(await getRegenciesOfProvinceCode(code)));
     } catch {
       setRegionError("Gagal memuat data kabupaten.");
     } finally {
@@ -725,9 +861,7 @@ const handleSearch = async () => {
     setKelurahanOpts([]);
     setLoadingKel(true);
     try {
-      setKelurahanOpts(
-        toSelectOptions(await getVillagesOfDistrictCode(code)),
-      );
+      setKelurahanOpts(toSelectOptions(await getVillagesOfDistrictCode(code)));
     } catch {
       setRegionError("Gagal memuat data kelurahan.");
     } finally {
@@ -752,12 +886,12 @@ const handleSearch = async () => {
     const e: Partial<Record<keyof FormData, string>> = {};
 
     if (mode === "lama") {
+      if (!form.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+        e.email = "Email wajib diisi dengan format yang valid";
       if (!form.poli) e.poli = "Poli wajib dipilih";
       if (!form.dokter) e.dokter = "Dokter wajib dipilih";
-      if (!form.tglBerkunjung)
-        e.tglBerkunjung = "Tanggal berkunjung wajib diisi";
-      if (!form.waktuBerkunjung)
-        e.waktuBerkunjung = "Waktu kunjungan wajib dipilih";
+      if (!form.tglBerkunjung) e.tglBerkunjung = "Tanggal berkunjung wajib diisi";
+      if (!form.waktuBerkunjung) e.waktuBerkunjung = "Waktu kunjungan wajib dipilih";
       if (!form.keluhan.trim()) e.keluhan = "Keluhan wajib diisi";
     } else {
       const req: Array<[keyof FormData, string]> = [
@@ -833,7 +967,7 @@ const handleSearch = async () => {
       const msgHeader = `*PENDAFTARAN PASIEN — ${Profile.shortName}*\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
       const msgIdentitas =
         mode === "lama"
-          ? `*DATA PASIEN*\n• No. RM: ${form.noRm}\n• NIK: ${form.nik}\n• Nama: ${form.nama}\n• No. HP: ${form.noTelp}\n\n`
+          ? `*DATA PASIEN*\n• No. RM: ${form.noRm}\n• NIK: ${form.nik}\n• Nama: ${form.nama}\n• No. HP: ${form.noTelp}\n• Email: ${form.email || "-"}\n\n`
           : `*DATA IDENTITAS*\n• NIK: ${form.nik}\n• Nama: ${form.nama}\n` +
             `• TTL: ${form.tempatLahir}, ${formatTanggal(form.tanggalLahir)}\n` +
             `• Jenis Kelamin: ${form.jenisKelamin}\n• Agama: ${form.agama}\n` +
@@ -899,6 +1033,7 @@ const handleSearch = async () => {
       setSearchResult(null);
       setSearchError("");
       setFilteredDokter([]);
+      jadwalDokterRef.current = [];
       setJadwalDokter([]);
       setAvailableDates([]);
       setAvailableTimes([]);
@@ -922,7 +1057,6 @@ const handleSearch = async () => {
     label: t,
   }));
 
-  /* ── Available dates as min/max for DatePicker ── */
   const minAvailableDate =
     availableDates.length > 0 ? availableDates[0] : undefined;
   const maxAvailableDate =
@@ -936,9 +1070,14 @@ const handleSearch = async () => {
     filteredDokter.find((d) => d.id === form.dokter)?.nama ?? "-";
 
   /* ─────────────────────────────────────────
-     KUNJUNGAN FIELDS (shared between lama & baru)
+     KUNJUNGAN FIELDS
+     ⚠️  CRITICAL FIX: This is NOT a React component (no capital letter / no hooks).
+         It returns JSX directly and is called as {kunjunganFields()} — NOT <KunjunganFields />.
+         Declaring it as a component inside the render function caused
+         React to unmount+remount it on every parent re-render, which lost
+         textarea focus after every keystroke.
   ───────────────────────────────────────── */
-  const KunjunganFields = () => (
+  const kunjunganFields = () => (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Select
@@ -968,15 +1107,18 @@ const handleSearch = async () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* DatePicker — hanya tampilkan tanggal yang ada jadwal */}
         <div>
           <DatePicker
             label="Tanggal Berkunjung"
             placeholder="Pilih tanggal"
             value={form.tglBerkunjung}
             onChange={(date) => {
-              // Hanya izinkan tanggal yang ada di availableDates
-              if (date && availableDates.length > 0 && !availableDates.includes(date)) return;
+              if (
+                date &&
+                availableDates.length > 0 &&
+                !availableDates.includes(date)
+              )
+                return;
               handleDateChange(date);
             }}
             minDate={minAvailableDate ?? todayStr}
@@ -1022,6 +1164,7 @@ const handleSearch = async () => {
         />
       </div>
 
+      {/* ✅ FIX: textarea keluhan — value controlled, onChange direct */}
       <Textarea
         label="Keluhan"
         placeholder="Tuliskan keluhan secara detail..."
@@ -1050,7 +1193,7 @@ const handleSearch = async () => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-9999 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowTimeExpired(false)}
           >
             <motion.div
@@ -1062,7 +1205,7 @@ const handleSearch = async () => {
               onClick={(e) => e.stopPropagation()}
               className="relative w-full sm:max-w-sm bg-white sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl"
             >
-              <div className="h-1 w-full bg-linear-to-r from-amber-400 via-orange-400 to-bittersweet-500" />
+              <div className="h-1 w-full bg-gradient-to-r from-amber-400 via-orange-400 to-bittersweet-500" />
               <div className="px-6 pt-5 pb-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-11 h-11 rounded-2xl bg-amber-50 flex items-center justify-center">
@@ -1113,7 +1256,7 @@ const handleSearch = async () => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-9999 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowConfirm(false)}
           >
             <motion.div
@@ -1167,40 +1310,20 @@ const handleSearch = async () => {
                           <ConfirmRow label="NIK" value={form.nik} />
                           <ConfirmRow label="Nama" value={form.nama} />
                           <ConfirmRow label="No. HP" value={form.noTelp} />
+                          <ConfirmRow label="Email" value={form.email} />
                         </>
                       ) : (
                         <>
                           <ConfirmRow label="NIK" value={form.nik} />
                           <ConfirmRow label="Nama" value={form.nama} />
-                          <ConfirmRow
-                            label="Tempat Lahir"
-                            value={form.tempatLahir}
-                          />
-                          <ConfirmRow
-                            label="Tanggal Lahir"
-                            value={formatTanggal(form.tanggalLahir)}
-                          />
-                          <ConfirmRow
-                            label="Jenis Kelamin"
-                            value={form.jenisKelamin}
-                          />
+                          <ConfirmRow label="Tempat Lahir" value={form.tempatLahir} />
+                          <ConfirmRow label="Tanggal Lahir" value={formatTanggal(form.tanggalLahir)} />
+                          <ConfirmRow label="Jenis Kelamin" value={form.jenisKelamin} />
                           <ConfirmRow label="Agama" value={form.agama} />
-                          <ConfirmRow
-                            label="Status"
-                            value={form.statusPernikahan}
-                          />
-                          <ConfirmRow
-                            label="Pendidikan"
-                            value={form.pendidikanTerakhir}
-                          />
-                          <ConfirmRow
-                            label="Pekerjaan"
-                            value={form.pekerjaan}
-                          />
-                          <ConfirmRow
-                            label="Ortu/Suami"
-                            value={form.ortuPriaSuami}
-                          />
+                          <ConfirmRow label="Status" value={form.statusPernikahan} />
+                          <ConfirmRow label="Pendidikan" value={form.pendidikanTerakhir} />
+                          <ConfirmRow label="Pekerjaan" value={form.pekerjaan} />
+                          <ConfirmRow label="Ortu/Suami" value={form.ortuPriaSuami} />
                           <ConfirmRow label="No. HP" value={form.noTelp} />
                           <ConfirmRow label="Email" value={form.email} />
                         </>
@@ -1217,22 +1340,10 @@ const handleSearch = async () => {
                       </p>
                       <div className="bg-gray-50 rounded-xl px-4 py-2 divide-y divide-gray-100">
                         <ConfirmRow label="Alamat" value={form.alamat} />
-                        <ConfirmRow
-                          label="RT/RW"
-                          value={`${form.rt}/${form.rw}`}
-                        />
-                        <ConfirmRow
-                          label="Kelurahan"
-                          value={form.kelurahan}
-                        />
-                        <ConfirmRow
-                          label="Kecamatan"
-                          value={form.kecamatan}
-                        />
-                        <ConfirmRow
-                          label="Kabupaten/Kota"
-                          value={form.kabupaten}
-                        />
+                        <ConfirmRow label="RT/RW" value={`${form.rt}/${form.rw}`} />
+                        <ConfirmRow label="Kelurahan" value={form.kelurahan} />
+                        <ConfirmRow label="Kecamatan" value={form.kecamatan} />
+                        <ConfirmRow label="Kabupaten/Kota" value={form.kabupaten} />
                         <ConfirmRow label="Provinsi" value={form.provinsi} />
                       </div>
                     </motion.div>
@@ -1246,18 +1357,9 @@ const handleSearch = async () => {
                     </p>
                     <div className="bg-gray-50 rounded-xl px-4 py-2 divide-y divide-gray-100">
                       <ConfirmRow label="Poli" value={selectedPoliLabel} />
-                      <ConfirmRow
-                        label="Dokter"
-                        value={selectedDokterLabel}
-                      />
-                      <ConfirmRow
-                        label="Tgl Berkunjung"
-                        value={formatTanggal(form.tglBerkunjung)}
-                      />
-                      <ConfirmRow
-                        label="Waktu"
-                        value={form.waktuBerkunjung}
-                      />
+                      <ConfirmRow label="Dokter" value={selectedDokterLabel} />
+                      <ConfirmRow label="Tgl Berkunjung" value={formatTanggal(form.tglBerkunjung)} />
+                      <ConfirmRow label="Waktu" value={form.waktuBerkunjung} />
                     </div>
                   </motion.div>
 
@@ -1353,18 +1455,21 @@ const handleSearch = async () => {
                       <motion.button
                         type="button"
                         initial={{ opacity: 0, y: 32, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: 0.2, duration: 0.5, ease } }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                          scale: 1,
+                          transition: { delay: 0.2, duration: 0.5, ease },
+                        }}
                         whileHover={{ y: -3, transition: { duration: 0.2 } }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setMode("lama")}
                         className="group relative flex flex-col items-center justify-center gap-4 p-7 sm:p-8 rounded-2xl border-2 border-mariner-200 hover:border-mariner-400 cursor-pointer text-center overflow-hidden transition-colors duration-300"
-                        style={{ background: "linear-gradient(160deg, #f0f7ff 0%, #e4efff 100%)" }}
+                        style={{
+                          background:
+                            "linear-gradient(160deg, #f0f7ff 0%, #e4efff 100%)",
+                        }}
                       >
-                        <motion.div
-                          className="absolute inset-0 pointer-events-none"
-                          whileHover={{ background: "rgba(59,130,246,0.06)" }}
-                          transition={{ duration: 0.3 }}
-                        />
                         <div className="w-16 h-16 rounded-2xl bg-mariner-100 group-hover:bg-mariner-200 flex items-center justify-center transition-colors duration-200 relative z-10 shadow-sm">
                           <UserCheck className="w-8 h-8 text-mariner-600" />
                         </div>
@@ -1373,7 +1478,8 @@ const handleSearch = async () => {
                             Sudah Punya RM
                           </p>
                           <p className="text-xs leading-relaxed text-gray-500 max-w-40 mx-auto">
-                            Pernah berobat di {Profile.shortName} dan sudah memiliki nomor rekam medis.
+                            Pernah berobat di {Profile.shortName} dan sudah
+                            memiliki nomor rekam medis.
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 bg-white rounded-full px-3.5 py-1.5 shadow-sm border border-mariner-100 relative z-10 group-hover:border-mariner-300 group-hover:shadow-md transition-all duration-200">
@@ -1389,18 +1495,21 @@ const handleSearch = async () => {
                       <motion.button
                         type="button"
                         initial={{ opacity: 0, y: 32, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: 0.32, duration: 0.5, ease } }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                          scale: 1,
+                          transition: { delay: 0.32, duration: 0.5, ease },
+                        }}
                         whileHover={{ y: -3, transition: { duration: 0.2 } }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setMode("baru")}
                         className="group relative flex flex-col items-center justify-center gap-4 p-7 sm:p-8 rounded-2xl border-2 border-bittersweet-200 hover:border-bittersweet-400 cursor-pointer text-center overflow-hidden transition-colors duration-300"
-                        style={{ background: "linear-gradient(160deg, #fff5f3 0%, #ffede9 100%)" }}
+                        style={{
+                          background:
+                            "linear-gradient(160deg, #fff5f3 0%, #ffede9 100%)",
+                        }}
                       >
-                        <motion.div
-                          className="absolute inset-0 pointer-events-none"
-                          whileHover={{ background: "rgba(239,68,68,0.05)" }}
-                          transition={{ duration: 0.3 }}
-                        />
                         <div className="w-16 h-16 rounded-2xl bg-bittersweet-100 group-hover:bg-bittersweet-200 flex items-center justify-center transition-colors duration-200 relative z-10 shadow-sm">
                           <UserPlus className="w-8 h-8 text-bittersweet-600" />
                         </div>
@@ -1409,7 +1518,8 @@ const handleSearch = async () => {
                             Pasien Baru
                           </p>
                           <p className="text-xs leading-relaxed text-gray-500 max-w-40 mx-auto">
-                            Belum pernah berobat di {Profile.shortName} dan belum punya nomor rekam medis.
+                            Belum pernah berobat di {Profile.shortName} dan
+                            belum punya nomor rekam medis.
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 bg-white rounded-full px-3.5 py-1.5 shadow-sm border border-bittersweet-100 relative z-10 group-hover:border-bittersweet-300 group-hover:shadow-md transition-all duration-200">
@@ -1432,7 +1542,9 @@ const handleSearch = async () => {
               </motion.div>
             )}
 
-            {/* ── STEP 1 (LAMA): Cari Pasien by NIK ── */}
+            {/* ─────────────────────────────────────────
+                STEP 1 (LAMA): Cari Pasien by NIK
+            ───────────────────────────────────────── */}
             {mode === "lama" && (
               <motion.div
                 key="lama-flow"
@@ -1441,14 +1553,12 @@ const handleSearch = async () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.35, ease }}
               >
-                {/* Desktop: 2-col [form | panel], Tablet/Mobile: single col centered */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_268px] gap-6 lg:gap-8 items-start">
-
-                  {/* Left column: search + kunjungan stacked */}
-                  <div className="space-y-5">
+                <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 xl:gap-8 items-start">
+                  {/* ── Left: search + kunjungan (xl: 3/5) ── */}
+                  <div className="xl:col-span-3 space-y-5">
                     {/* Search card */}
                     <Animate type="slideup" ready>
-                      <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
+                      <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
                         <div className="p-5 sm:p-8">
                           <BackButton
                             onClick={() => {
@@ -1474,7 +1584,6 @@ const handleSearch = async () => {
                             </div>
                           </div>
 
-                          {/* Input full-width on mobile, inline on sm+ */}
                           <div className="space-y-3">
                             <Input
                               label="Nomor Induk Kependudukan (NIK)"
@@ -1483,14 +1592,19 @@ const handleSearch = async () => {
                               value={searchNik}
                               onChange={(e) => {
                                 setSearchNik(
-                                  e.target.value.replace(/\D/g, "").slice(0, 16),
+                                  e.target.value
+                                    .replace(/\D/g, "")
+                                    .slice(0, 16),
                                 );
                                 setSearchError("");
                               }}
                               error={searchError}
                               maxLength={16}
+                              type="tel"
                               inputMode="numeric"
-                              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && handleSearch()
+                              }
                             />
                             <button
                               type="button"
@@ -1531,7 +1645,10 @@ const handleSearch = async () => {
                                       </span>
                                     </div>
                                     <p className="text-xs text-mariner-500 mt-0.5">
-                                      No. RM: <span className="font-semibold">{searchResult.no_rm}</span>
+                                      No. RM:{" "}
+                                      <span className="font-semibold">
+                                        {searchResult.no_rm}
+                                      </span>
                                     </p>
                                   </div>
                                 </div>
@@ -1551,27 +1668,41 @@ const handleSearch = async () => {
                           exit={{ opacity: 0, y: -8 }}
                           transition={{ duration: 0.4, ease }}
                         >
-                          <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
+                          <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
                             <div className="p-5 sm:p-8">
                               <div className="flex items-start gap-3 bg-bittersweet-50 border border-bittersweet-200/70 rounded-xl px-4 py-3 mb-6">
                                 <ShieldCheck className="w-4 h-4 text-bittersweet-500 shrink-0 mt-0.5" />
                                 <p className="text-xs text-bittersweet-700 leading-relaxed">
-                                  Data pasien berhasil ditemukan. Lengkapi detail kunjungan di bawah ini.
+                                  Data pasien berhasil ditemukan. Lengkapi
+                                  detail kunjungan di bawah ini.
                                 </p>
                               </div>
 
                               <form onSubmit={handleSubmit} className="space-y-4">
-                                <Animate type="stagger" staggerChildren={0.07} delayChildren={0.08} ready>
-                                  <Animate type="fielditem">
-                                    <SectionDivider
-                                      icon={<Stethoscope className="w-3.5 h-3.5" />}
-                                      label="Data Kunjungan"
-                                    />
-                                  </Animate>
-                                  <Animate type="fielditem">
-                                    <KunjunganFields />
-                                  </Animate>
-                                </Animate>
+                                {/* ── Email (wajib diisi pasien lama) ── */}
+                                <SectionDivider
+                                  icon={<User2 className="w-3.5 h-3.5" />}
+                                  label="Kontak Pasien"
+                                />
+                                <Input
+                                  label="Email"
+                                  icon={Mail}
+                                  type="email"
+                                  placeholder="nama@email.com"
+                                  value={form.email}
+                                  onChange={(e) =>
+                                    setField("email", e.target.value)
+                                  }
+                                  error={errors.email}
+                                  required
+                                />
+
+                                <SectionDivider
+                                  icon={<Stethoscope className="w-3.5 h-3.5" />}
+                                  label="Data Kunjungan"
+                                />
+                                {/* ⚠️ Called as function, NOT as JSX component */}
+                                {kunjunganFields()}
 
                                 <div className="flex justify-end pt-2">
                                   <Button
@@ -1581,7 +1712,9 @@ const handleSearch = async () => {
                                     disabled={loading}
                                     className="justify-center"
                                   >
-                                    {loading ? "Mengirim..." : "Daftar via WhatsApp"}
+                                    {loading
+                                      ? "Mengirim..."
+                                      : "Daftar via WhatsApp"}
                                     <ArrowRight className="w-4 h-4" />
                                   </Button>
                                 </div>
@@ -1593,92 +1726,19 @@ const handleSearch = async () => {
                     </AnimatePresence>
                   </div>
 
-                  {/* Right column: info panel (sticky on desktop) */}
-                  <Animate type="slideright" delay={0.1} ready>
-                    <div className="flex flex-col gap-4 lg:sticky lg:top-8">
-                      {/* Cara daftar */}
-                      <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm p-5">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">
-                          Cara Daftar
-                        </p>
-                        <div className="space-y-3">
-                          {[
-                            { num: "01", title: "Cari NIK", desc: "Masukkan NIK 16 digit Anda", color: "bg-mariner-500" },
-                            { num: "02", title: "Pilih Jadwal", desc: "Tentukan poli, dokter & waktu kunjungan", color: "bg-teal-500" },
-                            { num: "03", title: "Kirim via WA", desc: "Data pendaftaran dikirim ke WhatsApp", color: "bg-bittersweet-500" },
-                          ].map((step, i) => (
-                            <motion.div
-                              key={step.num}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.35, delay: 0.12 + 0.08 * i, ease }}
-                              className="flex items-center gap-3"
-                            >
-                              <div className={`w-9 h-9 ${step.color} rounded-xl flex items-center justify-center shrink-0 shadow-sm`}>
-                                <span className="text-white text-[10px] font-extrabold">{step.num}</span>
-                              </div>
-                              <div>
-                                <p className="text-gray-800 font-semibold text-xs">{step.title}</p>
-                                <p className="text-gray-400 text-[11px] mt-0.5 leading-tight">{step.desc}</p>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Kontak */}
-                      <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm p-5">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
-                          Hubungi Kami
-                        </p>
-                        <div className="space-y-1">
-                          {[
-                            { icon: Phone, label: "WhatsApp", value: Profile.whatsapp, href: `https://wa.me/${Profile.whatsapp.replace(/\D/g, "")}`, color: "bg-bittersweet-500" },
-                            { icon: Mail, label: "Email", value: Profile.email, href: `mailto:${Profile.email}`, color: "bg-teal-500" },
-                            { icon: Phone, label: "Telepon", value: Profile.pusatPanggilan, href: `tel:${Profile.pusatPanggilan}`, color: "bg-mariner-500" },
-                          ].map((c) => (
-                            <a key={c.label} href={c.href} target="_blank" rel="noopener noreferrer"
-                              className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-                              <div className={`w-8 h-8 ${c.color} rounded-lg flex items-center justify-center shrink-0`}>
-                                <c.icon className="w-3.5 h-3.5 text-white" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">{c.label}</p>
-                                <p className="text-gray-800 font-semibold text-xs group-hover:text-mariner-500 transition-colors truncate">{c.value}</p>
-                              </div>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Jam pelayanan */}
-                      <div className="bg-mariner-50 rounded-2xl p-5 ring-1 ring-mariner-100">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-mariner-400 mb-3">
-                          Jam Pelayanan
-                        </p>
-                        <div className="space-y-2">
-                          {[
-                            ["Senin – Jumat", "07.00 – 16.00", false],
-                            ["Sabtu", "07.00 – 13.00", false],
-                            ["UGD", "24 jam", true],
-                          ].map(([hari, jam, isUgd]) => (
-                            <div key={String(hari)} className="flex items-center justify-between">
-                              <span className="text-xs text-mariner-600">{hari}</span>
-                              <span className={`text-xs font-bold ${isUgd ? "text-bittersweet-500" : "text-mariner-700"}`}>
-                                {jam}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </Animate>
-
+                  {/* ── Right: info sidebar (xl: 2/5) ── */}
+                  <div className="xl:col-span-2">
+                    <Animate type="slideleft" delay={0.1} ready>
+                      <InfoSidebarPanel mode="lama" />
+                    </Animate>
+                  </div>
                 </div>
               </motion.div>
             )}
 
-            {/* ── STEP 1 (BARU): Form Lengkap ── */}
+            {/* ─────────────────────────────────────────
+                STEP 1 (BARU): Form Lengkap
+            ───────────────────────────────────────── */}
             {mode === "baru" && (
               <motion.div
                 key="baru-flow"
@@ -1687,412 +1747,417 @@ const handleSearch = async () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.35, ease }}
               >
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_268px] gap-6 lg:gap-8 items-start">
-                  {/* ── FORM CARD ── */}
-                  <Animate type="slideup" ready>
-                    <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
-                      <div className="p-5 sm:p-8 lg:p-8">
-                        {/* Back button inside card */}
-                        <BackButton
-                          onClick={() => {
-                            setMode(null);
-                            setForm({ ...EMPTY });
-                            setErrors({});
-                          }}
-                        />
+                <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 xl:gap-8 items-start">
+                  {/* ── FORM CARD (xl: 3/5) ── */}
+                  <div className="xl:col-span-3">
+                    <Animate type="slideup" ready>
+                      <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
+                        <div className="p-5 sm:p-8">
+                          <BackButton
+                            onClick={() => {
+                              setMode(null);
+                              setForm({ ...EMPTY });
+                              setErrors({});
+                            }}
+                          />
 
-                        <Animate type="fadein" ready>
-                          <div className="mb-7">
-                            <div className="inline-flex items-center gap-2 bg-mariner-50 text-mariner-500 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest mb-3">
-                              <span className="w-1 h-1 rounded-full bg-mariner-500 inline-block" />
-                              Pasien Baru
+                          <Animate type="fadein" ready>
+                            <div className="mb-7">
+                              <div className="inline-flex items-center gap-2 bg-mariner-50 text-mariner-500 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest mb-3">
+                                <span className="w-1 h-1 rounded-full bg-mariner-500 inline-block" />
+                                Pasien Baru
+                              </div>
+                              <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-1">
+                                Data Pasien Baru
+                              </h2>
+                              <div className="mt-2 mb-5 h-0.5 w-10 bg-mariner-500 rounded-full" />
+                              <div className="flex items-start gap-2.5 bg-bittersweet-50 border border-bittersweet-200/70 rounded-xl px-3.5 py-2.5">
+                                <ShieldCheck className="w-3.5 h-3.5 text-bittersweet-500 shrink-0 mt-0.5" />
+                                <p className="text-xs text-bittersweet-700 leading-relaxed">
+                                  <span className="font-bold">
+                                    Data bersifat rahasia
+                                  </span>{" "}
+                                  — hanya untuk keperluan administrasi medis.
+                                </p>
+                              </div>
                             </div>
-                            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-1">
-                              Data Pasien Baru
-                            </h2>
-                            <div className="mt-2 mb-5 h-0.5 w-10 bg-mariner-500 rounded-full" />
-                            <div className="flex items-start gap-2.5 bg-bittersweet-50 border border-bittersweet-200/70 rounded-xl px-3.5 py-2.5">
-                              <ShieldCheck className="w-3.5 h-3.5 text-bittersweet-500 shrink-0 mt-0.5" />
-                              <p className="text-xs text-bittersweet-700 leading-relaxed">
-                                <span className="font-bold">Data bersifat rahasia</span>{" "}
-                                — hanya untuk keperluan administrasi medis.
-                              </p>
-                            </div>
-                          </div>
-                        </Animate>
+                          </Animate>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                          <Animate
-                            type="stagger"
-                            staggerChildren={0.055}
-                            delayChildren={0.1}
-                            ready
-                          >
-                            {/* ══ IDENTITAS ══ */}
-                            <Animate type="fielditem">
-                              <SectionDivider
-                                icon={<User2 className="w-3.5 h-3.5" />}
-                                label="Identitas Diri"
-                              />
-                            </Animate>
-
-                            <Animate type="fielditem">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Input
-                                  label="NIK"
-                                  icon={CreditCard}
-                                  placeholder="16 digit NIK"
-                                  value={form.nik}
-                                  onChange={(e) =>
-                                    setField("nik", e.target.value.replace(/\D/g, "").slice(0, 16))
-                                  }
-                                  error={errors.nik}
-                                  maxLength={16}
-                                  required
-                                />
-                                <Input
-                                  label="Nama Lengkap"
-                                  icon={User}
-                                  placeholder="Sesuai KTP"
-                                  value={form.nama}
-                                  onChange={(e) => setField("nama", e.target.value)}
-                                  error={errors.nama}
-                                  required
-                                />
-                              </div>
-                            </Animate>
-
-                            <Animate type="fielditem">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Input
-                                  label="Tempat Lahir"
-                                  icon={MapPin}
-                                  placeholder="Kota tempat lahir"
-                                  value={form.tempatLahir}
-                                  onChange={(e) => setField("tempatLahir", e.target.value)}
-                                  error={errors.tempatLahir}
-                                  required
-                                />
-                                <DatePicker
-                                  label="Tanggal Lahir"
-                                  placeholder="Pilih tanggal lahir"
-                                  value={form.tanggalLahir}
-                                  onChange={(v) => setField("tanggalLahir", v)}
-                                  maxDate={todayStr}
-                                  error={errors.tanggalLahir}
-                                  required
-                                />
-                              </div>
-                            </Animate>
-
-                            <Animate type="fielditem">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Select
-                                  label="Jenis Kelamin"
-                                  placeholder="Pilih jenis kelamin"
-                                  value={form.jenisKelamin}
-                                  onChange={(v) => setField("jenisKelamin", v)}
-                                  options={JENIS_KELAMIN_OPTIONS}
-                                  error={errors.jenisKelamin}
-                                  required
-                                />
-                                <Select
-                                  label="Agama"
-                                  placeholder="Pilih agama"
-                                  value={form.agama}
-                                  onChange={(v) => setField("agama", v)}
-                                  options={AGAMA_OPTIONS}
-                                  error={errors.agama}
-                                  required
-                                />
-                              </div>
-                            </Animate>
-
-                            <Animate type="fielditem">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Select
-                                  label="Status Pernikahan"
-                                  placeholder="Pilih status"
-                                  value={form.statusPernikahan}
-                                  onChange={(v) => setField("statusPernikahan", v)}
-                                  options={STATUS_PERNIKAHAN_OPTIONS}
-                                  error={errors.statusPernikahan}
-                                  required
-                                />
-                                <Select
-                                  label="Pendidikan Terakhir"
-                                  placeholder="Pilih pendidikan"
-                                  value={form.pendidikanTerakhir}
-                                  onChange={(v) => setField("pendidikanTerakhir", v)}
-                                  options={PENDIDIKAN_OPTIONS}
-                                  error={errors.pendidikanTerakhir}
-                                  required
-                                />
-                              </div>
-                            </Animate>
-
-                            <Animate type="fielditem">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Select
-                                  label="Pekerjaan"
-                                  placeholder="Pilih pekerjaan"
-                                  value={form.pekerjaan}
-                                  onChange={(v) => setField("pekerjaan", v)}
-                                  options={PEKERJAAN_OPTIONS}
-                                  searchable
-                                  error={errors.pekerjaan}
-                                  required
-                                />
-                                <Input
-                                  label="Nama Ortu Pria / Suami"
-                                  icon={Users}
-                                  placeholder="Opsional"
-                                  value={form.ortuPriaSuami}
-                                  onChange={(e) => setField("ortuPriaSuami", e.target.value)}
-                                />
-                              </div>
-                            </Animate>
-
-                            <Animate type="fielditem">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Input
-                                  label="Nomor Telepon"
-                                  icon={Phone}
-                                  type="tel"
-                                  placeholder="08xx-xxxx-xxxx"
-                                  value={form.noTelp}
-                                  onChange={(e) => setField("noTelp", e.target.value)}
-                                  error={errors.noTelp}
-                                  required
-                                />
-                                <Input
-                                  label="Email"
-                                  icon={Mail}
-                                  type="email"
-                                  placeholder="nama@email.com"
-                                  value={form.email}
-                                  onChange={(e) => setField("email", e.target.value)}
-                                  error={errors.email}
-                                />
-                              </div>
-                            </Animate>
-
-                            {/* ══ ALAMAT ══ */}
-                            <Animate type="fielditem">
-                              <SectionDivider
-                                icon={<Home className="w-3.5 h-3.5" />}
-                                label="Alamat Domisili"
-                              />
-                            </Animate>
-
-                            {regionError && (
+                          <form onSubmit={handleSubmit} className="space-y-4">
+                            <Animate
+                              type="stagger"
+                              staggerChildren={0.055}
+                              delayChildren={0.1}
+                              ready
+                            >
+                              {/* ══ IDENTITAS ══ */}
                               <Animate type="fielditem">
-                                <div className="flex items-start gap-2 bg-bittersweet-50 border border-bittersweet-200 rounded-xl px-3 py-2.5">
-                                  <X className="w-3.5 h-3.5 text-bittersweet-500 shrink-0 mt-0.5" />
-                                  <p className="text-xs text-bittersweet-700 flex-1">{regionError}</p>
-                                  <button type="button" onClick={() => setRegionError("")}>
-                                    <X className="w-3 h-3 text-bittersweet-400" />
-                                  </button>
+                                <SectionDivider
+                                  icon={<User2 className="w-3.5 h-3.5" />}
+                                  label="Identitas Diri"
+                                />
+                              </Animate>
+
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {/* ✅ FIX: type="tel" untuk NIK */}
+                                  <Input
+                                    label="NIK"
+                                    icon={CreditCard}
+                                    placeholder="16 digit NIK"
+                                    value={form.nik}
+                                    type="tel"
+                                    inputMode="numeric"
+                                    onChange={(e) =>
+                                      setField(
+                                        "nik",
+                                        e.target.value
+                                          .replace(/\D/g, "")
+                                          .slice(0, 16),
+                                      )
+                                    }
+                                    error={errors.nik}
+                                    maxLength={16}
+                                    required
+                                  />
+                                  <Input
+                                    label="Nama Lengkap"
+                                    icon={User}
+                                    placeholder="Sesuai KTP"
+                                    value={form.nama}
+                                    onChange={(e) =>
+                                      setField("nama", e.target.value)
+                                    }
+                                    error={errors.nama}
+                                    required
+                                  />
                                 </div>
                               </Animate>
-                            )}
 
-                            <Animate type="fielditem">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Select
-                                  label="Provinsi"
-                                  placeholder="Pilih provinsi"
-                                  value={form.provinsiCode ? String(form.provinsiCode) : ""}
-                                  onChange={handleProvinsi}
-                                  options={provinsiOpts}
-                                  searchable
-                                  error={errors.provinsi}
-                                  required
-                                />
-                                <Select
-                                  label="Kabupaten / Kota"
-                                  placeholder={form.provinsiCode ? "Pilih kabupaten/kota" : "— pilih provinsi dulu —"}
-                                  value={form.kabupatenCode ? String(form.kabupatenCode) : ""}
-                                  onChange={handleKabupaten}
-                                  options={kabupatenOpts}
-                                  searchable
-                                  disabled={!form.provinsiCode}
-                                  loading={loadingKab}
-                                  error={errors.kabupaten}
-                                  required
-                                />
-                              </div>
-                            </Animate>
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <Input
+                                    label="Tempat Lahir"
+                                    icon={MapPin}
+                                    placeholder="Kota tempat lahir"
+                                    value={form.tempatLahir}
+                                    onChange={(e) =>
+                                      setField("tempatLahir", e.target.value)
+                                    }
+                                    error={errors.tempatLahir}
+                                    required
+                                  />
+                                  <DatePicker
+                                    label="Tanggal Lahir"
+                                    placeholder="Pilih tanggal lahir"
+                                    value={form.tanggalLahir}
+                                    onChange={(v) =>
+                                      setField("tanggalLahir", v)
+                                    }
+                                    maxDate={todayStr}
+                                    error={errors.tanggalLahir}
+                                    required
+                                  />
+                                </div>
+                              </Animate>
 
-                            <Animate type="fielditem">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Select
-                                  label="Kecamatan"
-                                  placeholder={form.kabupatenCode ? "Pilih kecamatan" : "— pilih kabupaten dulu —"}
-                                  value={form.kecamatanCode ? String(form.kecamatanCode) : ""}
-                                  onChange={handleKecamatan}
-                                  options={kecamatanOpts}
-                                  searchable
-                                  disabled={!form.kabupatenCode}
-                                  loading={loadingKec}
-                                  error={errors.kecamatan}
-                                  required
-                                />
-                                <Select
-                                  label="Kelurahan / Desa"
-                                  placeholder={form.kecamatanCode ? "Pilih kelurahan/desa" : "— pilih kecamatan dulu —"}
-                                  value={form.kelurahanCode ? String(form.kelurahanCode) : ""}
-                                  onChange={handleKelurahan}
-                                  options={kelurahanOpts}
-                                  searchable
-                                  disabled={!form.kecamatanCode}
-                                  loading={loadingKel}
-                                  error={errors.kelurahan}
-                                  required
-                                />
-                              </div>
-                            </Animate>
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <Select
+                                    label="Jenis Kelamin"
+                                    placeholder="Pilih jenis kelamin"
+                                    value={form.jenisKelamin}
+                                    onChange={(v) =>
+                                      setField("jenisKelamin", v)
+                                    }
+                                    options={JENIS_KELAMIN_OPTIONS}
+                                    error={errors.jenisKelamin}
+                                    required
+                                  />
+                                  <Select
+                                    label="Agama"
+                                    placeholder="Pilih agama"
+                                    value={form.agama}
+                                    onChange={(v) => setField("agama", v)}
+                                    options={AGAMA_OPTIONS}
+                                    error={errors.agama}
+                                    required
+                                  />
+                                </div>
+                              </Animate>
 
-                            <Animate type="fielditem">
-                              <div className="grid grid-cols-1 sm:grid-cols-[1fr_72px_72px] gap-3">
-                                <Input
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <Select
+                                    label="Status Pernikahan"
+                                    placeholder="Pilih status"
+                                    value={form.statusPernikahan}
+                                    onChange={(v) =>
+                                      setField("statusPernikahan", v)
+                                    }
+                                    options={STATUS_PERNIKAHAN_OPTIONS}
+                                    error={errors.statusPernikahan}
+                                    required
+                                  />
+                                  <Select
+                                    label="Pendidikan Terakhir"
+                                    placeholder="Pilih pendidikan"
+                                    value={form.pendidikanTerakhir}
+                                    onChange={(v) =>
+                                      setField("pendidikanTerakhir", v)
+                                    }
+                                    options={PENDIDIKAN_OPTIONS}
+                                    error={errors.pendidikanTerakhir}
+                                    required
+                                  />
+                                </div>
+                              </Animate>
+
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <Select
+                                    label="Pekerjaan"
+                                    placeholder="Pilih pekerjaan"
+                                    value={form.pekerjaan}
+                                    onChange={(v) => setField("pekerjaan", v)}
+                                    options={PEKERJAAN_OPTIONS}
+                                    searchable
+                                    error={errors.pekerjaan}
+                                    required
+                                  />
+                                  <Input
+                                    label="Nama Ortu Pria / Suami"
+                                    icon={Users}
+                                    placeholder="Opsional"
+                                    value={form.ortuPriaSuami}
+                                    onChange={(e) =>
+                                      setField("ortuPriaSuami", e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </Animate>
+
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {/* ✅ FIX: type="tel" untuk nomor telepon */}
+                                  <Input
+                                    label="Nomor Telepon"
+                                    icon={Phone}
+                                    type="tel"
+                                    placeholder="08xx-xxxx-xxxx"
+                                    value={form.noTelp}
+                                    onChange={(e) =>
+                                      setField("noTelp", e.target.value)
+                                    }
+                                    error={errors.noTelp}
+                                    required
+                                  />
+                                  <Input
+                                    label="Email"
+                                    icon={Mail}
+                                    type="email"
+                                    placeholder="nama@email.com"
+                                    value={form.email}
+                                    onChange={(e) =>
+                                      setField("email", e.target.value)
+                                    }
+                                    error={errors.email}
+                                  />
+                                </div>
+                              </Animate>
+
+                              {/* ══ ALAMAT ══ */}
+                              <Animate type="fielditem">
+                                <SectionDivider
+                                  icon={<Home className="w-3.5 h-3.5" />}
+                                  label="Alamat Domisili"
+                                />
+                              </Animate>
+
+                              {regionError && (
+                                <Animate type="fielditem">
+                                  <div className="flex items-start gap-2 bg-bittersweet-50 border border-bittersweet-200 rounded-xl px-3 py-2.5">
+                                    <X className="w-3.5 h-3.5 text-bittersweet-500 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-bittersweet-700 flex-1">
+                                      {regionError}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => setRegionError("")}
+                                    >
+                                      <X className="w-3 h-3 text-bittersweet-400" />
+                                    </button>
+                                  </div>
+                                </Animate>
+                              )}
+
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <Select
+                                    label="Provinsi"
+                                    placeholder="Pilih provinsi"
+                                    value={
+                                      form.provinsiCode
+                                        ? String(form.provinsiCode)
+                                        : ""
+                                    }
+                                    onChange={handleProvinsi}
+                                    options={provinsiOpts}
+                                    searchable
+                                    error={errors.provinsi}
+                                    required
+                                  />
+                                  <Select
+                                    label="Kabupaten / Kota"
+                                    placeholder={
+                                      form.provinsiCode
+                                        ? "Pilih kabupaten/kota"
+                                        : "— pilih provinsi dulu —"
+                                    }
+                                    value={
+                                      form.kabupatenCode
+                                        ? String(form.kabupatenCode)
+                                        : ""
+                                    }
+                                    onChange={handleKabupaten}
+                                    options={kabupatenOpts}
+                                    searchable
+                                    disabled={!form.provinsiCode}
+                                    loading={loadingKab}
+                                    error={errors.kabupaten}
+                                    required
+                                  />
+                                </div>
+                              </Animate>
+
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <Select
+                                    label="Kecamatan"
+                                    placeholder={
+                                      form.kabupatenCode
+                                        ? "Pilih kecamatan"
+                                        : "— pilih kabupaten dulu —"
+                                    }
+                                    value={
+                                      form.kecamatanCode
+                                        ? String(form.kecamatanCode)
+                                        : ""
+                                    }
+                                    onChange={handleKecamatan}
+                                    options={kecamatanOpts}
+                                    searchable
+                                    disabled={!form.kabupatenCode}
+                                    loading={loadingKec}
+                                    error={errors.kecamatan}
+                                    required
+                                  />
+                                  <Select
+                                    label="Kelurahan / Desa"
+                                    placeholder={
+                                      form.kecamatanCode
+                                        ? "Pilih kelurahan/desa"
+                                        : "— pilih kecamatan dulu —"
+                                    }
+                                    value={
+                                      form.kelurahanCode
+                                        ? String(form.kelurahanCode)
+                                        : ""
+                                    }
+                                    onChange={handleKelurahan}
+                                    options={kelurahanOpts}
+                                    searchable
+                                    disabled={!form.kecamatanCode}
+                                    loading={loadingKel}
+                                    error={errors.kelurahan}
+                                    required
+                                  />
+                                </div>
+                              </Animate>
+
+                              <Animate type="fielditem">
+                                {/* ✅ FIX: Alamat menggunakan Textarea */}
+                                <Textarea
                                   label="Alamat"
-                                  icon={Home}
-                                  placeholder="Nama jalan, nomor rumah"
+                                  placeholder="Nama jalan, nomor rumah, gang, dll."
+                                  rows={3}
                                   value={form.alamat}
-                                  onChange={(e) => setField("alamat", e.target.value)}
+                                  onChange={(e) =>
+                                    setField("alamat", e.target.value)
+                                  }
                                   error={errors.alamat}
                                   required
                                 />
-                                <Input
-                                  label="RT"
-                                  placeholder="001"
-                                  value={form.rt}
-                                  onChange={(e) => setField("rt", e.target.value)}
-                                  error={errors.rt}
-                                  required
+                              </Animate>
+
+                              <Animate type="fielditem">
+                                <div className="grid grid-cols-2 gap-3">
+                                  {/* ✅ FIX: type="tel" untuk RT & RW */}
+                                  <Input
+                                    label="RT"
+                                    placeholder="001"
+                                    type="tel"
+                                    inputMode="numeric"
+                                    value={form.rt}
+                                    onChange={(e) =>
+                                      setField("rt", e.target.value)
+                                    }
+                                    error={errors.rt}
+                                    required
+                                  />
+                                  <Input
+                                    label="RW"
+                                    placeholder="002"
+                                    type="tel"
+                                    inputMode="numeric"
+                                    value={form.rw}
+                                    onChange={(e) =>
+                                      setField("rw", e.target.value)
+                                    }
+                                    error={errors.rw}
+                                    required
+                                  />
+                                </div>
+                              </Animate>
+
+                              {/* ══ KUNJUNGAN ══ */}
+                              <Animate type="fielditem">
+                                <SectionDivider
+                                  icon={<Stethoscope className="w-3.5 h-3.5" />}
+                                  label="Data Kunjungan"
                                 />
-                                <Input
-                                  label="RW"
-                                  placeholder="002"
-                                  value={form.rw}
-                                  onChange={(e) => setField("rw", e.target.value)}
-                                  error={errors.rw}
-                                  required
-                                />
-                              </div>
+                              </Animate>
+
+                              <Animate type="fielditem">
+                                {/* ⚠️ Called as function, NOT as JSX component */}
+                                {kunjunganFields()}
+                              </Animate>
                             </Animate>
 
-                            {/* ══ KUNJUNGAN ══ */}
-                            <Animate type="fielditem">
-                              <SectionDivider
-                                icon={<Stethoscope className="w-3.5 h-3.5" />}
-                                label="Data Kunjungan"
-                              />
-                            </Animate>
-
-                            <Animate type="fielditem">
-                              <KunjunganFields />
-                            </Animate>
-                          </Animate>
-
-                          <div className="flex justify-end pt-2">
-                            <Button
-                              type="submit"
-                              variant="primary"
-                              size="lg"
-                              disabled={loading}
-                              className="justify-center"
-                            >
-                              {loading ? "Mengirim..." : "Daftar via WhatsApp"}
-                              <ArrowRight className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  </Animate>
-
-                  {/* ── INFO PANEL ── */}
-                  <Animate type="slideright" delay={0.1} ready>
-                    <div className="flex flex-col gap-4 lg:sticky lg:top-8">
-                      {/* Cara daftar */}
-                      <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm p-5">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">
-                          Cara Daftar
-                        </p>
-                        <div className="space-y-3">
-                          {[
-                            { num: "01", title: "Isi Data Diri", desc: "Lengkapi formulir sesuai KTP", color: "bg-bittersweet-500" },
-                            { num: "02", title: "Pilih Poli & Dokter", desc: "Tentukan poli, dokter & jadwal", color: "bg-teal-500" },
-                            { num: "03", title: "Konfirmasi via WA", desc: "Data dikirim otomatis ke WhatsApp", color: "bg-mariner-500" },
-                          ].map((step, i) => (
-                            <motion.div
-                              key={step.num}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.35, delay: 0.1 + 0.08 * i, ease }}
-                              className="flex items-center gap-3"
-                            >
-                              <div className={`w-9 h-9 ${step.color} rounded-xl flex items-center justify-center shrink-0 shadow-sm`}>
-                                <span className="text-white text-[10px] font-extrabold">{step.num}</span>
-                              </div>
-                              <div>
-                                <p className="text-gray-800 font-semibold text-xs">{step.title}</p>
-                                <p className="text-gray-400 text-[11px] mt-0.5 leading-tight">{step.desc}</p>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Kontak */}
-                      <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm p-5">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
-                          Hubungi Kami
-                        </p>
-                        <div className="space-y-1">
-                          {[
-                            { icon: Phone, label: "WhatsApp", value: Profile.whatsapp, href: `https://wa.me/${Profile.whatsapp.replace(/\D/g, "")}`, color: "bg-bittersweet-500" },
-                            { icon: Mail, label: "Email", value: Profile.email, href: `mailto:${Profile.email}`, color: "bg-teal-500" },
-                            { icon: Phone, label: "Telepon", value: Profile.pusatPanggilan, href: `tel:${Profile.pusatPanggilan}`, color: "bg-mariner-500" },
-                          ].map((c) => (
-                            <a key={c.label} href={c.href} target="_blank" rel="noopener noreferrer"
-                              className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-                              <div className={`w-8 h-8 ${c.color} rounded-lg flex items-center justify-center shrink-0`}>
-                                <c.icon className="w-3.5 h-3.5 text-white" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">{c.label}</p>
-                                <p className="text-gray-800 font-semibold text-xs group-hover:text-mariner-500 transition-colors truncate">{c.value}</p>
-                              </div>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Jam pelayanan */}
-                      <div className="bg-mariner-50 rounded-2xl p-5 ring-1 ring-mariner-100">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-mariner-400 mb-3">
-                          Jam Pelayanan
-                        </p>
-                        <div className="space-y-2">
-                          {[
-                            ["Senin – Jumat", "07.00 – 16.00", false],
-                            ["Sabtu", "07.00 – 13.00", false],
-                            ["UGD", "24 jam", true],
-                          ].map(([hari, jam, isUgd]) => (
-                            <div key={String(hari)} className="flex items-center justify-between">
-                              <span className="text-xs text-mariner-600">{hari}</span>
-                              <span className={`text-xs font-bold ${isUgd ? "text-bittersweet-500" : "text-mariner-700"}`}>
-                                {jam}
-                              </span>
+                            <div className="flex justify-end pt-2">
+                              <Button
+                                type="submit"
+                                variant="primary"
+                                size="lg"
+                                disabled={loading}
+                                className="justify-center"
+                              >
+                                {loading ? "Mengirim..." : "Daftar via WhatsApp"}
+                                <ArrowRight className="w-4 h-4" />
+                              </Button>
                             </div>
-                          ))}
+                          </form>
                         </div>
                       </div>
-                    </div>
-                  </Animate>
+                    </Animate>
+                  </div>
+
+                  {/* ── INFO SIDEBAR (xl: 2/5) ── */}
+                  <div className="xl:col-span-2">
+                    <Animate type="slideleft" delay={0.1} ready>
+                      <InfoSidebarPanel mode="baru" />
+                    </Animate>
+                  </div>
                 </div>
               </motion.div>
             )}
