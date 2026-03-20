@@ -248,6 +248,10 @@ function getGlobalLastUpdated(dokterList: Dokter[]): string | null {
 /* ─────────────────────────────────────────
    STATUS BADGE HELPER
 ───────────────────────────────────────── */
+
+// Set status yang dianggap "tidak aktif" — gambar akan di-grayscale
+const INACTIVE_STATUSES = new Set(["inactive", "cuti", "libur"]);
+
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   active: {
     label: "Aktif",
@@ -255,18 +259,22 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   },
   inactive: {
     label: "Tidak Aktif",
-    className: "bg-gray-400 text-white",
+    className: "bg-red-500 text-white",
   },
   cuti: {
     label: "Cuti",
-    className: "bg-amber-500 text-white",
+    className: "bg-red-500 text-white",
+  },
+  libur: {
+    label: "Libur",
+    className: "bg-red-500 text-white",
   },
 };
 
 const getStatusConfig = (status: string) =>
   STATUS_CONFIG[status] ?? {
     label: status,
-    className: "bg-gray-400 text-white",
+    className: "bg-red-500 text-white",
   };
 
 const HARI_OPTIONS = [
@@ -586,6 +594,9 @@ const DokterCard: React.FC<{
     (a, b) => (HARI_ORDER[a] ?? 99) - (HARI_ORDER[b] ?? 99),
   );
 
+  // Flag untuk status non-aktif: gambar di-grayscale
+  const isInactive = INACTIVE_STATUSES.has(dokter.status);
+
   return (
     <motion.div
       variants={cardWrapVariants}
@@ -601,18 +612,33 @@ const DokterCard: React.FC<{
         className="relative w-full overflow-hidden"
         style={{ paddingBottom: "115%" }}
       >
-        <div className="absolute inset-0 bg-linear-to-br from-mariner-100 to-mariner-200">
+        {/*
+         * Saat inactive/cuti/libur:
+         * - wrapper mendapat grayscale + brightness gelap
+         * - Image mendapat opacity-70 untuk efek pudar
+         */}
+        <div
+          className={`absolute inset-0 bg-linear-to-br from-mariner-100 to-mariner-200 transition-all duration-300 ${
+            isInactive ? "grayscale brightness-75" : ""
+          }`}
+        >
           {dokter.profile ? (
             <Image
               src={dokter.profile}
               alt={dokter.nama}
               fill
-              className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+              className={`object-cover object-top transition-all duration-500 group-hover:scale-105 ${
+                isInactive ? "opacity-70" : ""
+              }`}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <UserRound className="w-16 h-16 text-mariner-400" />
+              <UserRound
+                className={`w-16 h-16 ${
+                  isInactive ? "text-gray-300" : "text-mariner-400"
+                }`}
+              />
             </div>
           )}
 
