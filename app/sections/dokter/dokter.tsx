@@ -5,9 +5,6 @@ import Animate, {
   type BezierEase,
 } from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
-import DialogPendaftaran, {
-  type PendaftaranPrefill,
-} from "@/components/ui/custom/dialog-pendaftaran";
 import Input from "@/components/ui/custom/input";
 import Pagination from "@/components/ui/custom/pagination";
 import Select from "@/components/ui/custom/select";
@@ -298,8 +295,6 @@ interface JadwalDialogProps {
 
 const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
   const router = useRouter();
-  const [pendaftaranPrefill, setPendaftaranPrefill] =
-    useState<PendaftaranPrefill | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -326,16 +321,18 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
   const groupedEksekutif = groupJadwalByHari(jadwalEksekutif as JadwalDokter[]);
 
   const handleDaftar = (hari: string, jamMulai: string, jamSelesai: string) => {
-    setPendaftaranPrefill({
+    const params = new URLSearchParams({
       poliId: dokter.poli_id,
       poliNama: dokter.poli?.nama_poli || "-",
       dokterId: dokter.id,
       dokterNama: dokter.nama,
-      dokterProfile: dokter.profile,
       hari,
       jamMulai,
       jamSelesai,
     });
+    if (dokter.profile) params.set("dokterProfile", dokter.profile);
+    onClose();
+    router.push(`/sections/pendaftaran?${params.toString()}`);
   };
 
   const handleNavigateToDetail = () => {
@@ -560,15 +557,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
           </motion.div>
         </motion.div>
       </motion.div>
-
-      {/* ── DialogPendaftaran ── */}
-      {pendaftaranPrefill && (
-        <DialogPendaftaran
-          open={!!pendaftaranPrefill}
-          onClose={() => setPendaftaranPrefill(null)}
-          prefill={pendaftaranPrefill}
-        />
-      )}
     </>
   );
 };
