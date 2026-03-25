@@ -2,7 +2,7 @@
 import Animate from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
 import { Profile } from "@/config/profile";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const Kontak = () => {
@@ -22,6 +22,12 @@ const Kontak = () => {
   const handleMapClick = () => {
     window.open(
       `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(Profile.address)}`,
+      "_blank",
+    );
+  };
+  const handleWhatsappCsClick = () => {
+    window.open(
+      `https://wa.me/${Profile.whatsappCs.replace(/^0/, "62")}`,
       "_blank",
     );
   };
@@ -50,6 +56,17 @@ const Kontak = () => {
       valueColor: "text-greenfresh-600",
     },
     {
+      onClick: handleWhatsappCsClick,
+      gradient: "from-emerald-500 to-emerald-600",
+      iconBg: "bg-emerald-100 group-hover:bg-white",
+      Icon: MessageCircle,
+      iconColor: "text-emerald-600",
+      title: "WhatsApp CS",
+      subtitle: "Chat langsung dengan Customer Service",
+      value: Profile.whatsappCs,
+      valueColor: "text-emerald-600",
+    },
+    {
       onClick: handleMapClick,
       gradient: "from-mariner-500 to-mariner-600",
       iconBg: "bg-mariner-100 group-hover:bg-white",
@@ -73,13 +90,13 @@ const Kontak = () => {
           />
         </Animate>
 
-        {/* Cards — equal height via items-stretch on the grid */}
+        {/* Cards — 2×2 grid */}
         <Animate
           type="stagger"
           staggerChildren={0.12}
           delayChildren={0.1}
           ready={dataReady}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 mb-16 items-stretch"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-12 mb-16 items-stretch"
         >
           {cards.map(
             ({
@@ -123,7 +140,7 @@ const Kontak = () => {
                       {subtitle}
                     </p>
 
-                    {/* Value — pushed to bottom so all cards align */}
+                    {/* Value */}
                     <p
                       className={`mt-auto text-center font-semibold text-base ${valueColor} group-hover:text-white transition-colors duration-300 wrap-break-word`}
                     >

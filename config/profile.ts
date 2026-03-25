@@ -11,6 +11,7 @@ export interface Profile {
   phone: string;
   whatsapp: string;
   whatsappHumas: string;
+  whatsappCs: string;
   ambulance: string;
   pusatPanggilan: string;
   email: string;
@@ -46,6 +47,7 @@ export const Profile: Profile = {
   phone: "0317883980",
   whatsapp: "08113015001",
   whatsappHumas: "08113422330",
+  whatsappCs: "08113326757",
   ambulance: "08113087119",
   pusatPanggilan: "0317881130",
   email: "humas@sitikhodijah.com",
