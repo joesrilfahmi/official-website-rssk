@@ -8,9 +8,9 @@ import Hero from "./hero";
 import KamarInap from "./kamar-inap";
 import LayananUnggulan from "./klinik-spesialis";
 import Partner from "./partner-list";
-import Pendaftaran from "./pendaftaran";
+// import Pendaftaran from "./pendaftaran";
 import Review from "./review";
-import BackToTop from "@/components/layout/back-to-top"
+import BackToTop from "@/components/layout/back-to-top";
 // import Chat from "@/components/layout/chat";
 
 export default function App() {
@@ -26,7 +26,7 @@ export default function App() {
       <Berita />
       <Review />
       <Partner />
-      <Pendaftaran />
+      {/* <Pendaftaran /> */}
       <Footer />
     </>
   );
