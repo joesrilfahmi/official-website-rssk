@@ -58,21 +58,21 @@ export default function Navbar() {
   const navItems: NavItem[] = useMemo(
     () => [
       { label: "Beranda", href: "/" },
-      { label: "Rumah Sakit", href: "/sections/rumah-sakit" },
-      { label: "Dokter", href: "/sections/dokter" },
+      { label: "Rumah Sakit", href: "/rumah-sakit" },
+      { label: "Dokter", href: "/jadwal" },
       {
         label: "Informasi",
-dropdown: [
-  { label: "Blog", href: "/sections/blog" },
-  { label: "Formulir", href: "/sections/formulir" },
-  { label: "Kamar Inap", href: "/sections/home/kamar-inap/informasi" },
-  { label: "Klinik Spesialis", href: "/sections/klinik-spesialis" },
-  { label: "Layanan Unggulan", href: "/sections/layanan-unggulan" },
-],
-},
-{ label: "Pendaftaran", href: "/sections/pendaftaran" },
+        dropdown: [
+          { label: "Blog", href: "/blog" },
+          { label: "Formulir", href: "/formulir" },
+          { label: "Kamar Inap", href: "/kamar-inap/informasi" },
+          { label: "Klinik Spesialis", href: "/klinik-spesialis" },
+          { label: "Layanan Unggulan", href: "/layanan" },
+        ],
+      },
+      { label: "Pendaftaran", href: "/pendaftaran" },
       { label: "Kritik & Saran", href: "/feedback-qr-code" },
-      { label: "Kontak", href: "/sections/kontak" },
+      { label: "Kontak", href: "/kontak" },
     ],
     [],
   );

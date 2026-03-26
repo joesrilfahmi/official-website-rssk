@@ -5,13 +5,11 @@ import Banner from "@/components/ui/custom/banner";
 import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import { KamarInap as KamarInapType } from "@/types/index";
-import { ArrowLeft, Bed, CheckCircle2, Star } from "lucide-react";
+import { Bed, CheckCircle2, Star } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const InformasiKamarInap = () => {
-  const router = useRouter();
   const [kamarList, setKamarList] = useState<KamarInapType[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
@@ -62,7 +60,6 @@ const InformasiKamarInap = () => {
 
   const renderKamarCard = (kamar: KamarInapType) => (
     <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group border border-gray-100">
-
       {/* ────────────────────────────────────────────────
           MOBILE  (< md) — stacked: gambar atas, konten bawah
       ──────────────────────────────────────────────── */}
@@ -77,7 +74,9 @@ const InformasiKamarInap = () => {
               sizes="100vw"
               className="object-cover group-hover:scale-105 transition-transform duration-300"
               priority={kamar.is_recommended}
-              onError={(e) => { e.currentTarget.style.display = "none"; }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -94,10 +93,16 @@ const InformasiKamarInap = () => {
 
         {/* Konten */}
         <div className="p-5">
-          <h3 className="text-xl font-bold text-mariner-600 mb-2">{kamar.title}</h3>
-          <p className="text-gray-500 text-sm leading-relaxed mb-4">{kamar.description}</p>
+          <h3 className="text-xl font-bold text-mariner-600 mb-2">
+            {kamar.title}
+          </h3>
+          <p className="text-gray-500 text-sm leading-relaxed mb-4">
+            {kamar.description}
+          </p>
 
-          <h4 className="text-gray-700 font-semibold text-sm mb-3">Fasilitas Kamar</h4>
+          <h4 className="text-gray-700 font-semibold text-sm mb-3">
+            Fasilitas Kamar
+          </h4>
           <div
             className={
               kamar.facilities && kamar.facilities.length > 6
@@ -108,7 +113,9 @@ const InformasiKamarInap = () => {
             {kamar.facilities?.map((facility: string, idx: number) => (
               <div key={idx} className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-greenfresh-500 mt-0.5 shrink-0" />
-                <span className="text-gray-600 text-xs leading-relaxed">{facility}</span>
+                <span className="text-gray-600 text-xs leading-relaxed">
+                  {facility}
+                </span>
               </div>
             ))}
           </div>
@@ -120,7 +127,9 @@ const InformasiKamarInap = () => {
               <span className="text-2xl font-bold text-mariner-600">
                 {formatPrice(kamar.price).replace(/\s/g, "")}
               </span>
-              <span className="text-sm font-medium text-mariner-500">/Hari</span>
+              <span className="text-sm font-medium text-mariner-500">
+                /Hari
+              </span>
             </div>
           </div>
         </div>
@@ -140,7 +149,9 @@ const InformasiKamarInap = () => {
               sizes="224px"
               className="object-cover group-hover:scale-105 transition-transform duration-300"
               priority={kamar.is_recommended}
-              onError={(e) => { e.currentTarget.style.display = "none"; }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -158,11 +169,15 @@ const InformasiKamarInap = () => {
         {/* Konten */}
         <div className="flex-1 p-6 flex flex-col justify-between min-h-0">
           <div>
-            <h3 className="text-xl font-bold text-mariner-600 mb-2">{kamar.title}</h3>
+            <h3 className="text-xl font-bold text-mariner-600 mb-2">
+              {kamar.title}
+            </h3>
             <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-3">
               {kamar.description}
             </p>
-            <h4 className="text-gray-700 font-semibold text-sm mb-3">Fasilitas Kamar</h4>
+            <h4 className="text-gray-700 font-semibold text-sm mb-3">
+              Fasilitas Kamar
+            </h4>
             <div
               className={
                 kamar.facilities && kamar.facilities.length > 6
@@ -173,7 +188,9 @@ const InformasiKamarInap = () => {
               {kamar.facilities?.map((facility: string, idx: number) => (
                 <div key={idx} className="flex items-start gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-greenfresh-500 mt-0.5 shrink-0" />
-                  <span className="text-gray-600 text-xs leading-relaxed">{facility}</span>
+                  <span className="text-gray-600 text-xs leading-relaxed">
+                    {facility}
+                  </span>
                 </div>
               ))}
             </div>
@@ -186,7 +203,9 @@ const InformasiKamarInap = () => {
               <span className="text-2xl font-bold text-mariner-600">
                 {formatPrice(kamar.price).replace(/\s/g, "")}
               </span>
-              <span className="text-sm font-medium text-mariner-500">/Hari</span>
+              <span className="text-sm font-medium text-mariner-500">
+                /Hari
+              </span>
             </div>
           </div>
         </div>
@@ -202,7 +221,6 @@ const InformasiKamarInap = () => {
             <h3 className="text-2xl xl:text-3xl font-bold text-mariner-600">
               {kamar.title}
             </h3>
-
           </div>
 
           <p className="text-gray-500 text-sm xl:text-base leading-relaxed mb-6">
@@ -222,7 +240,9 @@ const InformasiKamarInap = () => {
             {kamar.facilities?.map((facility: string, idx: number) => (
               <div key={idx} className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-greenfresh-500 mt-0.5 shrink-0" />
-                <span className="text-gray-600 text-sm leading-relaxed">{facility}</span>
+                <span className="text-gray-600 text-sm leading-relaxed">
+                  {facility}
+                </span>
               </div>
             ))}
           </div>
@@ -239,7 +259,9 @@ const InformasiKamarInap = () => {
                 sizes="390px"
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 priority={kamar.is_recommended}
-                onError={(e) => { e.currentTarget.style.display = "none"; }}
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -260,7 +282,9 @@ const InformasiKamarInap = () => {
               <span className="text-3xl xl:text-4xl font-bold text-mariner-600">
                 {formatPrice(kamar.price).replace(/\s/g, "")}
               </span>
-              <span className="text-base font-medium text-mariner-500">/Hari</span>
+              <span className="text-base font-medium text-mariner-500">
+                /Hari
+              </span>
             </div>
           </div>
         </div>
@@ -272,7 +296,10 @@ const InformasiKamarInap = () => {
   const renderSkeleton = () => (
     <div className="space-y-5 lg:space-y-8">
       {[...Array(3)].map((_, i) => (
-        <div key={i} className="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse border border-gray-100">
+        <div
+          key={i}
+          className="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse border border-gray-100"
+        >
           {/* Mobile skeleton */}
           <div className="flex flex-col md:hidden">
             <div className="w-full h-52 bg-gray-200" />
@@ -284,7 +311,10 @@ const InformasiKamarInap = () => {
                 {[...Array(6)].map((_, j) => (
                   <div key={j} className="flex items-center gap-2">
                     <div className="w-3.5 h-3.5 rounded-full bg-gray-200 shrink-0" />
-                    <div className="h-3 bg-gray-200 rounded" style={{ width: `${50 + (j % 3) * 20}%` }} />
+                    <div
+                      className="h-3 bg-gray-200 rounded"
+                      style={{ width: `${50 + (j % 3) * 20}%` }}
+                    />
                   </div>
                 ))}
               </div>
@@ -304,7 +334,10 @@ const InformasiKamarInap = () => {
                 {[...Array(6)].map((_, j) => (
                   <div key={j} className="flex items-center gap-2">
                     <div className="w-3.5 h-3.5 rounded-full bg-gray-200 shrink-0" />
-                    <div className="h-3 bg-gray-200 rounded" style={{ width: `${50 + (j % 3) * 20}%` }} />
+                    <div
+                      className="h-3 bg-gray-200 rounded"
+                      style={{ width: `${50 + (j % 3) * 20}%` }}
+                    />
                   </div>
                 ))}
               </div>
@@ -328,7 +361,10 @@ const InformasiKamarInap = () => {
                 {[...Array(8)].map((_, j) => (
                   <div key={j} className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded-full bg-gray-200 shrink-0" />
-                    <div className="h-4 bg-gray-200 rounded" style={{ width: `${55 + (j % 3) * 15}%` }} />
+                    <div
+                      className="h-4 bg-gray-200 rounded"
+                      style={{ width: `${55 + (j % 3) * 15}%` }}
+                    />
                   </div>
                 ))}
               </div>
@@ -349,20 +385,6 @@ const InformasiKamarInap = () => {
   return (
     <div className="bg-gray-50 pt-20 sm:pt-24 min-h-screen pb-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-
-        {/* Tombol Kembali */}
-        <Animate type="fadein" duration={0.5} ready={!loading}>
-          <button
-            onClick={() => router.back()}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors duration-150 group mt-4 sm:mt-0"
-          >
-            <span className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:border-gray-300 transition-all duration-150 shadow-sm">
-              <ArrowLeft className="w-4 h-4" />
-            </span>
-            Kembali
-          </button>
-        </Animate>
-
         {/* Banner */}
         <Animate type="fadein" ready={dataReady}>
           <Banner
@@ -372,7 +394,6 @@ const InformasiKamarInap = () => {
         </Animate>
 
         <div className="py-10 lg:py-16">
-
           {/* Header */}
           <Animate type="fadein" ready={dataReady} delay={0.05}>
             <div className="text-center mb-8 lg:mb-12">

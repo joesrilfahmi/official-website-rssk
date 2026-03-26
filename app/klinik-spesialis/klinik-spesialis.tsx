@@ -13,7 +13,6 @@ import { AnimatePresence, motion, type Transition } from "framer-motion";
 import * as Icons from "lucide-react";
 import {
   AlertCircle,
-  ArrowLeft,
   ArrowRight,
   Calendar,
   ChevronDown,
@@ -911,7 +910,6 @@ const SkeletonCard = () => (
    MAIN COMPONENT
 ───────────────────────────────────────── */
 const KlinikSpesialis = () => {
-  const router = useRouter();
   const [layananList, setLayananList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
@@ -984,18 +982,6 @@ const KlinikSpesialis = () => {
 
       <div className="bg-gray-50 pt-24 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <Animate type="fadein" duration={0.5} ready={!loading}>
-            <button
-              onClick={() => router.back()}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors duration-150 group"
-            >
-              <span className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:border-gray-300 transition-all duration-150 shadow-sm">
-                <ArrowLeft className="w-4 h-4" />
-              </span>
-              Kembali
-            </button>
-          </Animate>
-
           <Animate type="fadein" ready={dataReady}>
             <Banner
               title="Klinik Spesialis"
