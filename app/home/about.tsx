@@ -370,7 +370,7 @@ const About = () => {
                 transition={{ duration: 0.2 } satisfies Transition}
                 className="inline-block"
               >
-                <Link href="/sections/rumah-sakit">
+                <Link href="/rumah-sakit">
                   <Button variant="primary" size="lg" className="group gap-2">
                     Selengkapnya
                     <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform duration-200" />

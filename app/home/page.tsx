@@ -1,4 +1,4 @@
-// app/sections/home/page.tsx
+// app/home/page.tsx
 
 import Footer from "@/components/layout/footer";
 import Navbar from "@/components/layout/navbar";

@@ -1,4 +1,4 @@
-// app/sections/dokter/dokter.tsx
+// app/dokter/dokter.tsx
 "use client";
 import Animate, {
   ease,
@@ -332,7 +332,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
     });
     if (dokter.profile) params.set("dokterProfile", dokter.profile);
     onClose();
-    router.push(`/sections/pendaftaran?${params.toString()}`);
+    router.push(`/pendaftaran?${params.toString()}`);
   };
 
   const handleNavigateToDetail = () => {

@@ -84,7 +84,7 @@ const KenapaMemilih: React.FC = () => {
       color: "text-red-500",
       bgIcon: "bg-red-50",
       onClick: () => {
-        window.location.href = "/sections/dokter";
+        window.location.href = "/jadwal";
       },
     },
     {

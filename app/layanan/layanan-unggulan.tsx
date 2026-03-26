@@ -248,7 +248,7 @@ function TabCarousel({ activeTab, onTabChange }: TabCarouselProps) {
 }
 
 // ── JadwalDialog per dokter ────────────────────────────────────────────────
-// PERUBAHAN: tombol "Daftar" eksekutif → redirect ke /sections/pendaftaran
+// PERUBAHAN: tombol "Daftar" eksekutif → redirect ke /pendaftaran
 
 interface JadwalDialogProps {
   dokter: DokterItem["dokter"] & { id: string };
@@ -348,7 +348,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
       slots: g.slots.filter((s) => s.tipe_jadwal === "eksekutif"),
     }));
 
-  /* ── PERUBAHAN: redirect ke /sections/pendaftaran ── */
+  /* ── PERUBAHAN: redirect ke /pendaftaran ── */
   const handleDaftar = (hari: string, jamMulai: string, jamSelesai: string) => {
     const params = new URLSearchParams({
       poliId,
@@ -361,7 +361,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
     });
     if (dokter.profile) params.set("dokterProfile", dokter.profile);
     onClose();
-    router.push(`/sections/pendaftaran?${params.toString()}`);
+    router.push(`/pendaftaran?${params.toString()}`);
   };
 
   const renderGrouped = (

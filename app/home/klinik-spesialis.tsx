@@ -1,4 +1,4 @@
-// app/sections/home/klinik-spesialis.tsx
+// app/home/klinik-spesialis.tsx
 "use client";
 import Animate, {
   ease,
@@ -250,7 +250,7 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): GroupedJadwal[] {
 /* ─────────────────────────────────────────
    JADWAL DIALOG
    PERUBAHAN:
-   - Tombol "Daftar" eksekutif → redirect ke /sections/pendaftaran
+   - Tombol "Daftar" eksekutif → redirect ke /pendaftaran
      dengan query params (poliId, dokterId, hari, jamMulai, jamSelesai)
 ───────────────────────────────────────── */
 interface JadwalDialogProps {
@@ -294,7 +294,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
   const groupedReguler = groupJadwalByHari(jadwalReguler);
   const groupedEksekutif = groupJadwalByHari(jadwalEksekutif);
 
-  /* ── PERUBAHAN: redirect ke /sections/pendaftaran ── */
+  /* ── PERUBAHAN: redirect ke /pendaftaran ── */
   const handleDaftar = (hari: string, jamMulai: string, jamSelesai: string) => {
     const params = new URLSearchParams({
       poliId,
@@ -307,7 +307,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
     });
     if (dokter.profile) params.set("dokterProfile", dokter.profile);
     onClose();
-    router.push(`/sections/pendaftaran?${params.toString()}`);
+    router.push(`/pendaftaran?${params.toString()}`);
   };
 
   const handleNavigateToDetail = () => {
@@ -1092,7 +1092,7 @@ const KlinikSpesialis = () => {
                     transition={{ duration: 0.2 } satisfies Transition}
                     className="inline-block"
                   >
-                    <Link href="/sections/klinik-spesialis">
+                    <Link href="/klinik-spesialis">
                       <Button
                         variant="primary"
                         size="lg"

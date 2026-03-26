@@ -1,4 +1,4 @@
-// app/sections/blog/blog.tsx
+// app/blog/blog.tsx
 "use client";
 import Animate from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
@@ -195,7 +195,7 @@ const Blog = () => {
   };
 
   const handleBeritaClick = (b: BeritaWithAuthor) =>
-    router.push(`/sections/blog/detail/${b.id}`);
+    router.push(`/blog/detail/${b.id}`);
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("id-ID", {

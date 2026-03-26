@@ -39,7 +39,7 @@ const formList: FormItem[] = [
     title: "Formulir Persetujuan Pembayaran Uang Muka",
     description:
       "Formulir ini berfungsi sebagai bukti persetujuan pembayaran uang muka atas layanan yang akan diberikan. Pengisian formulir ini menandakan bahwa pihak terkait memahami dan menyetujui kewajiban pembayaran sesuai dengan ketentuan yang telah ditetapkan.",
-    link: "/sections/formulir/persetujuan-pembayaran-uang-muka",
+    link: "/formulir/persetujuan-pembayaran-uang-muka",
     Icon: ClipboardList,
     category: "Pembayaran",
     gradient: "from-bittersweet-500 to-bittersweet-600",

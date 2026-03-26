@@ -1,4 +1,4 @@
-// app/sections/home/hero.tsx
+// app/home/hero.tsx
 "use client";
 import Animate, {
   ease,
@@ -102,7 +102,11 @@ function useCountUp(target: number, duration = 1800, delay = 0) {
 const TrustIndicators: React.FC = () => {
   const yearsTarget = new Date().getFullYear() - Profile.since;
   const { count: yearsCount, ref: yearsRef } = useCountUp(yearsTarget, 1600);
-  const { count: emergencyCount, ref: emergencyRef } = useCountUp(24, 1200, 200);
+  const { count: emergencyCount, ref: emergencyRef } = useCountUp(
+    24,
+    1200,
+    200,
+  );
 
   return (
     <div className="flex flex-wrap gap-8 pt-2 justify-center lg:justify-start">
@@ -150,7 +154,6 @@ interface Promo {
   end_date: string | null;
 }
 
-
 /* ─────────────────────────────────────────
    IMAGE LIGHTBOX
 ───────────────────────────────────────── */
@@ -169,7 +172,9 @@ const ImageLightbox: React.FC<{
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, []);
 
   return (
@@ -283,7 +288,10 @@ const PromoScrollBodyFull: React.FC<{
       <div
         ref={ref}
         className="promo-scroll overflow-y-auto h-full px-6 pt-5 pb-6 space-y-4"
-        style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(0,0,0,0.15) transparent" }}
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(0,0,0,0.15) transparent",
+        }}
       >
         {/* Tanggal dibuat — mobile only */}
         <div className="flex items-center gap-2 text-gray-400 text-xs sm:hidden">
@@ -299,7 +307,9 @@ const PromoScrollBodyFull: React.FC<{
           </div>
         )}
 
-        <p className="text-gray-600 text-sm leading-relaxed">{promo.description}</p>
+        <p className="text-gray-600 text-sm leading-relaxed">
+          {promo.description}
+        </p>
       </div>
     </div>
   );
@@ -328,7 +338,9 @@ const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, []);
 
   const formattedDate = new Date(promo.created_at).toLocaleDateString("id-ID", {
@@ -380,12 +392,22 @@ const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
           <div className="relative w-full h-72 sm:h-auto sm:w-72 md:w-80 shrink-0 bg-linear-to-br from-easternblue-500 to-easternblue-700 overflow-hidden">
             {promo.picture ? (
               <>
-                <Image src={promo.picture} alt={promo.title} fill className="object-cover" />
+                <Image
+                  src={promo.picture}
+                  alt={promo.title}
+                  fill
+                  className="object-cover"
+                />
                 <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.35, duration: 0.4, ease } satisfies Transition}
-                  whileHover={{ scale: 1.08, backgroundColor: "rgba(0,0,0,0.55)" }}
+                  transition={
+                    { delay: 0.35, duration: 0.4, ease } satisfies Transition
+                  }
+                  whileHover={{
+                    scale: 1.08,
+                    backgroundColor: "rgba(0,0,0,0.55)",
+                  }}
                   whileTap={{ scale: 0.94 }}
                   onClick={() => setLightboxOpen(true)}
                   aria-label="Lihat gambar penuh"
@@ -403,14 +425,18 @@ const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
             <motion.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.28, duration: 0.55, ease } satisfies Transition}
+              transition={
+                { delay: 0.28, duration: 0.55, ease } satisfies Transition
+              }
               className="absolute bottom-0 left-0 right-0 px-5 pb-5 sm:hidden"
             >
               <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm border border-white/20 text-white/90 text-[10px] font-bold uppercase tracking-[0.14em] px-2.5 py-1 rounded-full mb-2">
                 <Sparkles className="w-2.5 h-2.5" />
                 Promo Spesial
               </span>
-              <h2 className="text-white text-xl font-bold leading-snug pr-10">{promo.title}</h2>
+              <h2 className="text-white text-xl font-bold leading-snug pr-10">
+                {promo.title}
+              </h2>
             </motion.div>
           </div>
 
@@ -419,7 +445,9 @@ const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5, ease } satisfies Transition}
+              transition={
+                { delay: 0.2, duration: 0.5, ease } satisfies Transition
+              }
               className="hidden sm:block px-7 pt-7 pb-4 shrink-0"
             >
               <span className="inline-flex items-center gap-1.5 bg-easternblue-50 border border-easternblue-100 text-easternblue-600 text-[10px] font-bold uppercase tracking-[0.14em] px-2.5 py-1 rounded-full mb-3">
@@ -438,10 +466,15 @@ const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.28, duration: 0.5, ease } satisfies Transition}
+              transition={
+                { delay: 0.28, duration: 0.5, ease } satisfies Transition
+              }
               className="flex-1 min-h-0 overflow-hidden"
             >
-              <PromoScrollBodyFull promo={promo} formattedDate={formattedDate} />
+              <PromoScrollBodyFull
+                promo={promo}
+                formattedDate={formattedDate}
+              />
             </motion.div>
           </div>
         </motion.div>
@@ -501,7 +534,9 @@ const Hero: React.FC = () => {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const nextSlide = useCallback(() => {
@@ -511,7 +546,9 @@ const Hero: React.FC = () => {
 
   const prevSlide = useCallback(() => {
     if (promoImages.length > 0)
-      setCurrentSlide((prev) => (prev - 1 + promoImages.length) % promoImages.length);
+      setCurrentSlide(
+        (prev) => (prev - 1 + promoImages.length) % promoImages.length,
+      );
   }, [promoImages.length]);
 
   useEffect(() => {
@@ -521,8 +558,14 @@ const Hero: React.FC = () => {
     }
   }, [isHovered, isDragging, selectedPromo, nextSlide, promoImages.length]);
 
-  const handleDragStart = (clientX: number) => { setIsDragging(true); setStartX(clientX); };
-  const handleDragMove = (clientX: number) => { if (!isDragging) return; setTranslateX(clientX - startX); };
+  const handleDragStart = (clientX: number) => {
+    setIsDragging(true);
+    setStartX(clientX);
+  };
+  const handleDragMove = (clientX: number) => {
+    if (!isDragging) return;
+    setTranslateX(clientX - startX);
+  };
   const handleDragEnd = () => {
     if (!isDragging) return;
     setIsDragging(false);
@@ -539,7 +582,10 @@ const Hero: React.FC = () => {
     <>
       <AnimatePresence>
         {selectedPromo && (
-          <PromoDialog promo={selectedPromo} onClose={() => setSelectedPromo(null)} />
+          <PromoDialog
+            promo={selectedPromo}
+            onClose={() => setSelectedPromo(null)}
+          />
         )}
       </AnimatePresence>
 
@@ -580,20 +626,23 @@ const Hero: React.FC = () => {
               </Animate>
               <Animate type="fadein">
                 <p className="text-lg text-white/75 leading-relaxed max-w-md mx-auto lg:mx-0">
-                  Selamat Datang di Rumah Sakit {Profile.name} {Profile.subtitle}. Kami
-                  memastikan layanan eksekutif yang bermanfaat bagi masyarakat.
+                  Selamat Datang di Rumah Sakit {Profile.name}{" "}
+                  {Profile.subtitle}. Kami memastikan layanan eksekutif yang
+                  bermanfaat bagi masyarakat.
                 </p>
               </Animate>
               <Animate type="fadein">
                 <div className="flex flex-wrap gap-3 pt-1 justify-center lg:justify-start">
-                  <Link href="sections/pendaftaran">
+                  <Link href="/pendaftaran">
                     <Button variant="primary" size="lg" className="group gap-2">
                       Buat Janji
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
                     </Button>
                   </Link>
-                  <Link href="/sections/kontak">
-                    <Button variant="outline" size="lg">Kontak Kami</Button>
+                  <Link href="/kontak">
+                    <Button variant="outline" size="lg">
+                      Kontak Kami
+                    </Button>
                   </Link>
                 </div>
               </Animate>
@@ -611,7 +660,10 @@ const Hero: React.FC = () => {
             >
               <div
                 onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => { setIsHovered(false); if (isDragging) handleDragEnd(); }}
+                onMouseLeave={() => {
+                  setIsHovered(false);
+                  if (isDragging) handleDragEnd();
+                }}
                 className="relative w-full max-w-[340px] sm:max-w-[375px]"
               >
                 <div className="absolute -inset-6 bg-white/8 rounded-[3rem] blur-2xl" />
@@ -639,12 +691,24 @@ const Hero: React.FC = () => {
                           key="skeleton"
                           initial={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          transition={{ duration: 0.5, ease: easeOut } satisfies Transition}
+                          transition={
+                            {
+                              duration: 0.5,
+                              ease: easeOut,
+                            } satisfies Transition
+                          }
                           className="absolute inset-0 bg-linear-to-br from-easternblue-400/20 to-easternblue-700/20"
                         >
                           <motion.div
                             animate={{ x: ["-100%", "200%"] }}
-                            transition={{ repeat: Infinity, duration: 1.6, ease: "linear", repeatDelay: 0.3 } satisfies Transition}
+                            transition={
+                              {
+                                repeat: Infinity,
+                                duration: 1.6,
+                                ease: "linear",
+                                repeatDelay: 0.3,
+                              } satisfies Transition
+                            }
                             className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent skew-x-12"
                           />
                         </motion.div>
@@ -657,82 +721,100 @@ const Hero: React.FC = () => {
                           key="empty"
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.5, ease } satisfies Transition}
+                          transition={
+                            { duration: 0.5, ease } satisfies Transition
+                          }
                           className="absolute inset-0 flex flex-col items-center justify-center gap-3"
                         >
                           <Sparkles className="w-10 h-10 text-white/20" />
-                          <p className="text-white/40 text-sm font-medium">Belum ada promo aktif</p>
+                          <p className="text-white/40 text-sm font-medium">
+                            Belum ada promo aktif
+                          </p>
                         </motion.div>
                       )}
                     </AnimatePresence>
 
-                    {!loading && promoImages.length > 0 && promoImages.map((promo, index) => (
-                      <AnimatePresence key={promo.id} initial={false}>
-                        {index === currentSlide && (
-                          <motion.div
-                            key={`slide-${promo.id}`}
-                            initial={{ opacity: 0, scale: 1.03 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.98 }}
-                            transition={{ duration: 0.75, ease: [0.4, 0, 0.2, 1] } satisfies Transition}
-                            className="absolute inset-0"
-                            style={{
-                              transform: isDragging ? `translateX(${translateX}px)` : undefined,
-                              transition: isDragging ? "none" : undefined,
-                            }}
-                            onClick={() => handleSlideClick(promo)}
-                          >
-                            {promo.picture ? (
-                              <Image
-                                src={promo.picture}
-                                alt={promo.title}
-                                fill
-                                className="object-cover pointer-events-none"
-                                priority={index === 0}
-                                draggable={false}
-                              />
-                            ) : (
-                              <div className="absolute inset-0 bg-linear-to-br from-easternblue-400 to-easternblue-700" />
-                            )}
-                            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent" />
+                    {!loading &&
+                      promoImages.length > 0 &&
+                      promoImages.map((promo, index) => (
+                        <AnimatePresence key={promo.id} initial={false}>
+                          {index === currentSlide && (
                             <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.2, duration: 0.55, ease } satisfies Transition}
-                              className="absolute bottom-0 left-0 right-0 p-5 pt-12"
+                              key={`slide-${promo.id}`}
+                              initial={{ opacity: 0, scale: 1.03 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.98 }}
+                              transition={
+                                {
+                                  duration: 0.75,
+                                  ease: [0.4, 0, 0.2, 1],
+                                } satisfies Transition
+                              }
+                              className="absolute inset-0"
+                              style={{
+                                transform: isDragging
+                                  ? `translateX(${translateX}px)`
+                                  : undefined,
+                                transition: isDragging ? "none" : undefined,
+                              }}
+                              onClick={() => handleSlideClick(promo)}
                             >
-                              <p className="text-white/55 text-[10px] font-semibold uppercase tracking-[0.15em] mb-1.5">
-                                Promo Spesial
-                              </p>
-                              <h3 className="text-white font-bold text-base leading-snug line-clamp-2">
-                                {promo.title}
-                              </h3>
-                              <p className="text-white/50 text-xs mt-1.5 line-clamp-2 leading-relaxed">
-                                {promo.description}
-                              </p>
-                              {/* Tampilkan rentang tanggal di slide */}
-                              {(promo.start_date || promo.end_date) && (
-                                <div className="mt-2 flex items-center gap-1.5 text-white/40 text-[10px]">
-                                  <Calendar className="w-3 h-3" />
-                                  <span>
-                                    {promo.start_date && promo.end_date
-                                      ? `${new Date(promo.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "short" })} – ${new Date(promo.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
-                                      : promo.end_date
-                                      ? `Hingga ${new Date(promo.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
-                                      : `Mulai ${new Date(promo.start_date!).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
-                                    }
-                                  </span>
-                                </div>
+                              {promo.picture ? (
+                                <Image
+                                  src={promo.picture}
+                                  alt={promo.title}
+                                  fill
+                                  className="object-cover pointer-events-none"
+                                  priority={index === 0}
+                                  draggable={false}
+                                />
+                              ) : (
+                                <div className="absolute inset-0 bg-linear-to-br from-easternblue-400 to-easternblue-700" />
                               )}
-                              <div className="mt-2 flex items-center gap-1.5 text-white/50 text-[11px]">
-                                <ExternalLink className="w-3 h-3" />
-                                <span>Tap untuk selengkapnya</span>
-                              </div>
+                              <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent" />
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={
+                                  {
+                                    delay: 0.2,
+                                    duration: 0.55,
+                                    ease,
+                                  } satisfies Transition
+                                }
+                                className="absolute bottom-0 left-0 right-0 p-5 pt-12"
+                              >
+                                <p className="text-white/55 text-[10px] font-semibold uppercase tracking-[0.15em] mb-1.5">
+                                  Promo Spesial
+                                </p>
+                                <h3 className="text-white font-bold text-base leading-snug line-clamp-2">
+                                  {promo.title}
+                                </h3>
+                                <p className="text-white/50 text-xs mt-1.5 line-clamp-2 leading-relaxed">
+                                  {promo.description}
+                                </p>
+                                {/* Tampilkan rentang tanggal di slide */}
+                                {(promo.start_date || promo.end_date) && (
+                                  <div className="mt-2 flex items-center gap-1.5 text-white/40 text-[10px]">
+                                    <Calendar className="w-3 h-3" />
+                                    <span>
+                                      {promo.start_date && promo.end_date
+                                        ? `${new Date(promo.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "short" })} – ${new Date(promo.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
+                                        : promo.end_date
+                                          ? `Hingga ${new Date(promo.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
+                                          : `Mulai ${new Date(promo.start_date!).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="mt-2 flex items-center gap-1.5 text-white/50 text-[11px]">
+                                  <ExternalLink className="w-3 h-3" />
+                                  <span>Tap untuk selengkapnya</span>
+                                </div>
+                              </motion.div>
                             </motion.div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    ))}
+                          )}
+                        </AnimatePresence>
+                      ))}
                   </div>
 
                   <AnimatePresence>
@@ -741,7 +823,9 @@ const Hero: React.FC = () => {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.4, ease } satisfies Transition}
+                        transition={
+                          { duration: 0.4, ease } satisfies Transition
+                        }
                         className="flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-sm border-t border-white/8"
                       >
                         <div className="flex items-center gap-1.5">
@@ -752,9 +836,17 @@ const Hero: React.FC = () => {
                               aria-label={`Slide ${idx + 1}`}
                               animate={{
                                 width: idx === currentSlide ? 18 : 6,
-                                backgroundColor: idx === currentSlide ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)",
+                                backgroundColor:
+                                  idx === currentSlide
+                                    ? "rgba(255,255,255,0.9)"
+                                    : "rgba(255,255,255,0.3)",
                               }}
-                              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] } satisfies Transition}
+                              transition={
+                                {
+                                  duration: 0.4,
+                                  ease: [0.22, 1, 0.36, 1],
+                                } satisfies Transition
+                              }
                               className="h-1.5 rounded-full"
                             />
                           ))}

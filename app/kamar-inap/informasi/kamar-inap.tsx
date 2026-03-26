@@ -1,4 +1,4 @@
-// app/sections/home/kamar-inap/informasi/page.tsx
+// app/home/kamar-inap/informasi/page.tsx
 "use client";
 import Animate from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";

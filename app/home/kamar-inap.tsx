@@ -1,4 +1,4 @@
-// app/sections/home/kamar-inap.tsx
+// app/home/kamar-inap.tsx
 "use client";
 import Animate, { ease, easeOut } from "@/components/animations/animate";
 import Button from "@/components/ui/custom/button";
@@ -403,7 +403,11 @@ const KamarInap = () => {
               className="hidden lg:grid grid-cols-3 gap-6 sm:gap-8 mb-12 items-stretch"
             >
               {sortedKamarList.slice(0, 3).map((kamar, index) => (
-                <KamarCard key={kamar.id} kamar={kamar} isFeatured={index === 1} />
+                <KamarCard
+                  key={kamar.id}
+                  kamar={kamar}
+                  isFeatured={index === 1}
+                />
               ))}
             </Animate>
 
@@ -443,7 +447,7 @@ const KamarInap = () => {
                 transition={{ duration: 0.2 } satisfies Transition}
                 className="inline-block"
               >
-                <Link href="/sections/home/kamar-inap/informasi">
+                <Link href="/kamar-inap/informasi">
                   <Button
                     variant="primary"
                     size="lg"

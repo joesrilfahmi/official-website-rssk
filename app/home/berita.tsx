@@ -83,10 +83,7 @@ const BeritaCard: React.FC<BeritaCardProps> = ({ berita, index }) => {
 
   return (
     <motion.div variants={cardWrapVariants} className="h-full">
-      <Link
-        href={`/sections/blog/detail/${berita.id}`}
-        className="block h-full group"
-      >
+      <Link href={`/blog/detail/${berita.id}`} className="block h-full group">
         <div className="h-full flex flex-col">
           {/* Number watermark */}
           <motion.div
@@ -317,7 +314,7 @@ export default function BeritaSection() {
                 transition={{ duration: 0.2 } satisfies Transition}
                 className="inline-block"
               >
-                <Link href="/sections/blog">
+                <Link href="/blog">
                   <Button
                     variant="primary"
                     size="lg"

@@ -327,7 +327,7 @@ export default function PartnerSection() {
             transition={{ duration: 0.2 }}
             className="inline-block"
           >
-            <Link href="/sections/partner">
+            <Link href="/partner">
               <Button variant="primary" size="lg" className="group shadow-lg">
                 Selengkapnya
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />

@@ -102,7 +102,7 @@ const BeritaDetailPage = () => {
   };
 
   const handleArticleClick = (id: string) => router.push(`/blog/detail/${id}`);
-  const handleBackToBlog = () => router.push("/sections/blog");
+  const handleBackToBlog = () => router.push("/blog");
 
   /* ── Widget wrapper ── */
   const Widget = ({
