@@ -24,6 +24,27 @@ import { useEffect, useMemo, useState } from "react";
 
 const ITEMS_PER_PAGE = 5;
 
+/* ─────────────────────────────────────────
+   useDebounce — generic debounce hook
+   Menunda pembaruan nilai selama `delay` ms
+   setelah perubahan terakhir.
+───────────────────────────────────────── */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 const Blog = () => {
   const router = useRouter();
   const [beritaList, setBeritaList] = useState<BeritaWithAuthor[]>([]);
@@ -32,11 +53,20 @@ const Blog = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
+
+  // ── Raw input state (langsung terupdate saat user mengetik/memilih) ──
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedTag, setSelectedTag] = useState<string>("");
-  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
+
   const [currentPage, setCurrentPage] = useState(1);
+
+  // ── Debounced state (digunakan untuk filtering) ──
+  // searchQuery: 400 ms — user mengetik huruf demi huruf
+  const debouncedSearch = useDebounce(searchQuery, 400);
+  // selectedCategory & selectedTag: 200 ms — interaksi klik lebih cepat
+  const debouncedCategory = useDebounce(selectedCategory, 200);
+  const debouncedTag = useDebounce(selectedTag, 200);
 
   // Embla carousel untuk category pills
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -62,14 +92,10 @@ const Blog = () => {
     };
   }, [emblaApi]);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchQuery), 500);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
-
+  // ── Reset ke halaman 1 hanya saat debounced filter berubah ──
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, selectedCategory, selectedTag]);
+  }, [debouncedSearch, debouncedCategory, debouncedTag]);
 
   useEffect(() => {
     fetchData();
@@ -120,6 +146,8 @@ const Blog = () => {
     }
   };
 
+  // ── Semua useMemo di bawah menggunakan nilai debounced ──
+
   const searchFilteredBerita = useMemo(
     () =>
       beritaList.filter((b) => {
@@ -151,13 +179,13 @@ const Blog = () => {
           )
             return false;
         }
-        if (selectedCategory !== "all" && b.category !== selectedCategory)
+        if (debouncedCategory !== "all" && b.category !== debouncedCategory)
           return false;
-        if (selectedTag && (!b.tags || !b.tags.includes(selectedTag)))
+        if (debouncedTag && (!b.tags || !b.tags.includes(debouncedTag)))
           return false;
         return true;
       }),
-    [beritaList, debouncedSearch, selectedCategory, selectedTag],
+    [beritaList, debouncedSearch, debouncedCategory, debouncedTag],
   );
 
   const totalPages = Math.ceil(filteredBerita.length / ITEMS_PER_PAGE);
@@ -166,6 +194,7 @@ const Blog = () => {
     currentPage * ITEMS_PER_PAGE,
   );
 
+  // ── Handler: update raw state saja, debounce bekerja otomatis ──
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     if (value) {
@@ -316,7 +345,7 @@ const Blog = () => {
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-8 mt-10">
           {/* ── Main content (3/5) ── */}
           <div className="xl:col-span-3 flex flex-col gap-6">
-            {/* Search input */}
+            {/* Search input — bind ke raw searchQuery */}
             <Animate
               type="slideright"
               duration={0.7}
@@ -346,7 +375,7 @@ const Blog = () => {
               </div>
             </Animate>
 
-            {/* Category pills carousel */}
+            {/* Category pills carousel — bind ke raw selectedCategory */}
             {!loading && categories.length > 0 && (
               <Animate type="fadein" ready={dataReady} delay={0.08}>
                 <div className="relative -mx-4 px-4 space-y-2">
@@ -405,7 +434,7 @@ const Blog = () => {
               </Animate>
             )}
 
-            {/* Active tag chip */}
+            {/* Active tag chip — bind ke raw selectedTag */}
             {selectedTag && (
               <Animate type="popin" duration={0.4}>
                 <div className="flex items-center gap-2">
@@ -422,7 +451,7 @@ const Blog = () => {
               </Animate>
             )}
 
-            {/* Loading skeleton — card artikel */}
+            {/* Loading skeleton */}
             <AnimatePresence>
               {loading && (
                 <motion.div
@@ -437,30 +466,21 @@ const Blog = () => {
                       key={i}
                       className="bg-white rounded-2xl ring-1 ring-gray-100 animate-pulse overflow-hidden flex flex-col"
                     >
-                      {/* Thumbnail */}
                       <div className="w-full h-56 bg-gray-200" />
-
                       <div className="flex flex-col flex-1 p-5 space-y-3">
-                        {/* Meta: tanggal | penulis */}
                         <div className="flex items-center gap-3">
                           <div className="h-3.5 w-28 bg-gray-100 rounded" />
                           <div className="h-3.5 w-px bg-gray-200" />
                           <div className="h-3.5 w-24 bg-gray-100 rounded" />
                         </div>
-
-                        {/* Title — 2 baris */}
                         <div className="space-y-2">
                           <div className="h-6 w-full bg-gray-100 rounded" />
                           <div className="h-6 w-4/5 bg-gray-100 rounded" />
                         </div>
-
-                        {/* Description — 2 baris */}
                         <div className="space-y-2">
                           <div className="h-4 w-full bg-gray-100 rounded" />
                           <div className="h-4 w-3/4 bg-gray-100 rounded" />
                         </div>
-
-                        {/* Footer: tags + Baca */}
                         <div className="flex items-center justify-between pt-1">
                           <div className="flex gap-1.5">
                             <div className="h-6 w-16 bg-gray-100 rounded" />
@@ -486,7 +506,7 @@ const Blog = () => {
                     Tidak Ada Artikel Ditemukan
                   </h3>
                   <p className="text-gray-400 text-sm">
-                    {debouncedSearch || selectedTag
+                    {debouncedSearch || debouncedTag
                       ? "Coba ubah kata kunci atau filter Anda."
                       : "Artikel belum tersedia."}
                   </p>
@@ -518,7 +538,6 @@ const Blog = () => {
                   </div>
                 </Animate>
 
-                {/* Pagination */}
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -552,9 +571,7 @@ const Blog = () => {
                         key={i}
                         className="flex gap-3 items-start animate-pulse"
                       >
-                        {/* Thumbnail */}
                         <div className="w-14 h-14 bg-gray-100 rounded-xl shrink-0" />
-                        {/* Title + date */}
                         <div className="flex-1 space-y-2 pt-0.5">
                           <div className="h-3.5 w-full bg-gray-100 rounded" />
                           <div className="h-3.5 w-4/5 bg-gray-100 rounded" />
@@ -612,7 +629,6 @@ const Blog = () => {
               >
                 {loading ? (
                   <div className="flex flex-wrap gap-2">
-                    {/* Lebar bervariasi menyerupai tag asli */}
                     {[20, 16, 24, 14, 18, 22, 16, 20].map((w, i) => (
                       <div
                         key={i}

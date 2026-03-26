@@ -14,6 +14,27 @@ import React, { useEffect, useMemo, useState } from "react";
 const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
 
 /* ─────────────────────────────────────────
+   useDebounce — generic debounce hook
+   Menunda pembaruan nilai selama `delay` ms
+   setelah perubahan terakhir.
+───────────────────────────────────────── */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+/* ─────────────────────────────────────────
    INTERFACES
 ───────────────────────────────────────── */
 interface Partner {
@@ -121,7 +142,12 @@ const PartnerSection = () => {
   const [partnerList, setPartnerList] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
+
+  // ── Raw input state (langsung terupdate saat user mengetik) ──
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ── Debounced state (digunakan untuk filtering, 300 ms delay) ──
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   useEffect(() => {
     fetchData();
@@ -155,17 +181,17 @@ const PartnerSection = () => {
     }
   };
 
+  // ── Filter menggunakan nilai debounced, bukan nilai raw ──
   const filteredPartners = useMemo(
     () =>
       partnerList.filter((p) => {
-        if (!searchQuery) return true;
-        return p.nama.toLowerCase().includes(searchQuery.toLowerCase());
+        if (!debouncedSearch) return true;
+        return p.nama.toLowerCase().includes(debouncedSearch.toLowerCase());
       }),
-    [partnerList, searchQuery],
+    [partnerList, debouncedSearch],
   );
 
   return (
-    // pt-24 = 96px → memberi ruang agar konten tidak tertutup navbar (h-20 = 80px)
     <div className="bg-gray-50 pt-24 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <Animate type="fadein" ready={dataReady}>
@@ -175,7 +201,7 @@ const PartnerSection = () => {
           />
         </Animate>
 
-        {/* Search */}
+        {/* Search — input bind ke raw searchQuery agar tampilan responsif */}
         <Animate
           type="slideup"
           ready={dataReady}
@@ -212,8 +238,12 @@ const PartnerSection = () => {
             </div>
           </div>
 
+          {/*
+           * Teks hasil pencarian mengacu ke debouncedSearch
+           * agar angka jumlah mitra tidak berubah-ubah saat user masih mengetik.
+           */}
           <AnimatePresence>
-            {searchQuery && !loading && (
+            {debouncedSearch && !loading && (
               <motion.p
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -265,10 +295,13 @@ const PartnerSection = () => {
           </Animate>
         )}
 
-        {/* Grid */}
+        {/* Grid
+         * key menggunakan debouncedSearch — animasi stagger hanya
+         * re-trigger setelah debounce selesai, bukan setiap ketukan.
+         */}
         {!loading && filteredPartners.length > 0 && (
           <Animate
-            key={searchQuery}
+            key={debouncedSearch}
             type="stagger"
             staggerChildren={0.045}
             delayChildren={0.02}

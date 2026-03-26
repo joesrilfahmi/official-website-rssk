@@ -42,6 +42,27 @@ const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
 const ITEMS_PER_PAGE = 12;
 
 /* ─────────────────────────────────────────
+   useDebounce — generic debounce hook
+   Menunda pembaruan nilai selama `delay` ms
+   setelah perubahan terakhir.
+───────────────────────────────────────── */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+/* ─────────────────────────────────────────
    useScrollIndicator — vertical scroll tracking
 ───────────────────────────────────────── */
 function useScrollIndicator() {
@@ -755,10 +776,20 @@ const DokterSpesialis = () => {
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
   const [selectedDokter, setSelectedDokter] = useState<Dokter | null>(null);
-  const [selectedPoli, setSelectedPoli] = useState<string>("all");
+
+  // ── Raw input state (langsung terupdate saat user mengetik/memilih) ──
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedPoli, setSelectedPoli] = useState<string>("all");
   const [selectedHari, setSelectedHari] = useState<string>("all");
+
   const [currentPage, setCurrentPage] = useState(1);
+
+  // ── Debounced state (digunakan untuk filtering, 300 ms delay) ──
+  // Pencarian teks: 300 ms agar tidak filter setiap ketukan
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  // Filter poli & hari: 200 ms untuk select yang biasanya lebih cepat
+  const debouncedSelectedPoli = useDebounce(selectedPoli, 200);
+  const debouncedSelectedHari = useDebounce(selectedHari, 200);
 
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -818,31 +849,42 @@ const DokterSpesialis = () => {
     }
   };
 
+  // ── Filter menggunakan nilai debounced, bukan nilai raw ──
   const filteredDokter = useMemo(
     () =>
       dokterList.filter((d) => {
-        if (searchQuery) {
-          const q = searchQuery.toLowerCase();
+        if (debouncedSearchQuery) {
+          const q = debouncedSearchQuery.toLowerCase();
           if (
             !d.nama.toLowerCase().includes(q) &&
             !(d.poli?.nama_poli?.toLowerCase() || "").includes(q)
           )
             return false;
         }
-        if (selectedPoli !== "all" && d.poli_id !== selectedPoli) return false;
         if (
-          selectedHari !== "all" &&
-          !d.jadwal_dokter.some((j) => j.hari === selectedHari)
+          debouncedSelectedPoli !== "all" &&
+          d.poli_id !== debouncedSelectedPoli
+        )
+          return false;
+        if (
+          debouncedSelectedHari !== "all" &&
+          !d.jadwal_dokter.some((j) => j.hari === debouncedSelectedHari)
         )
           return false;
         return true;
       }),
-    [dokterList, searchQuery, selectedPoli, selectedHari],
+    [
+      dokterList,
+      debouncedSearchQuery,
+      debouncedSelectedPoli,
+      debouncedSelectedHari,
+    ],
   );
 
+  // ── Reset ke halaman 1 saat debounced filter berubah ──
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedPoli, selectedHari]);
+  }, [debouncedSearchQuery, debouncedSelectedPoli, debouncedSelectedHari]);
 
   const totalPages = Math.ceil(filteredDokter.length / ITEMS_PER_PAGE);
 
@@ -860,8 +902,11 @@ const DokterSpesialis = () => {
     gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // ── Handler input: update raw state saja ──
+  // Debounce akan otomatis meneruskan ke debouncedSearchQuery setelah delay
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
+    // Jika ada teks pencarian, reset filter poli & hari (raw state)
     if (value) {
       setSelectedPoli("all");
       setSelectedHari("all");
@@ -870,6 +915,7 @@ const DokterSpesialis = () => {
 
   const handlePoliChange = (poliId: string) => {
     setSelectedPoli(poliId);
+    // Jika memilih poli tertentu, bersihkan pencarian teks (raw state)
     if (poliId !== "all") setSearchQuery("");
   };
 
@@ -933,7 +979,7 @@ const DokterSpesialis = () => {
           >
             <div className="flex justify-center">
               <div className="w-full max-w-4xl flex flex-col sm:flex-row gap-3">
-                {/* Search */}
+                {/* Search — raw state di-bind ke input, debounced state untuk filter */}
                 <div className="relative flex-1">
                   <Input
                     type="text"
@@ -956,7 +1002,7 @@ const DokterSpesialis = () => {
                   )}
                 </div>
 
-                {/* Filter Poli */}
+                {/* Filter Poli — raw state di-bind ke select */}
                 <div className="w-full sm:w-52 shrink-0">
                   <Select
                     icon={Stethoscope}
@@ -977,7 +1023,7 @@ const DokterSpesialis = () => {
                   />
                 </div>
 
-                {/* Filter Hari */}
+                {/* Filter Hari — raw state di-bind ke select */}
                 <div className="w-full sm:w-44 shrink-0">
                   <Select
                     icon={Calendar}
@@ -1039,7 +1085,7 @@ const DokterSpesialis = () => {
               <div ref={gridRef} className="-mt-4 pt-4" />
 
               <Animate
-                key={`${selectedPoli}-${selectedHari}-${searchQuery}-${currentPage}`}
+                key={`${debouncedSelectedPoli}-${debouncedSelectedHari}-${debouncedSearchQuery}-${currentPage}`}
                 type="stagger"
                 staggerChildren={0.06}
                 delayChildren={0.02}

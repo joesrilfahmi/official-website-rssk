@@ -37,6 +37,27 @@ import React, {
 const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
 
 /* ─────────────────────────────────────────
+   useDebounce — generic debounce hook
+   Menunda pembaruan nilai selama `delay` ms
+   setelah perubahan terakhir.
+───────────────────────────────────────── */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+/* ─────────────────────────────────────────
    STATUS CONFIG
 ───────────────────────────────────────── */
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -243,9 +264,6 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): GroupedJadwal[] {
 
 /* ─────────────────────────────────────────
    JADWAL DIALOG
-   PERUBAHAN:
-   - Tombol "Daftar" eksekutif → redirect ke /pendaftaran
-     dengan query params (poliId, dokterId, hari, jamMulai, jamSelesai)
 ───────────────────────────────────────── */
 interface JadwalDialogProps {
   dokter: Dokter;
@@ -288,7 +306,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
   const groupedReguler = groupJadwalByHari(jadwalReguler);
   const groupedEksekutif = groupJadwalByHari(jadwalEksekutif);
 
-  /* ── PERUBAHAN: redirect ke /pendaftaran ── */
   const handleDaftar = (hari: string, jamMulai: string, jamSelesai: string) => {
     const params = new URLSearchParams({
       poliId,
@@ -525,8 +542,6 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
 
 /* ─────────────────────────────────────────
    DOKTER ROW
-   PERUBAHAN: tampilkan foto dokter jika ada,
-   fallback ke icon User
 ───────────────────────────────────────── */
 const DokterRow: React.FC<{
   dokter: Dokter;
@@ -538,7 +553,6 @@ const DokterRow: React.FC<{
     transition={{ duration: 0.35, ease } satisfies Transition}
     className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3.5 ring-1 ring-gray-100"
   >
-    {/* Avatar: foto dokter jika ada, fallback icon */}
     <div className="w-10 h-10 rounded-full ring-2 ring-bittersweet-100 shrink-0 overflow-hidden bg-bittersweet-50 flex items-center justify-center">
       {dokter.profile ? (
         <Image
@@ -913,9 +927,14 @@ const KlinikSpesialis = () => {
   const [layananList, setLayananList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
-  const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPoli, setSelectedPoli] = useState<Poli | null>(null);
+
+  // ── Raw input state (langsung terupdate saat user mengetik) ──
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // ── Debounced state (digunakan untuk filtering, 300 ms delay) ──
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   useEffect(() => {
     const fetchLayanan = async () => {
@@ -948,19 +967,21 @@ const KlinikSpesialis = () => {
     };
   }, []);
 
+  // ── Filter menggunakan nilai debounced, bukan nilai raw ──
   const filteredLayanan = useMemo(() => {
     return layananList.filter((layanan) => {
-      if (!searchQuery) return true;
+      if (!debouncedSearch) return true;
       const title = layanan.nama_poli?.toLowerCase() || "";
       const description = layanan.description?.toLowerCase() || "";
-      const query = searchQuery.toLowerCase();
+      const query = debouncedSearch.toLowerCase();
       return title.includes(query) || description.includes(query);
     });
-  }, [layananList, searchQuery]);
+  }, [layananList, debouncedSearch]);
 
+  // ── Reset ke halaman 1 hanya saat debounced search berubah ──
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [debouncedSearch]);
 
   const totalPages = Math.ceil(filteredLayanan.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -997,6 +1018,7 @@ const KlinikSpesialis = () => {
           >
             <div className="flex justify-center">
               <div className="w-full max-w-3xl flex items-center gap-3">
+                {/* Search — bind ke raw searchQuery agar tampilan responsif */}
                 <div className="relative flex-1">
                   <Input
                     type="text"
@@ -1069,8 +1091,12 @@ const KlinikSpesialis = () => {
 
           {!loading && filteredLayanan.length > 0 && (
             <>
+              {/*
+               * Gunakan debouncedSearch sebagai key agar animasi grid
+               * hanya re-trigger setelah debounce selesai — bukan setiap ketukan.
+               */}
               <Animate
-                key={`${searchQuery}-page-${currentPage}`}
+                key={`${debouncedSearch}-page-${currentPage}`}
                 type="stagger"
                 staggerChildren={0.1}
                 delayChildren={0.03}
