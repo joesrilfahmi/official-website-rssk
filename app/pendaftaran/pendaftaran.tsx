@@ -338,14 +338,44 @@ function InfoSidebarPanel({ mode }: { mode: "lama" | "baru" }) {
   const steps =
     mode === "lama"
       ? [
-          { num: "01", title: "Cari NIK", desc: "Masukkan NIK 16 digit Anda", color: "bg-mariner-500" },
-          { num: "02", title: "Pilih Jadwal", desc: "Tentukan poli, dokter & waktu kunjungan", color: "bg-teal-500" },
-          { num: "03", title: "Kirim via WA", desc: "Data pendaftaran dikirim ke WhatsApp", color: "bg-bittersweet-500" },
+          {
+            num: "01",
+            title: "Cari NIK",
+            desc: "Masukkan NIK 16 digit Anda",
+            color: "bg-mariner-500",
+          },
+          {
+            num: "02",
+            title: "Pilih Jadwal",
+            desc: "Tentukan poli, dokter & waktu kunjungan",
+            color: "bg-teal-500",
+          },
+          {
+            num: "03",
+            title: "Kirim via WA",
+            desc: "Data pendaftaran dikirim ke WhatsApp",
+            color: "bg-bittersweet-500",
+          },
         ]
       : [
-          { num: "01", title: "Isi Data Diri", desc: "Lengkapi formulir sesuai KTP", color: "bg-bittersweet-500" },
-          { num: "02", title: "Pilih Poli & Dokter", desc: "Tentukan poli, dokter & jadwal", color: "bg-teal-500" },
-          { num: "03", title: "Konfirmasi via WA", desc: "Data dikirim otomatis ke WhatsApp", color: "bg-mariner-500" },
+          {
+            num: "01",
+            title: "Isi Data Diri",
+            desc: "Lengkapi formulir sesuai KTP",
+            color: "bg-bittersweet-500",
+          },
+          {
+            num: "02",
+            title: "Pilih Poli & Dokter",
+            desc: "Tentukan poli, dokter & jadwal",
+            color: "bg-teal-500",
+          },
+          {
+            num: "03",
+            title: "Konfirmasi via WA",
+            desc: "Data dikirim otomatis ke WhatsApp",
+            color: "bg-mariner-500",
+          },
         ];
 
   return (
@@ -479,7 +509,9 @@ export default function PendaftaranSection() {
   const [searchError, setSearchError] = useState("");
 
   const [form, setForm] = useState<FormData>({ ...EMPTY });
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
+    {},
+  );
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTimeExpired, setShowTimeExpired] = useState(false);
@@ -887,13 +919,16 @@ export default function PendaftaranSection() {
 
     if (mode === "lama") {
       if (!form.noTelp?.trim()) e.noTelp = "Nomor telepon wajib diisi";
-      else if (!/^[\d\s\-+()]+$/.test(form.noTelp)) e.noTelp = "Format nomor telepon tidak valid";
+      else if (!/^[\d\s\-+()]+$/.test(form.noTelp))
+        e.noTelp = "Format nomor telepon tidak valid";
       if (!form.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
         e.email = "Email wajib diisi dengan format yang valid";
       if (!form.poli) e.poli = "Poli wajib dipilih";
       if (!form.dokter) e.dokter = "Dokter wajib dipilih";
-      if (!form.tglBerkunjung) e.tglBerkunjung = "Tanggal berkunjung wajib diisi";
-      if (!form.waktuBerkunjung) e.waktuBerkunjung = "Waktu kunjungan wajib dipilih";
+      if (!form.tglBerkunjung)
+        e.tglBerkunjung = "Tanggal berkunjung wajib diisi";
+      if (!form.waktuBerkunjung)
+        e.waktuBerkunjung = "Waktu kunjungan wajib dipilih";
       if (!form.keluhan.trim()) e.keluhan = "Keluhan wajib diisi";
     } else {
       const req: Array<[keyof FormData, string]> = [
@@ -1318,14 +1353,35 @@ export default function PendaftaranSection() {
                         <>
                           <ConfirmRow label="NIK" value={form.nik} />
                           <ConfirmRow label="Nama" value={form.nama} />
-                          <ConfirmRow label="Tempat Lahir" value={form.tempatLahir} />
-                          <ConfirmRow label="Tanggal Lahir" value={formatTanggal(form.tanggalLahir)} />
-                          <ConfirmRow label="Jenis Kelamin" value={form.jenisKelamin} />
+                          <ConfirmRow
+                            label="Tempat Lahir"
+                            value={form.tempatLahir}
+                          />
+                          <ConfirmRow
+                            label="Tanggal Lahir"
+                            value={formatTanggal(form.tanggalLahir)}
+                          />
+                          <ConfirmRow
+                            label="Jenis Kelamin"
+                            value={form.jenisKelamin}
+                          />
                           <ConfirmRow label="Agama" value={form.agama} />
-                          <ConfirmRow label="Status" value={form.statusPernikahan} />
-                          <ConfirmRow label="Pendidikan" value={form.pendidikanTerakhir} />
-                          <ConfirmRow label="Pekerjaan" value={form.pekerjaan} />
-                          <ConfirmRow label="Ortu/Suami" value={form.ortuPriaSuami} />
+                          <ConfirmRow
+                            label="Status"
+                            value={form.statusPernikahan}
+                          />
+                          <ConfirmRow
+                            label="Pendidikan"
+                            value={form.pendidikanTerakhir}
+                          />
+                          <ConfirmRow
+                            label="Pekerjaan"
+                            value={form.pekerjaan}
+                          />
+                          <ConfirmRow
+                            label="Ortu/Suami"
+                            value={form.ortuPriaSuami}
+                          />
                           <ConfirmRow label="No. HP" value={form.noTelp} />
                           <ConfirmRow label="Email" value={form.email} />
                         </>
@@ -1342,10 +1398,16 @@ export default function PendaftaranSection() {
                       </p>
                       <div className="bg-gray-50 rounded-xl px-4 py-2 divide-y divide-gray-100">
                         <ConfirmRow label="Alamat" value={form.alamat} />
-                        <ConfirmRow label="RT/RW" value={`${form.rt}/${form.rw}`} />
+                        <ConfirmRow
+                          label="RT/RW"
+                          value={`${form.rt}/${form.rw}`}
+                        />
                         <ConfirmRow label="Kelurahan" value={form.kelurahan} />
                         <ConfirmRow label="Kecamatan" value={form.kecamatan} />
-                        <ConfirmRow label="Kabupaten/Kota" value={form.kabupaten} />
+                        <ConfirmRow
+                          label="Kabupaten/Kota"
+                          value={form.kabupaten}
+                        />
                         <ConfirmRow label="Provinsi" value={form.provinsi} />
                       </div>
                     </motion.div>
@@ -1360,7 +1422,10 @@ export default function PendaftaranSection() {
                     <div className="bg-gray-50 rounded-xl px-4 py-2 divide-y divide-gray-100">
                       <ConfirmRow label="Poli" value={selectedPoliLabel} />
                       <ConfirmRow label="Dokter" value={selectedDokterLabel} />
-                      <ConfirmRow label="Tgl Berkunjung" value={formatTanggal(form.tglBerkunjung)} />
+                      <ConfirmRow
+                        label="Tgl Berkunjung"
+                        value={formatTanggal(form.tglBerkunjung)}
+                      />
                       <ConfirmRow label="Waktu" value={form.waktuBerkunjung} />
                     </div>
                   </motion.div>
@@ -1419,7 +1484,7 @@ export default function PendaftaranSection() {
           {/* ── BANNER ── */}
           <Animate type="fadein" ready={choiceReady}>
             <Banner
-              title="Pendaftaran Pasien"
+              title="Pendaftaran Pasien Poli Eksekutif"
               subtitle={`Daftarkan diri Anda dengan mudah dan cepat di ${Profile.shortName}. Pilih poli, dokter, dan jadwal kunjungan Anda secara online.`}
             />
           </Animate>
@@ -1536,7 +1601,8 @@ export default function PendaftaranSection() {
 
                     <Animate type="fadein" delay={0.45} ready={choiceReady}>
                       <p className="text-center text-[11px] text-gray-400 mt-7 leading-relaxed">
-                        Pilih sesuai status kunjungan Anda di {Profile.shortName}
+                        Pilih sesuai status kunjungan Anda di{" "}
+                        {Profile.shortName}
                       </p>
                     </Animate>
                   </div>
@@ -1695,7 +1761,10 @@ export default function PendaftaranSection() {
                                 </div>
                               </div>
 
-                              <form onSubmit={handleSubmit} className="space-y-4">
+                              <form
+                                onSubmit={handleSubmit}
+                                className="space-y-4"
+                              >
                                 <Animate
                                   type="stagger"
                                   staggerChildren={0.055}
@@ -1767,7 +1836,9 @@ export default function PendaftaranSection() {
                                   {/* ══ DATA KUNJUNGAN ══ */}
                                   <Animate type="fielditem">
                                     <SectionDivider
-                                      icon={<Stethoscope className="w-3.5 h-3.5" />}
+                                      icon={
+                                        <Stethoscope className="w-3.5 h-3.5" />
+                                      }
                                       label="Data Kunjungan"
                                     />
                                   </Animate>
@@ -1785,7 +1856,9 @@ export default function PendaftaranSection() {
                                     disabled={loading}
                                     className="justify-center"
                                   >
-                                    {loading ? "Mengirim..." : "Daftar via WhatsApp"}
+                                    {loading
+                                      ? "Mengirim..."
+                                      : "Daftar via WhatsApp"}
                                     <ArrowRight className="w-4 h-4" />
                                   </Button>
                                 </div>
@@ -2213,7 +2286,9 @@ export default function PendaftaranSection() {
                                 disabled={loading}
                                 className="justify-center"
                               >
-                                {loading ? "Mengirim..." : "Daftar via WhatsApp"}
+                                {loading
+                                  ? "Mengirim..."
+                                  : "Daftar via WhatsApp"}
                                 <ArrowRight className="w-4 h-4" />
                               </Button>
                             </div>
