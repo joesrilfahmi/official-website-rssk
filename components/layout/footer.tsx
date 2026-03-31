@@ -178,6 +178,10 @@ const Footer = () => {
           text: `Ambulance : ${Profile.ambulance}`,
           href: `tel:${Profile.ambulance}`,
         },
+        {
+          text: `Customer Care : ${Profile.whatsappCs}`,
+          href: `https://wa.me/${Profile.whatsappCs.replace(/\D/g, "")}`,
+        },
       ],
     },
     {
