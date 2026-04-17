@@ -454,6 +454,7 @@ const KritikSaran = () => {
     if (!formData.unit_pelayanan_id)
       newErrors.unit_pelayanan_id = "Unit pelayanan wajib dipilih";
     if (!formData.pesan.trim()) newErrors.pesan = "Pesan wajib diisi";
+    if (formData.rating === 0) newErrors.rating = "Rating kepuasan wajib diisi";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -514,8 +515,8 @@ const KritikSaran = () => {
   };
 
   const selectedUnitLabel =
-    unitPelayananList.find((u) => u.id === formData.unit_pelayanan_id)
-      ?.title ?? "-";
+    unitPelayananList.find((u) => u.id === formData.unit_pelayanan_id)?.title ??
+    "-";
 
   return (
     <>
@@ -592,14 +593,18 @@ const KritikSaran = () => {
                   </p>
                   <div className="bg-gray-50 rounded-xl p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-gray-500 shrink-0">Nama</span>
+                      <span className="text-xs text-gray-500 shrink-0">
+                        Nama
+                      </span>
                       <span className="text-xs font-semibold text-gray-900 text-right truncate">
                         {formData.nama}
                       </span>
                     </div>
                     <div className="h-px bg-gray-100" />
                     <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-gray-500 shrink-0">No HP</span>
+                      <span className="text-xs text-gray-500 shrink-0">
+                        No HP
+                      </span>
                       <span className="text-xs font-semibold text-gray-900 text-right truncate">
                         {formData.no_hp}
                       </span>
@@ -661,8 +666,8 @@ const KritikSaran = () => {
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                   </svg>
                   <p className="text-[10px] text-green-700 leading-relaxed">
-                    WhatsApp akan terbuka dengan pesan yang sudah terisi —{" "}
-                    tekan <span className="font-bold">Kirim</span> untuk
+                    WhatsApp akan terbuka dengan pesan yang sudah terisi — tekan{" "}
+                    <span className="font-bold">Kirim</span> untuk
                     menyelesaikan.
                   </p>
                 </motion.div>
@@ -707,8 +712,7 @@ const KritikSaran = () => {
                     "Mengirim..."
                   ) : (
                     <>
-                      Ya, Kirim Sekarang{" "}
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      Ya, Kirim Sekarang <ArrowRight className="w-3.5 h-3.5" />
                     </>
                   )}
                 </motion.button>
@@ -952,8 +956,7 @@ const KritikSaran = () => {
                                   y: 10,
                                   scale: 0.9,
                                   rotate: [0, -3, 2, -2, 1, 0],
-                                  filter:
-                                    "grayscale(0.6) brightness(0.85)",
+                                  filter: "grayscale(0.6) brightness(0.85)",
                                 }
                               : {
                                   y: 0,
@@ -1009,8 +1012,7 @@ const KritikSaran = () => {
                                   y: 4,
                                   scale: 0.96,
                                   borderColor: "rgba(148,163,184,0.5)",
-                                  boxShadow:
-                                    "0 1px 3px rgba(100,116,139,0.10)",
+                                  boxShadow: "0 1px 3px rgba(100,116,139,0.10)",
                                   filter: "grayscale(1)",
                                   opacity: 0.75,
                                 }
@@ -1046,9 +1048,7 @@ const KritikSaran = () => {
                           setHappyParticleKey((k) => k + 1);
                         }}
                         onHoverEnd={() => setHappyHovered(false)}
-                        onClick={() =>
-                          window.open(GOOGLE_REVIEW_URL, "_blank")
-                        }
+                        onClick={() => window.open(GOOGLE_REVIEW_URL, "_blank")}
                         className="group relative flex flex-col items-center justify-center gap-3 sm:gap-4 p-6 sm:p-7 lg:p-9 rounded-2xl border-2 cursor-pointer text-center overflow-hidden"
                         style={{
                           background:
@@ -1122,8 +1122,7 @@ const KritikSaran = () => {
                                   y: [-2, -26, -18, -24, -20, -22],
                                   scale: [1, 1.45, 1.2, 1.38, 1.28, 1.32],
                                   rotate: [0, -20, 22, -14, 18, -10],
-                                  filter:
-                                    "brightness(1.15) saturate(1.3)",
+                                  filter: "brightness(1.15) saturate(1.3)",
                                 }
                               : {
                                   y: 0,
@@ -1184,10 +1183,7 @@ const KritikSaran = () => {
                                       Math.sin(angle) * r * 0.5,
                                       Math.sin(angle) * r + 10,
                                     ],
-                                    rotate: [
-                                      0,
-                                      i % 2 === 0 ? 30 : -30,
-                                    ],
+                                    rotate: [0, i % 2 === 0 ? 30 : -30],
                                   }}
                                   exit={{ opacity: 0 }}
                                   transition={{
@@ -1239,8 +1235,7 @@ const KritikSaran = () => {
                               ? {
                                   y: -6,
                                   scale: 1.08,
-                                  boxShadow:
-                                    "0 8px 20px rgba(251,191,36,0.3)",
+                                  boxShadow: "0 8px 20px rgba(251,191,36,0.3)",
                                   borderColor: "rgba(251,191,36,0.4)",
                                 }
                               : {
@@ -1307,7 +1302,6 @@ const KritikSaran = () => {
               >
                 {/* Two-column layout on lg: form left, info panel right */}
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 lg:gap-8 items-start max-w-5xl mx-auto">
-
                   {/* ── FORM CARD ── */}
                   <Animate type="slideup" ready={dataReady} delay={0.05}>
                     <div className="bg-white rounded-3xl ring-1 ring-gray-100 shadow-sm overflow-hidden">
@@ -1330,7 +1324,11 @@ const KritikSaran = () => {
                             stroke="currentColor"
                             strokeWidth={2.5}
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 5l7 7-7 7"
+                            />
                           </svg>
                           Kembali
                         </motion.button>
@@ -1351,7 +1349,13 @@ const KritikSaran = () => {
                         {!loading && (
                           <>
                             {/* Header */}
-                            <Animate type="stagger" staggerChildren={0.08} delayChildren={0.1} ready={dataReady} className="space-y-0">
+                            <Animate
+                              type="stagger"
+                              staggerChildren={0.08}
+                              delayChildren={0.1}
+                              ready={dataReady}
+                              className="space-y-0"
+                            >
                               <Animate type="fielditem" className="mb-7">
                                 <div>
                                   <div className="inline-flex items-center gap-2 bg-bittersweet-50 text-bittersweet-500 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest mb-3">
@@ -1362,7 +1366,8 @@ const KritikSaran = () => {
                                     Kritik &amp; Saran
                                   </h2>
                                   <p className="text-sm text-gray-400 leading-relaxed">
-                                    Masukan Anda membantu kami meningkatkan kualitas layanan.
+                                    Masukan Anda membantu kami meningkatkan
+                                    kualitas layanan.
                                   </p>
                                   <div className="mt-4 h-0.5 w-10 bg-bittersweet-400 rounded-full" />
                                 </div>
@@ -1412,7 +1417,10 @@ const KritikSaran = () => {
                                   placeholder="Pilih unit pelayanan yang dituju"
                                   value={formData.unit_pelayanan_id}
                                   onChange={(value) =>
-                                    handleSelectChange("unit_pelayanan_id", value)
+                                    handleSelectChange(
+                                      "unit_pelayanan_id",
+                                      value,
+                                    )
                                   }
                                   options={unitPelayananList.map((u) => ({
                                     value: u.id,
@@ -1427,12 +1435,20 @@ const KritikSaran = () => {
 
                               {/* ── RATING ── */}
                               <Animate type="fielditem">
-                                <div className="bg-gray-50 rounded-2xl p-4 sm:p-5">
+                                <div
+                                  className={`bg-gray-50 rounded-2xl p-4 sm:p-5 transition-all duration-200 ${
+                                    errors.rating
+                                      ? "ring-1 ring-red-300 bg-red-50/30"
+                                      : ""
+                                  }`}
+                                >
                                   <div className="flex items-center justify-between mb-3">
                                     <label className="text-sm font-semibold text-gray-700">
                                       Rating Kepuasan
                                     </label>
-                                    <span className="text-[11px] text-gray-400 font-normal">opsional</span>
+                                    {/* <span className="text-[11px] text-bittersweet-500 font-semibold">
+                                      wajib
+                                    </span> */}
                                   </div>
                                   <div className="flex items-center gap-1.5 sm:gap-2">
                                     {[1, 2, 3, 4, 5].map((star) => (
@@ -1442,12 +1458,18 @@ const KritikSaran = () => {
                                         disabled={isSubmitting}
                                         whileHover={{ scale: 1.15 }}
                                         whileTap={{ scale: 0.9 }}
-                                        onClick={() =>
+                                        onClick={() => {
                                           setFormData((p) => ({
                                             ...p,
-                                            rating: p.rating === star ? 0 : star,
-                                          }))
-                                        }
+                                            rating:
+                                              p.rating === star ? 0 : star,
+                                          }));
+                                          if (errors.rating)
+                                            setErrors((prev) => ({
+                                              ...prev,
+                                              rating: "",
+                                            }));
+                                        }}
                                         className="focus:outline-none"
                                       >
                                         <Star
@@ -1472,6 +1494,19 @@ const KritikSaran = () => {
                                       )}
                                     </AnimatePresence>
                                   </div>
+                                  <AnimatePresence>
+                                    {errors.rating && (
+                                      <motion.p
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -4 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="mt-2 text-xs text-red-500 font-medium"
+                                      >
+                                        {errors.rating}
+                                      </motion.p>
+                                    )}
+                                  </AnimatePresence>
                                 </div>
                               </Animate>
 
@@ -1521,7 +1556,6 @@ const KritikSaran = () => {
                   {/* ── INFO PANEL (desktop sidebar) ── */}
                   <Animate type="slideright" delay={0.12} ready={dataReady}>
                     <div className="flex flex-col gap-4 lg:sticky lg:top-8">
-
                       {/* Privacy notice */}
                       <div className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm p-5">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">
@@ -1545,11 +1579,20 @@ const KritikSaran = () => {
                               desc: "Identitas Anda dijaga dan tidak disebarluaskan.",
                             },
                           ].map((item) => (
-                            <div key={item.title} className="flex items-start gap-3">
-                              <span className="text-base shrink-0 mt-0.5">{item.icon}</span>
+                            <div
+                              key={item.title}
+                              className="flex items-start gap-3"
+                            >
+                              <span className="text-base shrink-0 mt-0.5">
+                                {item.icon}
+                              </span>
                               <div>
-                                <p className="text-xs font-semibold text-gray-700">{item.title}</p>
-                                <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{item.desc}</p>
+                                <p className="text-xs font-semibold text-gray-700">
+                                  {item.title}
+                                </p>
+                                <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">
+                                  {item.desc}
+                                </p>
                               </div>
                             </div>
                           ))}
@@ -1562,7 +1605,8 @@ const KritikSaran = () => {
                           Butuh Bantuan?
                         </p>
                         <p className="text-xs text-mariner-600 leading-relaxed mb-3">
-                          Hubungi kami langsung jika masukan Anda memerlukan penanganan segera.
+                          Hubungi kami langsung jika masukan Anda memerlukan
+                          penanganan segera.
                         </p>
                         <a
                           href={`https://wa.me/${Profile.whatsappHumas?.replace(/\D/g, "")}`}
@@ -1574,14 +1618,15 @@ const KritikSaran = () => {
                             <Phone className="w-3.5 h-3.5 text-white" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400">WhatsApp Humas</p>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                              WhatsApp Humas
+                            </p>
                             <p className="text-xs font-semibold text-gray-800 group-hover:text-mariner-600 transition-colors truncate">
                               {Profile.whatsappHumas}
                             </p>
                           </div>
                         </a>
                       </div>
-
                     </div>
                   </Animate>
                 </div>
