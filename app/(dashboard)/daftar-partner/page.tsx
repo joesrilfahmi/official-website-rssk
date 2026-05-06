@@ -12,6 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import CachedImage from "@/components/ui/custom/cached-image";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Breadcrumb,
@@ -151,10 +153,13 @@ export default function PartnerPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">(
+    "newest",
+  );
 
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
-  const [formErrors, setFormErrors] = useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
+  const [formErrors, setFormErrors] =
+    useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   // Pagination
@@ -231,9 +236,13 @@ export default function PartnerPage() {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "newest":
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
         case "oldest":
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         case "a-z":
           return a.nama.localeCompare(b.nama, "id");
         case "z-a":
@@ -379,7 +388,10 @@ export default function PartnerPage() {
 
       if (formData.pictureFile) {
         if (selectedPartner?.picture) {
-          const oldPath = getFilePathFromUrl(selectedPartner.picture, "partner");
+          const oldPath = getFilePathFromUrl(
+            selectedPartner.picture,
+            "partner",
+          );
           if (oldPath) await deleteFile("partner", oldPath);
         }
         const uploadResult = await uploadFile({
@@ -399,7 +411,7 @@ export default function PartnerPage() {
           .update({
             nama: formData.nama,
             picture: pictureUrl,
-            updated_by: currentUserId,           // ← simpan siapa yang update
+            updated_by: currentUserId, // ← simpan siapa yang update
             updated_at: new Date().toISOString(),
           })
           .eq("id", selectedPartner.id);
@@ -410,7 +422,7 @@ export default function PartnerPage() {
         const { error } = await supabase.from("partner").insert({
           nama: formData.nama,
           picture: pictureUrl,
-          created_by: currentUserId,             // ← simpan siapa yang buat
+          created_by: currentUserId, // ← simpan siapa yang buat
         });
         if (error) throw error;
         toast.success("Partner berhasil ditambahkan");
@@ -509,7 +521,9 @@ export default function PartnerPage() {
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Partner</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+              Partner
+            </h1>
             <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">
               Kelola data partner
             </p>
@@ -526,7 +540,9 @@ export default function PartnerPage() {
                 <Trash2 className="h-4 w-4 sm:mr-2 shrink-0" />
                 <span className="hidden sm:inline truncate">Hapus</span>
                 <span className="sm:hidden">({selectedItems.length})</span>
-                <span className="hidden sm:inline">({selectedItems.length})</span>
+                <span className="hidden sm:inline">
+                  ({selectedItems.length})
+                </span>
               </Button>
             )}
             <Button
@@ -555,7 +571,10 @@ export default function PartnerPage() {
                 onCheckedChange={handleSelectAll}
                 id="select-all"
               />
-              <Label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">
+              <Label
+                htmlFor="select-all"
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
                 All
               </Label>
             </div>
@@ -680,7 +699,7 @@ export default function PartnerPage() {
                   {/* Image */}
                   <div className="relative h-48 bg-muted overflow-hidden rounded-t-xl -mt-6">
                     {item.picture ? (
-                      <Image
+                      <CachedImage
                         src={item.picture}
                         alt={item.nama}
                         fill
@@ -688,6 +707,7 @@ export default function PartnerPage() {
                         style={{ objectPosition: "center 30%" }}
                         sizes="(max-width: 640px) 100vw, 512px"
                         unoptimized
+                        bucket={""}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
@@ -714,20 +734,27 @@ export default function PartnerPage() {
                             alt={item.created_by_user?.nama || "User"}
                           />
                           <AvatarFallback className="text-xs">
-                            {item.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}
+                            {item.created_by_user?.nama
+                              ?.charAt(0)
+                              .toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
                         <span className="truncate text-xs text-muted-foreground">
                           {item.created_by_user?.nama}
                         </span>
-                        <span className="text-muted-foreground hidden sm:inline">•</span>
+                        <span className="text-muted-foreground hidden sm:inline">
+                          •
+                        </span>
                         <Calendar className="h-3 w-3 shrink-0 hidden sm:block" />
                         <span className="text-xs text-muted-foreground hidden sm:inline">
-                          {new Date(item.created_at).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {new Date(item.created_at).toLocaleDateString(
+                            "id-ID",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )}
                         </span>
                       </div>
 
@@ -784,8 +811,11 @@ export default function PartnerPage() {
                 <div className="hidden sm:flex items-center justify-between gap-4">
                   <div className="text-sm text-muted-foreground shrink-0">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredPartners.length)} dari{" "}
-                    {filteredPartners.length} data partner
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredPartners.length,
+                    )}{" "}
+                    dari {filteredPartners.length} data partner
                   </div>
                   <div className="flex-1" />
                   <div className="shrink-0">
@@ -794,7 +824,8 @@ export default function PartnerPage() {
                         <PaginationItem>
                           <PaginationPrevious
                             onClick={() =>
-                              currentPage > 1 && handlePageChange(currentPage - 1)
+                              currentPage > 1 &&
+                              handlePageChange(currentPage - 1)
                             }
                             className={`h-9 px-3 text-sm ${
                               currentPage === 1
@@ -840,8 +871,11 @@ export default function PartnerPage() {
                 <div className="flex sm:hidden flex-col items-center gap-3">
                   <div className="text-xs text-muted-foreground text-center px-2">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredPartners.length)} dari{" "}
-                    {filteredPartners.length} data partner
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredPartners.length,
+                    )}{" "}
+                    dari {filteredPartners.length} data partner
                   </div>
                   <Pagination>
                     <PaginationContent className="gap-1">
@@ -906,9 +940,10 @@ export default function PartnerPage() {
                 Gambar Partner
               </Label>
 
-              {(formData.picture || formData.pictureFile) && !formData.pictureDeleted ? (
+              {(formData.picture || formData.pictureFile) &&
+              !formData.pictureDeleted ? (
                 <div className="relative w-full h-48 rounded-md overflow-hidden border">
-                  <Image
+                  <CachedImage
                     src={
                       formData.pictureFile
                         ? URL.createObjectURL(formData.pictureFile)
@@ -918,6 +953,7 @@ export default function PartnerPage() {
                     fill
                     className="object-cover"
                     unoptimized
+                    bucket={""}
                   />
                   <Button
                     type="button"
@@ -925,7 +961,11 @@ export default function PartnerPage() {
                     size="icon"
                     className="absolute top-2 right-2 h-8 w-8"
                     onClick={() =>
-                      setFormData({ ...formData, pictureFile: null, pictureDeleted: true })
+                      setFormData({
+                        ...formData,
+                        pictureFile: null,
+                        pictureDeleted: true,
+                      })
                     }
                     disabled={submitting}
                   >
@@ -942,11 +982,18 @@ export default function PartnerPage() {
                       if (file) {
                         const validation = validateImage(file);
                         if (!validation.valid) {
-                          setFormErrors({ ...formErrors, picture: validation.error || "" });
+                          setFormErrors({
+                            ...formErrors,
+                            picture: validation.error || "",
+                          });
                           toast.error(validation.error || "File tidak valid");
                           return;
                         }
-                        setFormData({ ...formData, pictureFile: file, pictureDeleted: false });
+                        setFormData({
+                          ...formData,
+                          pictureFile: file,
+                          pictureDeleted: false,
+                        });
                         setFormErrors({ ...formErrors, picture: "" });
                       }
                     }}
@@ -970,7 +1017,9 @@ export default function PartnerPage() {
                       <p className="text-sm font-medium mb-1">
                         Klik untuk upload atau drag & drop
                       </p>
-                      <p className="text-xs text-muted-foreground">Format: WebP, Max: 300KB</p>
+                      <p className="text-xs text-muted-foreground">
+                        Format: WebP, Max: 300KB
+                      </p>
                     </label>
                   </div>
                   {formErrors.picture && (
@@ -990,7 +1039,8 @@ export default function PartnerPage() {
                 value={formData.nama}
                 onChange={(e) => {
                   setFormData({ ...formData, nama: e.target.value });
-                  if (formErrors.nama) setFormErrors({ ...formErrors, nama: "" });
+                  if (formErrors.nama)
+                    setFormErrors({ ...formErrors, nama: "" });
                 }}
                 disabled={submitting}
                 placeholder="Masukkan nama partner"
@@ -1002,11 +1052,18 @@ export default function PartnerPage() {
             </div>
 
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={submitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseDialog}
+                disabled={submitting}
+              >
                 Batal
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
@@ -1020,14 +1077,16 @@ export default function PartnerPage() {
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Detail Partner</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
+              Detail Partner
+            </DialogTitle>
           </DialogHeader>
           {selectedPartner && (
             <div className="space-y-4">
               {/* Image */}
               {selectedPartner.picture && (
                 <div className="relative w-full h-48 sm:h-56 md:h-64 rounded-lg overflow-hidden">
-                  <Image
+                  <CachedImage
                     src={selectedPartner.picture}
                     alt={selectedPartner.nama}
                     fill
@@ -1035,13 +1094,16 @@ export default function PartnerPage() {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
                     priority
                     unoptimized
+                    bucket={""}
                   />
                 </div>
               )}
 
               {/* Nama + Audit box */}
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold">{selectedPartner.nama}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold">
+                  {selectedPartner.nama}
+                </h2>
 
                 {/* ── Audit box — identik dengan berita & kamar inap ── */}
                 <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-2 text-xs text-muted-foreground">
@@ -1053,7 +1115,9 @@ export default function PartnerPage() {
                         alt={selectedPartner.created_by_user?.nama || "User"}
                       />
                       <AvatarFallback className="text-[10px]">
-                        {selectedPartner.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}
+                        {selectedPartner.created_by_user?.nama
+                          ?.charAt(0)
+                          .toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                     <span>
@@ -1076,7 +1140,9 @@ export default function PartnerPage() {
                           alt={selectedPartner.updated_by_user.nama || "User"}
                         />
                         <AvatarFallback className="text-[10px]">
-                          {selectedPartner.updated_by_user.nama?.charAt(0).toUpperCase() || "U"}
+                          {selectedPartner.updated_by_user.nama
+                            ?.charAt(0)
+                            .toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <span>
@@ -1116,14 +1182,20 @@ export default function PartnerPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">Hapus Partner?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base sm:text-lg">
+              Hapus Partner?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
               Apakah Anda yakin ingin menghapus partner{" "}
-              <strong>{selectedPartner?.nama}</strong>? Tindakan ini tidak dapat dibatalkan.
+              <strong>{selectedPartner?.nama}</strong>? Tindakan ini tidak dapat
+              dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -1139,7 +1211,10 @@ export default function PartnerPage() {
       </AlertDialog>
 
       {/* ── Bulk Delete Dialog ── */}
-      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+      <AlertDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+      >
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base sm:text-lg">
@@ -1147,12 +1222,15 @@ export default function PartnerPage() {
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
               Apakah Anda yakin ingin menghapus{" "}
-              <strong>{selectedItems.length} partner</strong> yang dipilih? Tindakan ini tidak
-              dapat dibatalkan.
+              <strong>{selectedItems.length} partner</strong> yang dipilih?
+              Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -1161,13 +1239,18 @@ export default function PartnerPage() {
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto"
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {submitting ? "Menghapus..." : `Hapus ${selectedItems.length} Partner`}
+              {submitting
+                ? "Menghapus..."
+                : `Hapus ${selectedItems.length} Partner`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
+      <AccessDeniedDialog
+        open={showAccessDenied}
+        onOpenChange={setShowAccessDenied}
+      />
     </div>
   );
 }

@@ -12,6 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import CachedImage from "@/components/ui/custom/cached-image";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -135,32 +137,33 @@ const DEFAULT_FORM_ERRORS: DokterFormErrors = {
   pelatihan: "",
 };
 
-const STATUS_OPTIONS: { value: DokterStatus; label: string; color: string }[] = [
-  {
-    value: "active",
-    label: "Aktif",
-    color:
-      "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700",
-  },
-  {
-    value: "inactive",
-    label: "Tidak Aktif",
-    color:
-      "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700",
-  },
-  {
-    value: "cuti",
-    label: "Cuti",
-    color:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700",
-  },
-  {
-    value: "libur",
-    label: "Libur",
-    color:
-      "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-300 dark:border-orange-700",
-  },
-];
+const STATUS_OPTIONS: { value: DokterStatus; label: string; color: string }[] =
+  [
+    {
+      value: "active",
+      label: "Aktif",
+      color:
+        "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700",
+    },
+    {
+      value: "inactive",
+      label: "Tidak Aktif",
+      color:
+        "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700",
+    },
+    {
+      value: "cuti",
+      label: "Cuti",
+      color:
+        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700",
+    },
+    {
+      value: "libur",
+      label: "Libur",
+      color:
+        "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-300 dark:border-orange-700",
+    },
+  ];
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Terbaru" },
@@ -360,7 +363,9 @@ const JadwalTabContent = ({
       </div>
       {filtered.length === 0 ? (
         <div className="text-center py-6 border-2 border-dashed rounded-lg">
-          <p className="text-xs text-muted-foreground">Belum ada jadwal {tipe}</p>
+          <p className="text-xs text-muted-foreground">
+            Belum ada jadwal {tipe}
+          </p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -402,7 +407,11 @@ const JadwalTabContent = ({
                     key={`mulai-${jadwal._temp_id}`}
                     defaultValue={jadwal.jam_mulai}
                     onBlur={(e) =>
-                      handleJadwalChange(jadwal._temp_id, "jam_mulai", e.target.value)
+                      handleJadwalChange(
+                        jadwal._temp_id,
+                        "jam_mulai",
+                        e.target.value,
+                      )
                     }
                     disabled={submitting}
                     placeholder="09.00"
@@ -416,7 +425,11 @@ const JadwalTabContent = ({
                     key={`selesai-${jadwal._temp_id}`}
                     defaultValue={jadwal.jam_selesai}
                     onBlur={(e) =>
-                      handleJadwalChange(jadwal._temp_id, "jam_selesai", e.target.value)
+                      handleJadwalChange(
+                        jadwal._temp_id,
+                        "jam_selesai",
+                        e.target.value,
+                      )
                     }
                     disabled={submitting}
                     placeholder="17.00"
@@ -437,14 +450,17 @@ const JadwalTabContent = ({
 
 export default function JadwalDokterPage() {
   const [dokterList, setDokterList] = useState<DokterWithRelations[]>([]);
-  const [filteredDokter, setFilteredDokter] = useState<DokterWithRelations[]>([]);
+  const [filteredDokter, setFilteredDokter] = useState<DokterWithRelations[]>(
+    [],
+  );
   const [poliList, setPoliList] = useState<Poli[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [selectedDokter, setSelectedDokter] = useState<DokterWithRelations | null>(null);
+  const [selectedDokter, setSelectedDokter] =
+    useState<DokterWithRelations | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [showAccessDenied, setShowAccessDenied] = useState(false);
@@ -453,14 +469,19 @@ export default function JadwalDokterPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<DokterStatus | "all">("all");
   const [poliFilter, setPoliFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">(
+    "newest",
+  );
 
   const [formData, setFormData] = useState<DokterFormData>(DEFAULT_FORM_DATA);
-  const [formErrors, setFormErrors] = useState<DokterFormErrors>(DEFAULT_FORM_ERRORS);
+  const [formErrors, setFormErrors] =
+    useState<DokterFormErrors>(DEFAULT_FORM_ERRORS);
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [poliPopoverOpen, setPoliPopoverOpen] = useState(false);
-  const [hariPopoverOpen, setHariPopoverOpen] = useState<Record<string, boolean>>({});
+  const [hariPopoverOpen, setHariPopoverOpen] = useState<
+    Record<string, boolean>
+  >({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
 
@@ -572,14 +593,20 @@ export default function JadwalDokterPage() {
             .includes(debouncedSearch.toLowerCase()),
       );
     }
-    if (statusFilter !== "all") filtered = filtered.filter((item) => item.status === statusFilter);
-    if (poliFilter !== "all") filtered = filtered.filter((item) => item.poli_id === poliFilter);
+    if (statusFilter !== "all")
+      filtered = filtered.filter((item) => item.status === statusFilter);
+    if (poliFilter !== "all")
+      filtered = filtered.filter((item) => item.poli_id === poliFilter);
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "newest":
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
         case "oldest":
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         case "a-z":
           return a.nama.localeCompare(b.nama, "id");
         case "z-a":
@@ -749,14 +776,17 @@ export default function JadwalDokterPage() {
     }));
   }, []);
 
-  const handleJadwalChange = useCallback((tempId: string, field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      jadwal: prev.jadwal.map((j) =>
-        j._temp_id === tempId ? { ...j, [field]: value } : j,
-      ),
-    }));
-  }, []);
+  const handleJadwalChange = useCallback(
+    (tempId: string, field: string, value: string) => {
+      setFormData((prev) => ({
+        ...prev,
+        jadwal: prev.jadwal.map((j) =>
+          j._temp_id === tempId ? { ...j, [field]: value } : j,
+        ),
+      }));
+    },
+    [],
+  );
 
   // ── Pendidikan handlers ──────────────────────────────────────
 
@@ -765,7 +795,12 @@ export default function JadwalDokterPage() {
       ...prev,
       pendidikan: [
         ...prev.pendidikan,
-        { tahun: "", institusi: "", deskripsi: "", _temp_id: `temp_${Date.now()}` },
+        {
+          tahun: "",
+          institusi: "",
+          deskripsi: "",
+          _temp_id: `temp_${Date.now()}`,
+        },
       ],
     }));
 
@@ -775,7 +810,11 @@ export default function JadwalDokterPage() {
       pendidikan: prev.pendidikan.filter((p) => p._temp_id !== tempId),
     }));
 
-  const handlePendidikanChange = (tempId: string, field: string, value: string) =>
+  const handlePendidikanChange = (
+    tempId: string,
+    field: string,
+    value: string,
+  ) =>
     setFormData((prev) => ({
       ...prev,
       pendidikan: prev.pendidikan.map((p) =>
@@ -800,7 +839,11 @@ export default function JadwalDokterPage() {
       organisasi: prev.organisasi.filter((o) => o._temp_id !== tempId),
     }));
 
-  const handleOrganisasiChange = (tempId: string, field: string, value: string) =>
+  const handleOrganisasiChange = (
+    tempId: string,
+    field: string,
+    value: string,
+  ) =>
     setFormData((prev) => ({
       ...prev,
       organisasi: prev.organisasi.map((o) =>
@@ -825,7 +868,11 @@ export default function JadwalDokterPage() {
       publikasi: prev.publikasi.filter((p) => p._temp_id !== tempId),
     }));
 
-  const handlePublikasiChange = (tempId: string, field: string, value: string) =>
+  const handlePublikasiChange = (
+    tempId: string,
+    field: string,
+    value: string,
+  ) =>
     setFormData((prev) => ({
       ...prev,
       publikasi: prev.publikasi.map((p) =>
@@ -840,7 +887,12 @@ export default function JadwalDokterPage() {
       ...prev,
       pelatihan: [
         ...prev.pelatihan,
-        { tahun: "", institusi: "", deskripsi: "", _temp_id: `temp_${Date.now()}` },
+        {
+          tahun: "",
+          institusi: "",
+          deskripsi: "",
+          _temp_id: `temp_${Date.now()}`,
+        },
       ],
     }));
 
@@ -850,7 +902,11 @@ export default function JadwalDokterPage() {
       pelatihan: prev.pelatihan.filter((p) => p._temp_id !== tempId),
     }));
 
-  const handlePelatihanChange = (tempId: string, field: string, value: string) =>
+  const handlePelatihanChange = (
+    tempId: string,
+    field: string,
+    value: string,
+  ) =>
     setFormData((prev) => ({
       ...prev,
       pelatihan: prev.pelatihan.map((p) =>
@@ -868,7 +924,11 @@ export default function JadwalDokterPage() {
       toast.error(validation.error || "File tidak valid");
       return;
     }
-    setFormData((prev) => ({ ...prev, profileFile: file, profileDeleted: false }));
+    setFormData((prev) => ({
+      ...prev,
+      profileFile: file,
+      profileDeleted: false,
+    }));
   };
 
   // ── Validate ─────────────────────────────────────────────────
@@ -894,7 +954,10 @@ export default function JadwalDokterPage() {
           isValid = false;
           break;
         }
-        if (!timeFormatRegex.test(j.jam_mulai) || !timeFormatRegex.test(j.jam_selesai)) {
+        if (
+          !timeFormatRegex.test(j.jam_mulai) ||
+          !timeFormatRegex.test(j.jam_selesai)
+        ) {
           errors.jadwal = "Format jam harus 00.00";
           isValid = false;
           break;
@@ -999,10 +1062,22 @@ export default function JadwalDokterPage() {
 
         // Hapus semua relasi lama sebelum re-insert
         await supabase.from("jadwal_dokter").delete().eq("dokter_id", dokterId);
-        await supabase.from("pendidikan_dokter").delete().eq("dokter_id", dokterId);
-        await supabase.from("organisasi_dokter").delete().eq("dokter_id", dokterId);
-        await supabase.from("publikasi_dokter").delete().eq("dokter_id", dokterId);
-        await supabase.from("pelatihan_dokter").delete().eq("dokter_id", dokterId);
+        await supabase
+          .from("pendidikan_dokter")
+          .delete()
+          .eq("dokter_id", dokterId);
+        await supabase
+          .from("organisasi_dokter")
+          .delete()
+          .eq("dokter_id", dokterId);
+        await supabase
+          .from("publikasi_dokter")
+          .delete()
+          .eq("dokter_id", dokterId);
+        await supabase
+          .from("pelatihan_dokter")
+          .delete()
+          .eq("dokter_id", dokterId);
       } else {
         const { data, error } = await supabase
           .from("dokter")
@@ -1083,12 +1158,17 @@ export default function JadwalDokterPage() {
         if (error) throw error;
       }
 
-      if (selectedDokter?.profile && (formData.profileFile || formData.profileDeleted)) {
+      if (
+        selectedDokter?.profile &&
+        (formData.profileFile || formData.profileDeleted)
+      ) {
         const oldPath = getFilePathFromUrl(selectedDokter.profile, "dokter");
         if (oldPath) await deleteFile("dokter", oldPath);
       }
 
-      toast.success(isEdit ? "Dokter berhasil diperbarui" : "Dokter berhasil ditambahkan");
+      toast.success(
+        isEdit ? "Dokter berhasil diperbarui" : "Dokter berhasil ditambahkan",
+      );
       handleCloseDialog();
       fetchDokter();
     } catch (error) {
@@ -1110,7 +1190,10 @@ export default function JadwalDokterPage() {
         const path = getFilePathFromUrl(selectedDokter.profile, "dokter");
         if (path) await deleteFile("dokter", path);
       }
-      const { error } = await supabase.from("dokter").delete().eq("id", selectedDokter.id);
+      const { error } = await supabase
+        .from("dokter")
+        .delete()
+        .eq("id", selectedDokter.id);
       if (error) throw error;
       toast.success("Dokter berhasil dihapus");
       setDeleteDialogOpen(false);
@@ -1170,7 +1253,9 @@ export default function JadwalDokterPage() {
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Jadwal Dokter</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+              Jadwal Dokter
+            </h1>
             <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">
               Kelola data dokter dan jadwal praktik
             </p>
@@ -1187,7 +1272,9 @@ export default function JadwalDokterPage() {
                 <Trash2 className="h-4 w-4 sm:mr-2 shrink-0" />
                 <span className="hidden sm:inline truncate">Hapus</span>
                 <span className="sm:hidden">({selectedItems.length})</span>
-                <span className="hidden sm:inline">({selectedItems.length})</span>
+                <span className="hidden sm:inline">
+                  ({selectedItems.length})
+                </span>
               </Button>
             )}
             <Button
@@ -1225,7 +1312,10 @@ export default function JadwalDokterPage() {
             </div>
           )}
           <div className="hidden sm:flex sm:items-center sm:gap-2 sm:ml-auto">
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+            <Select
+              value={sortBy}
+              onValueChange={(value) => setSortBy(value as typeof sortBy)}
+            >
               <SelectTrigger className="w-[120px] h-9">
                 <SelectValue placeholder="Urutan" />
               </SelectTrigger>
@@ -1239,7 +1329,9 @@ export default function JadwalDokterPage() {
             </Select>
             <Select
               value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as DokterStatus | "all")}
+              onValueChange={(value) =>
+                setStatusFilter(value as DokterStatus | "all")
+              }
             >
               <SelectTrigger className="w-[140px] h-9">
                 <SelectValue placeholder="Status" />
@@ -1281,7 +1373,10 @@ export default function JadwalDokterPage() {
         {/* Mobile filters */}
         <div className="flex sm:hidden flex-col gap-2">
           <div className="flex gap-2">
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+            <Select
+              value={sortBy}
+              onValueChange={(value) => setSortBy(value as typeof sortBy)}
+            >
               <SelectTrigger className="flex-1 h-9 text-sm">
                 <SelectValue placeholder="Urutan" />
               </SelectTrigger>
@@ -1295,7 +1390,9 @@ export default function JadwalDokterPage() {
             </Select>
             <Select
               value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as DokterStatus | "all")}
+              onValueChange={(value) =>
+                setStatusFilter(value as DokterStatus | "all")
+              }
             >
               <SelectTrigger className="flex-1 h-9 text-sm">
                 <SelectValue placeholder="Status" />
@@ -1390,7 +1487,7 @@ export default function JadwalDokterPage() {
                   </div>
                   <div className="relative h-48 bg-muted overflow-hidden rounded-t-xl -mt-6">
                     {item.profile ? (
-                      <Image
+                      <CachedImage
                         src={item.profile}
                         alt={item.nama}
                         fill
@@ -1398,6 +1495,7 @@ export default function JadwalDokterPage() {
                         style={{ objectPosition: "center 30%" }}
                         sizes="(max-width: 640px) 100vw, 512px"
                         unoptimized
+                        bucket={""}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center bg-muted">
@@ -1454,9 +1552,12 @@ export default function JadwalDokterPage() {
                           </AvatarFallback>
                         </Avatar>
                         <span className="truncate text-xs text-muted-foreground">
-                          {item.updated_by_user?.nama ?? item.created_by_user?.nama}
+                          {item.updated_by_user?.nama ??
+                            item.created_by_user?.nama}
                         </span>
-                        <span className="text-muted-foreground hidden sm:inline">•</span>
+                        <span className="text-muted-foreground hidden sm:inline">
+                          •
+                        </span>
                         <Calendar className="h-3 w-3 shrink-0 hidden sm:block" />
                         <span className="text-xs text-muted-foreground hidden sm:inline">
                           {formatDate(item.updated_at ?? item.created_at)}
@@ -1512,8 +1613,11 @@ export default function JadwalDokterPage() {
                 <div className="hidden sm:flex items-center justify-between gap-4">
                   <div className="text-sm text-muted-foreground shrink-0">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredDokter.length)} dari{" "}
-                    {filteredDokter.length} dokter
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredDokter.length,
+                    )}{" "}
+                    dari {filteredDokter.length} dokter
                   </div>
                   <div className="flex-1" />
                   <div className="shrink-0">
@@ -1522,7 +1626,8 @@ export default function JadwalDokterPage() {
                         <PaginationItem>
                           <PaginationPrevious
                             onClick={() =>
-                              currentPage > 1 && handlePageChange(currentPage - 1)
+                              currentPage > 1 &&
+                              handlePageChange(currentPage - 1)
                             }
                             className={`h-9 px-3 text-sm ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
                           />
@@ -1545,7 +1650,8 @@ export default function JadwalDokterPage() {
                         <PaginationItem>
                           <PaginationNext
                             onClick={() =>
-                              currentPage < totalPages && handlePageChange(currentPage + 1)
+                              currentPage < totalPages &&
+                              handlePageChange(currentPage + 1)
                             }
                             className={`h-9 px-3 text-sm ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
                           />
@@ -1557,8 +1663,11 @@ export default function JadwalDokterPage() {
                 <div className="flex sm:hidden flex-col items-center gap-3">
                   <div className="text-xs text-muted-foreground text-center">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredDokter.length)} dari{" "}
-                    {filteredDokter.length} dokter
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredDokter.length,
+                    )}{" "}
+                    dari {filteredDokter.length} dokter
                   </div>
                   <Pagination>
                     <PaginationContent className="gap-1">
@@ -1578,7 +1687,8 @@ export default function JadwalDokterPage() {
                       <PaginationItem>
                         <PaginationNext
                           onClick={() =>
-                            currentPage < totalPages && handlePageChange(currentPage + 1)
+                            currentPage < totalPages &&
+                            handlePageChange(currentPage + 1)
                           }
                           className={`h-8 px-2 text-xs ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
                         />
@@ -1611,9 +1721,10 @@ export default function JadwalDokterPage() {
             {/* Upload Foto */}
             <div className="space-y-2">
               <Label className="text-sm">Foto Profile</Label>
-              {(formData.profile || formData.profileFile) && !formData.profileDeleted ? (
+              {(formData.profile || formData.profileFile) &&
+              !formData.profileDeleted ? (
                 <div className="relative w-full h-48 rounded-md overflow-hidden border">
-                  <Image
+                  <CachedImage
                     src={
                       formData.profileFile
                         ? URL.createObjectURL(formData.profileFile)
@@ -1625,6 +1736,7 @@ export default function JadwalDokterPage() {
                     style={{ objectPosition: "center 30%" }}
                     sizes="(max-width: 640px) 100vw, 512px"
                     unoptimized
+                    bucket={""}
                   />
                   <Button
                     type="button"
@@ -1682,7 +1794,9 @@ export default function JadwalDokterPage() {
                     <p className="text-sm font-medium mb-1">
                       Klik untuk upload atau drag & drop
                     </p>
-                    <p className="text-xs text-muted-foreground">Format: WebP, Max: 300KB</p>
+                    <p className="text-xs text-muted-foreground">
+                      Format: WebP, Max: 300KB
+                    </p>
                   </label>
                 </div>
               )}
@@ -1698,7 +1812,8 @@ export default function JadwalDokterPage() {
                 value={formData.nama}
                 onChange={(e) => {
                   setFormData((prev) => ({ ...prev, nama: e.target.value }));
-                  if (formErrors.nama) setFormErrors((prev) => ({ ...prev, nama: "" }));
+                  if (formErrors.nama)
+                    setFormErrors((prev) => ({ ...prev, nama: "" }));
                 }}
                 disabled={submitting}
                 placeholder="Masukkan nama dokter"
@@ -1715,7 +1830,10 @@ export default function JadwalDokterPage() {
                 <Label className="text-sm">
                   Poli <span className="text-red-500">*</span>
                 </Label>
-                <Popover open={poliPopoverOpen} onOpenChange={setPoliPopoverOpen}>
+                <Popover
+                  open={poliPopoverOpen}
+                  onOpenChange={setPoliPopoverOpen}
+                >
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
@@ -1729,7 +1847,8 @@ export default function JadwalDokterPage() {
                       )}
                     >
                       {formData.poli_id
-                        ? poliList.find((p) => p.id === formData.poli_id)?.nama_poli
+                        ? poliList.find((p) => p.id === formData.poli_id)
+                            ?.nama_poli
                         : "Pilih poli"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -1745,16 +1864,24 @@ export default function JadwalDokterPage() {
                               key={poli.id}
                               value={poli.nama_poli}
                               onSelect={() => {
-                                setFormData((prev) => ({ ...prev, poli_id: poli.id }));
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  poli_id: poli.id,
+                                }));
                                 if (formErrors.poli_id)
-                                  setFormErrors((prev) => ({ ...prev, poli_id: "" }));
+                                  setFormErrors((prev) => ({
+                                    ...prev,
+                                    poli_id: "",
+                                  }));
                                 setPoliPopoverOpen(false);
                               }}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  formData.poli_id === poli.id ? "opacity-100" : "opacity-0",
+                                  formData.poli_id === poli.id
+                                    ? "opacity-100"
+                                    : "opacity-0",
                                 )}
                               />
                               {poli.nama_poli}
@@ -1774,7 +1901,10 @@ export default function JadwalDokterPage() {
                 <Select
                   value={formData.status}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, status: value as DokterStatus }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      status: value as DokterStatus,
+                    }))
                   }
                   disabled={submitting}
                 >
@@ -1802,17 +1932,28 @@ export default function JadwalDokterPage() {
                 <TabsList className="w-full">
                   <TabsTrigger value="reguler" className="flex-1">
                     Reguler
-                    {formData.jadwal.filter((j) => j.tipe_jadwal === "reguler").length > 0 && (
+                    {formData.jadwal.filter((j) => j.tipe_jadwal === "reguler")
+                      .length > 0 && (
                       <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
-                        {formData.jadwal.filter((j) => j.tipe_jadwal === "reguler").length}
+                        {
+                          formData.jadwal.filter(
+                            (j) => j.tipe_jadwal === "reguler",
+                          ).length
+                        }
                       </span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="eksekutif" className="flex-1">
                     Eksekutif
-                    {formData.jadwal.filter((j) => j.tipe_jadwal === "eksekutif").length > 0 && (
+                    {formData.jadwal.filter(
+                      (j) => j.tipe_jadwal === "eksekutif",
+                    ).length > 0 && (
                       <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 leading-none">
-                        {formData.jadwal.filter((j) => j.tipe_jadwal === "eksekutif").length}
+                        {
+                          formData.jadwal.filter(
+                            (j) => j.tipe_jadwal === "eksekutif",
+                          ).length
+                        }
                       </span>
                     )}
                   </TabsTrigger>
@@ -1851,38 +1992,102 @@ export default function JadwalDokterPage() {
                     </span>
                   )}
                 </Label>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddPendidikan} disabled={submitting} className="h-7 text-xs">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddPendidikan}
+                  disabled={submitting}
+                  className="h-7 text-xs"
+                >
                   <Plus className="h-3 w-3 mr-1" /> Tambah
                 </Button>
               </div>
-              {formErrors.pendidikan && <p className="text-sm text-red-500">{formErrors.pendidikan}</p>}
+              {formErrors.pendidikan && (
+                <p className="text-sm text-red-500">{formErrors.pendidikan}</p>
+              )}
               {formData.pendidikan.length === 0 ? (
                 <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                  <p className="text-xs text-muted-foreground">Belum ada data pendidikan</p>
+                  <p className="text-xs text-muted-foreground">
+                    Belum ada data pendidikan
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {formData.pendidikan.map((p, index) => (
-                    <div key={p._temp_id} className="p-3 border rounded-lg space-y-2 bg-muted/30">
+                    <div
+                      key={p._temp_id}
+                      className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                    >
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Pendidikan #{index + 1}</Label>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemovePendidikan(p._temp_id)} disabled={submitting} className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Label className="text-xs font-medium">
+                          Pendidikan #{index + 1}
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemovePendidikan(p._temp_id)}
+                          disabled={submitting}
+                          className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-xs">Tahun <span className="text-red-500">*</span></Label>
-                          <Input value={p.tahun} onChange={(e) => handlePendidikanChange(p._temp_id, "tahun", e.target.value)} disabled={submitting} placeholder="2010" maxLength={4} className="h-8 text-xs" />
+                          <Label className="text-xs">
+                            Tahun <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={p.tahun}
+                            onChange={(e) =>
+                              handlePendidikanChange(
+                                p._temp_id,
+                                "tahun",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="2010"
+                            maxLength={4}
+                            className="h-8 text-xs"
+                          />
                         </div>
                         <div className="col-span-2 space-y-1">
-                          <Label className="text-xs">Institusi <span className="text-red-500">*</span></Label>
-                          <Input value={p.institusi} onChange={(e) => handlePendidikanChange(p._temp_id, "institusi", e.target.value)} disabled={submitting} placeholder="Nama universitas / institusi" className="h-8 text-xs" />
+                          <Label className="text-xs">
+                            Institusi <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={p.institusi}
+                            onChange={(e) =>
+                              handlePendidikanChange(
+                                p._temp_id,
+                                "institusi",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="Nama universitas / institusi"
+                            className="h-8 text-xs"
+                          />
                         </div>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Deskripsi</Label>
-                        <Input value={p.deskripsi} onChange={(e) => handlePendidikanChange(p._temp_id, "deskripsi", e.target.value)} disabled={submitting} placeholder="Contoh: S1 Kedokteran Umum" className="h-8 text-xs" />
+                        <Input
+                          value={p.deskripsi}
+                          onChange={(e) =>
+                            handlePendidikanChange(
+                              p._temp_id,
+                              "deskripsi",
+                              e.target.value,
+                            )
+                          }
+                          disabled={submitting}
+                          placeholder="Contoh: S1 Kedokteran Umum"
+                          className="h-8 text-xs"
+                        />
                       </div>
                     </div>
                   ))}
@@ -1901,33 +2106,86 @@ export default function JadwalDokterPage() {
                     </span>
                   )}
                 </Label>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddOrganisasi} disabled={submitting} className="h-7 text-xs">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddOrganisasi}
+                  disabled={submitting}
+                  className="h-7 text-xs"
+                >
                   <Plus className="h-3 w-3 mr-1" /> Tambah
                 </Button>
               </div>
-              {formErrors.organisasi && <p className="text-sm text-red-500">{formErrors.organisasi}</p>}
+              {formErrors.organisasi && (
+                <p className="text-sm text-red-500">{formErrors.organisasi}</p>
+              )}
               {formData.organisasi.length === 0 ? (
                 <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                  <p className="text-xs text-muted-foreground">Belum ada data organisasi</p>
+                  <p className="text-xs text-muted-foreground">
+                    Belum ada data organisasi
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {formData.organisasi.map((o, index) => (
-                    <div key={o._temp_id} className="p-3 border rounded-lg space-y-2 bg-muted/30">
+                    <div
+                      key={o._temp_id}
+                      className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                    >
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Organisasi #{index + 1}</Label>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveOrganisasi(o._temp_id)} disabled={submitting} className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Label className="text-xs font-medium">
+                          Organisasi #{index + 1}
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveOrganisasi(o._temp_id)}
+                          disabled={submitting}
+                          className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-xs">Tahun <span className="text-red-500">*</span></Label>
-                          <Input value={o.tahun} onChange={(e) => handleOrganisasiChange(o._temp_id, "tahun", e.target.value)} disabled={submitting} placeholder="2015" maxLength={4} className="h-8 text-xs" />
+                          <Label className="text-xs">
+                            Tahun <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={o.tahun}
+                            onChange={(e) =>
+                              handleOrganisasiChange(
+                                o._temp_id,
+                                "tahun",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="2015"
+                            maxLength={4}
+                            className="h-8 text-xs"
+                          />
                         </div>
                         <div className="col-span-2 space-y-1">
-                          <Label className="text-xs">Jabatan / Title <span className="text-red-500">*</span></Label>
-                          <Input value={o.title} onChange={(e) => handleOrganisasiChange(o._temp_id, "title", e.target.value)} disabled={submitting} placeholder="Ketua IDI Cabang..." className="h-8 text-xs" />
+                          <Label className="text-xs">
+                            Jabatan / Title{" "}
+                            <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={o.title}
+                            onChange={(e) =>
+                              handleOrganisasiChange(
+                                o._temp_id,
+                                "title",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="Ketua IDI Cabang..."
+                            className="h-8 text-xs"
+                          />
                         </div>
                       </div>
                     </div>
@@ -1947,38 +2205,102 @@ export default function JadwalDokterPage() {
                     </span>
                   )}
                 </Label>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddPelatihan} disabled={submitting} className="h-7 text-xs">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddPelatihan}
+                  disabled={submitting}
+                  className="h-7 text-xs"
+                >
                   <Plus className="h-3 w-3 mr-1" /> Tambah
                 </Button>
               </div>
-              {formErrors.pelatihan && <p className="text-sm text-red-500">{formErrors.pelatihan}</p>}
+              {formErrors.pelatihan && (
+                <p className="text-sm text-red-500">{formErrors.pelatihan}</p>
+              )}
               {formData.pelatihan.length === 0 ? (
                 <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                  <p className="text-xs text-muted-foreground">Belum ada data pelatihan</p>
+                  <p className="text-xs text-muted-foreground">
+                    Belum ada data pelatihan
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {formData.pelatihan.map((p, index) => (
-                    <div key={p._temp_id} className="p-3 border rounded-lg space-y-2 bg-muted/30">
+                    <div
+                      key={p._temp_id}
+                      className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                    >
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Pelatihan #{index + 1}</Label>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemovePelatihan(p._temp_id)} disabled={submitting} className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Label className="text-xs font-medium">
+                          Pelatihan #{index + 1}
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemovePelatihan(p._temp_id)}
+                          disabled={submitting}
+                          className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-xs">Tahun <span className="text-red-500">*</span></Label>
-                          <Input value={p.tahun} onChange={(e) => handlePelatihanChange(p._temp_id, "tahun", e.target.value)} disabled={submitting} placeholder="2020" maxLength={4} className="h-8 text-xs" />
+                          <Label className="text-xs">
+                            Tahun <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={p.tahun}
+                            onChange={(e) =>
+                              handlePelatihanChange(
+                                p._temp_id,
+                                "tahun",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="2020"
+                            maxLength={4}
+                            className="h-8 text-xs"
+                          />
                         </div>
                         <div className="col-span-2 space-y-1">
-                          <Label className="text-xs">Institusi <span className="text-red-500">*</span></Label>
-                          <Input value={p.institusi} onChange={(e) => handlePelatihanChange(p._temp_id, "institusi", e.target.value)} disabled={submitting} placeholder="Nama institusi / penyelenggara" className="h-8 text-xs" />
+                          <Label className="text-xs">
+                            Institusi <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={p.institusi}
+                            onChange={(e) =>
+                              handlePelatihanChange(
+                                p._temp_id,
+                                "institusi",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="Nama institusi / penyelenggara"
+                            className="h-8 text-xs"
+                          />
                         </div>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Deskripsi</Label>
-                        <Input value={p.deskripsi} onChange={(e) => handlePelatihanChange(p._temp_id, "deskripsi", e.target.value)} disabled={submitting} placeholder="Contoh: Pelatihan ACLS, Sertifikasi BLS, dll" className="h-8 text-xs" />
+                        <Input
+                          value={p.deskripsi}
+                          onChange={(e) =>
+                            handlePelatihanChange(
+                              p._temp_id,
+                              "deskripsi",
+                              e.target.value,
+                            )
+                          }
+                          disabled={submitting}
+                          placeholder="Contoh: Pelatihan ACLS, Sertifikasi BLS, dll"
+                          className="h-8 text-xs"
+                        />
                       </div>
                     </div>
                   ))}
@@ -1997,33 +2319,85 @@ export default function JadwalDokterPage() {
                     </span>
                   )}
                 </Label>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddPublikasi} disabled={submitting} className="h-7 text-xs">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddPublikasi}
+                  disabled={submitting}
+                  className="h-7 text-xs"
+                >
                   <Plus className="h-3 w-3 mr-1" /> Tambah
                 </Button>
               </div>
-              {formErrors.publikasi && <p className="text-sm text-red-500">{formErrors.publikasi}</p>}
+              {formErrors.publikasi && (
+                <p className="text-sm text-red-500">{formErrors.publikasi}</p>
+              )}
               {formData.publikasi.length === 0 ? (
                 <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                  <p className="text-xs text-muted-foreground">Belum ada data publikasi</p>
+                  <p className="text-xs text-muted-foreground">
+                    Belum ada data publikasi
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {formData.publikasi.map((p, index) => (
-                    <div key={p._temp_id} className="p-3 border rounded-lg space-y-2 bg-muted/30">
+                    <div
+                      key={p._temp_id}
+                      className="p-3 border rounded-lg space-y-2 bg-muted/30"
+                    >
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Publikasi #{index + 1}</Label>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemovePublikasi(p._temp_id)} disabled={submitting} className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Label className="text-xs font-medium">
+                          Publikasi #{index + 1}
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemovePublikasi(p._temp_id)}
+                          disabled={submitting}
+                          className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-xs">Tahun <span className="text-red-500">*</span></Label>
-                          <Input value={p.tahun} onChange={(e) => handlePublikasiChange(p._temp_id, "tahun", e.target.value)} disabled={submitting} placeholder="2022" maxLength={4} className="h-8 text-xs" />
+                          <Label className="text-xs">
+                            Tahun <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={p.tahun}
+                            onChange={(e) =>
+                              handlePublikasiChange(
+                                p._temp_id,
+                                "tahun",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="2022"
+                            maxLength={4}
+                            className="h-8 text-xs"
+                          />
                         </div>
                         <div className="col-span-2 space-y-1">
-                          <Label className="text-xs">Judul <span className="text-red-500">*</span></Label>
-                          <Input value={p.title} onChange={(e) => handlePublikasiChange(p._temp_id, "title", e.target.value)} disabled={submitting} placeholder="Judul artikel / jurnal" className="h-8 text-xs" />
+                          <Label className="text-xs">
+                            Judul <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={p.title}
+                            onChange={(e) =>
+                              handlePublikasiChange(
+                                p._temp_id,
+                                "title",
+                                e.target.value,
+                              )
+                            }
+                            disabled={submitting}
+                            placeholder="Judul artikel / jurnal"
+                            className="h-8 text-xs"
+                          />
                         </div>
                       </div>
                     </div>
@@ -2033,11 +2407,18 @@ export default function JadwalDokterPage() {
             </div>
 
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={submitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseDialog}
+                disabled={submitting}
+              >
                 Batal
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
@@ -2051,14 +2432,16 @@ export default function JadwalDokterPage() {
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Detail Dokter</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
+              Detail Dokter
+            </DialogTitle>
           </DialogHeader>
           {selectedDokter && (
             <div className="space-y-4">
               {/* Foto */}
               <div className="relative w-full h-48 sm:h-56 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
                 {selectedDokter.profile ? (
-                  <Image
+                  <CachedImage
                     src={selectedDokter.profile}
                     alt={selectedDokter.nama}
                     fill
@@ -2067,20 +2450,34 @@ export default function JadwalDokterPage() {
                     sizes="(max-width: 640px) 100vw, 512px"
                     unoptimized
                     priority
+                    bucket={""}
                   />
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-28 w-28 text-muted-foreground/30">
-                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="h-28 w-28 text-muted-foreground/30"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 )}
               </div>
 
               {/* Info + Audit */}
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold">{selectedDokter.nama}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold">
+                  {selectedDokter.nama}
+                </h2>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {getStatusBadge(selectedDokter.status)}
-                  <Badge variant="outline">{selectedDokter.poli_detail?.nama_poli}</Badge>
+                  <Badge variant="outline">
+                    {selectedDokter.poli_detail?.nama_poli}
+                  </Badge>
                 </div>
 
                 {/* ── Audit box dokter ── */}
@@ -2088,9 +2485,14 @@ export default function JadwalDokterPage() {
                   {/* Dibuat oleh */}
                   <div className="flex items-center gap-2">
                     <Avatar className="h-5 w-5 shrink-0">
-                      <AvatarImage src={selectedDokter.created_by_user?.avatar} alt={selectedDokter.created_by_user?.nama || "User"} />
+                      <AvatarImage
+                        src={selectedDokter.created_by_user?.avatar}
+                        alt={selectedDokter.created_by_user?.nama || "User"}
+                      />
                       <AvatarFallback className="text-[10px]">
-                        {selectedDokter.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}
+                        {selectedDokter.created_by_user?.nama
+                          ?.charAt(0)
+                          .toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                     <span>
@@ -2107,9 +2509,14 @@ export default function JadwalDokterPage() {
                   {selectedDokter.updated_by_user && (
                     <div className="flex items-center gap-2">
                       <Avatar className="h-5 w-5 shrink-0">
-                        <AvatarImage src={selectedDokter.updated_by_user.avatar} alt={selectedDokter.updated_by_user.nama || "User"} />
+                        <AvatarImage
+                          src={selectedDokter.updated_by_user.avatar}
+                          alt={selectedDokter.updated_by_user.nama || "User"}
+                        />
                         <AvatarFallback className="text-[10px]">
-                          {selectedDokter.updated_by_user.nama?.charAt(0).toUpperCase() || "U"}
+                          {selectedDokter.updated_by_user.nama
+                            ?.charAt(0)
+                            .toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <span>
@@ -2141,10 +2548,21 @@ export default function JadwalDokterPage() {
                       eksekutif: JadwalDokter | null;
                     }[] = [];
                     HARI_OPTIONS.forEach((hari) => {
-                      const regulerList = jadwal.filter((j) => j.hari === hari && j.tipe_jadwal === "reguler");
-                      const eksekutifList = jadwal.filter((j) => j.hari === hari && j.tipe_jadwal === "eksekutif");
-                      if (regulerList.length === 0 && eksekutifList.length === 0) return;
-                      const maxRows = Math.max(regulerList.length, eksekutifList.length);
+                      const regulerList = jadwal.filter(
+                        (j) => j.hari === hari && j.tipe_jadwal === "reguler",
+                      );
+                      const eksekutifList = jadwal.filter(
+                        (j) => j.hari === hari && j.tipe_jadwal === "eksekutif",
+                      );
+                      if (
+                        regulerList.length === 0 &&
+                        eksekutifList.length === 0
+                      )
+                        return;
+                      const maxRows = Math.max(
+                        regulerList.length,
+                        eksekutifList.length,
+                      );
                       for (let i = 0; i < maxRows; i++) {
                         allRows.push({
                           hari,
@@ -2159,14 +2577,23 @@ export default function JadwalDokterPage() {
                         <table className="w-full">
                           <thead>
                             <tr className="bg-muted/50 border-b">
-                              <th className="text-left px-4 py-2.5 font-semibold text-foreground">Hari</th>
-                              <th className="text-left px-4 py-2.5 font-semibold text-foreground">Jadwal BPJS</th>
-                              <th className="text-left px-4 py-2.5 font-semibold text-foreground">Jadwal Eksekutif</th>
+                              <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                                Hari
+                              </th>
+                              <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                                Jadwal BPJS
+                              </th>
+                              <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                                Jadwal Eksekutif
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {allRows.map((row, idx) => (
-                              <tr key={idx} className="border-b last:border-b-0">
+                              <tr
+                                key={idx}
+                                className="border-b last:border-b-0"
+                              >
                                 <td className="px-4 py-2.5">
                                   {row.isFirst ? (
                                     <div className="flex items-center gap-2 text-muted-foreground font-medium">
@@ -2178,14 +2605,22 @@ export default function JadwalDokterPage() {
                                   )}
                                 </td>
                                 <td className="px-4 py-2.5 text-muted-foreground">
-                                  {row.reguler
-                                    ? `${row.reguler.jam_mulai} - ${row.reguler.jam_selesai}`
-                                    : <span className="text-muted-foreground/40">-</span>}
+                                  {row.reguler ? (
+                                    `${row.reguler.jam_mulai} - ${row.reguler.jam_selesai}`
+                                  ) : (
+                                    <span className="text-muted-foreground/40">
+                                      -
+                                    </span>
+                                  )}
                                 </td>
                                 <td className="px-4 py-2.5 text-muted-foreground">
-                                  {row.eksekutif
-                                    ? `${row.eksekutif.jam_mulai} - ${row.eksekutif.jam_selesai}`
-                                    : <span className="text-muted-foreground/40">-</span>}
+                                  {row.eksekutif ? (
+                                    `${row.eksekutif.jam_mulai} - ${row.eksekutif.jam_selesai}`
+                                  ) : (
+                                    <span className="text-muted-foreground/40">
+                                      -
+                                    </span>
+                                  )}
                                 </td>
                               </tr>
                             ))}
@@ -2207,9 +2642,15 @@ export default function JadwalDokterPage() {
                     <table className="w-full">
                       <thead>
                         <tr className="bg-muted/50 border-b">
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground w-20">Tahun</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">Institusi</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">Deskripsi</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground w-20">
+                            Tahun
+                          </th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                            Institusi
+                          </th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                            Deskripsi
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2218,10 +2659,18 @@ export default function JadwalDokterPage() {
                           .sort((a, b) => Number(b.tahun) - Number(a.tahun))
                           .map((p, idx) => (
                             <tr key={idx} className="border-b last:border-b-0">
-                              <td className="px-4 py-2.5 text-muted-foreground font-medium">{p.tahun}</td>
-                              <td className="px-4 py-2.5 text-foreground">{p.institusi}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground font-medium">
+                                {p.tahun}
+                              </td>
+                              <td className="px-4 py-2.5 text-foreground">
+                                {p.institusi}
+                              </td>
                               <td className="px-4 py-2.5 text-muted-foreground">
-                                {p.deskripsi || <span className="text-muted-foreground/40">-</span>}
+                                {p.deskripsi || (
+                                  <span className="text-muted-foreground/40">
+                                    -
+                                  </span>
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -2241,8 +2690,12 @@ export default function JadwalDokterPage() {
                     <table className="w-full">
                       <thead>
                         <tr className="bg-muted/50 border-b">
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground w-20">Tahun</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">Jabatan / Title</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground w-20">
+                            Tahun
+                          </th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                            Jabatan / Title
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2251,8 +2704,12 @@ export default function JadwalDokterPage() {
                           .sort((a, b) => Number(b.tahun) - Number(a.tahun))
                           .map((o, idx) => (
                             <tr key={idx} className="border-b last:border-b-0">
-                              <td className="px-4 py-2.5 text-muted-foreground font-medium">{o.tahun}</td>
-                              <td className="px-4 py-2.5 text-foreground">{o.title}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground font-medium">
+                                {o.tahun}
+                              </td>
+                              <td className="px-4 py-2.5 text-foreground">
+                                {o.title}
+                              </td>
                             </tr>
                           ))}
                       </tbody>
@@ -2271,9 +2728,15 @@ export default function JadwalDokterPage() {
                     <table className="w-full">
                       <thead>
                         <tr className="bg-muted/50 border-b">
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground w-20">Tahun</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">Institusi</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">Deskripsi</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground w-20">
+                            Tahun
+                          </th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                            Institusi
+                          </th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                            Deskripsi
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2282,10 +2745,18 @@ export default function JadwalDokterPage() {
                           .sort((a, b) => Number(b.tahun) - Number(a.tahun))
                           .map((p, idx) => (
                             <tr key={idx} className="border-b last:border-b-0">
-                              <td className="px-4 py-2.5 text-muted-foreground font-medium">{p.tahun}</td>
-                              <td className="px-4 py-2.5 text-foreground">{p.institusi}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground font-medium">
+                                {p.tahun}
+                              </td>
+                              <td className="px-4 py-2.5 text-foreground">
+                                {p.institusi}
+                              </td>
                               <td className="px-4 py-2.5 text-muted-foreground">
-                                {p.deskripsi || <span className="text-muted-foreground/40">-</span>}
+                                {p.deskripsi || (
+                                  <span className="text-muted-foreground/40">
+                                    -
+                                  </span>
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -2305,8 +2776,12 @@ export default function JadwalDokterPage() {
                     <table className="w-full">
                       <thead>
                         <tr className="bg-muted/50 border-b">
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground w-20">Tahun</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">Judul</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground w-20">
+                            Tahun
+                          </th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-foreground">
+                            Judul
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2315,8 +2790,12 @@ export default function JadwalDokterPage() {
                           .sort((a, b) => Number(b.tahun) - Number(a.tahun))
                           .map((p, idx) => (
                             <tr key={idx} className="border-b last:border-b-0">
-                              <td className="px-4 py-2.5 text-muted-foreground font-medium">{p.tahun}</td>
-                              <td className="px-4 py-2.5 text-foreground">{p.title}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground font-medium">
+                                {p.tahun}
+                              </td>
+                              <td className="px-4 py-2.5 text-foreground">
+                                {p.title}
+                              </td>
                             </tr>
                           ))}
                       </tbody>
@@ -2327,7 +2806,10 @@ export default function JadwalDokterPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDetailDialogOpen(false)}
+            >
               Tutup
             </Button>
             {selectedDokter && (
@@ -2348,15 +2830,21 @@ export default function JadwalDokterPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">Hapus Dokter?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base sm:text-lg">
+              Hapus Dokter?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
               Apakah Anda yakin ingin menghapus dokter{" "}
-              <strong>{selectedDokter?.nama}</strong>? Semua jadwal, pendidikan, organisasi,
-              pelatihan, dan publikasi juga akan terhapus. Tindakan ini tidak dapat dibatalkan.
+              <strong>{selectedDokter?.nama}</strong>? Semua jadwal, pendidikan,
+              organisasi, pelatihan, dan publikasi juga akan terhapus. Tindakan
+              ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -2372,18 +2860,26 @@ export default function JadwalDokterPage() {
       </AlertDialog>
 
       {/* Bulk Delete Dialog */}
-      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+      <AlertDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+      >
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">Hapus Beberapa Dokter?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base sm:text-lg">
+              Hapus Beberapa Dokter?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
               Apakah Anda yakin ingin menghapus{" "}
-              <strong>{selectedItems.length} dokter</strong> yang dipilih? Tindakan ini tidak
-              dapat dibatalkan.
+              <strong>{selectedItems.length} dokter</strong> yang dipilih?
+              Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -2392,13 +2888,18 @@ export default function JadwalDokterPage() {
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto"
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {submitting ? "Menghapus..." : `Hapus ${selectedItems.length} Dokter`}
+              {submitting
+                ? "Menghapus..."
+                : `Hapus ${selectedItems.length} Dokter`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
+      <AccessDeniedDialog
+        open={showAccessDenied}
+        onOpenChange={setShowAccessDenied}
+      />
     </div>
   );
 }

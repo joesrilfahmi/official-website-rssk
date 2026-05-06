@@ -9,35 +9,63 @@ import {
 import { cn } from "@/lib/utils";
 import { AccessDeniedDialog } from "@/components/access-denied-dialog";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import CachedImage from "@/components/ui/custom/cached-image";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
-  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList,
-  BreadcrumbPage, BreadcrumbSeparator,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Pagination, PaginationContent, PaginationEllipsis, PaginationItem,
-  PaginationLink, PaginationNext, PaginationPrevious,
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase/client";
@@ -46,7 +74,17 @@ import { formatDateTime } from "@/lib/utils";
 import { validateImage } from "@/lib/validasi/validasiImage";
 import { PromoStatus, PromoWithCreator } from "@/types/index";
 import {
-  Calendar, Clock, Eye, File, Loader2, Pencil, Plus, Search, Trash2, Upload, X,
+  Calendar,
+  Clock,
+  Eye,
+  File,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -123,12 +161,14 @@ const STATUS_OPTIONS: { value: PromoStatus; label: string; color: string }[] = [
   {
     value: "active",
     label: "Aktif",
-    color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700",
+    color:
+      "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700",
   },
   {
     value: "non_active",
     label: "Tidak Aktif",
-    color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700",
+    color:
+      "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700",
   },
 ];
 
@@ -150,7 +190,9 @@ export default function PromoPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [selectedPromo, setSelectedPromo] = useState<PromoWithCreator | null>(null);
+  const [selectedPromo, setSelectedPromo] = useState<PromoWithCreator | null>(
+    null,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [showAccessDenied, setShowAccessDenied] = useState(false);
@@ -158,10 +200,13 @@ export default function PromoPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PromoStatus | "all">("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">(
+    "newest",
+  );
 
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
-  const [formErrors, setFormErrors] = useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
+  const [formErrors, setFormErrors] =
+    useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -187,11 +232,13 @@ export default function PromoPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("promo")
-        .select(`
+        .select(
+          `
           *,
           created_by_user:users!promo_created_by_fkey(id, nama, username, avatar),
           updated_by_user:users!promo_updated_by_fkey(id, nama, username, avatar)
-        `)
+        `,
+        )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -205,7 +252,9 @@ export default function PromoPage() {
     }
   }, []);
 
-  useEffect(() => { fetchPromo(); }, [fetchPromo]);
+  useEffect(() => {
+    fetchPromo();
+  }, [fetchPromo]);
 
   /* ── Filter & sort ── */
   useEffect(() => {
@@ -215,7 +264,9 @@ export default function PromoPage() {
       filtered = filtered.filter(
         (item) =>
           item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          item.description.toLowerCase().includes(debouncedSearch.toLowerCase()),
+          item.description
+            .toLowerCase()
+            .includes(debouncedSearch.toLowerCase()),
       );
     }
 
@@ -225,11 +276,20 @@ export default function PromoPage() {
 
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case "newest": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case "oldest": return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case "a-z": return a.title.localeCompare(b.title, "id");
-        case "z-a": return b.title.localeCompare(a.title, "id");
-        default: return 0;
+        case "newest":
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        case "a-z":
+          return a.title.localeCompare(b.title, "id");
+        case "z-a":
+          return b.title.localeCompare(a.title, "id");
+        default:
+          return 0;
       }
     });
 
@@ -252,7 +312,9 @@ export default function PromoPage() {
 
   /* ── Selection ── */
   const handleSelectItem = (id: string) =>
-    setSelectedItems((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
 
   const handleSelectAll = (checked: boolean) =>
     setSelectedItems(checked ? paginatedPromo.map((item) => item.id) : []);
@@ -357,7 +419,11 @@ export default function PromoPage() {
       errors.end_date = "Tanggal berakhir wajib diisi";
       isValid = false;
     }
-    if (formData.start_date && formData.end_date && formData.end_date < formData.start_date) {
+    if (
+      formData.start_date &&
+      formData.end_date &&
+      formData.end_date < formData.start_date
+    ) {
       errors.end_date = "Tanggal berakhir tidak boleh sebelum tanggal mulai";
       isValid = false;
     }
@@ -369,7 +435,10 @@ export default function PromoPage() {
   /* ── Submit ── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) { toast.error("Mohon lengkapi semua field yang wajib diisi"); return; }
+    if (!validateForm()) {
+      toast.error("Mohon lengkapi semua field yang wajib diisi");
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -386,8 +455,13 @@ export default function PromoPage() {
           const oldPath = getFilePathFromUrl(selectedPromo.picture, "promo");
           if (oldPath) await deleteFile("promo", oldPath);
         }
-        const uploadResult = await uploadFile({ bucket: "promo", folder: "images", file: formData.pictureFile });
-        if (!uploadResult.success) throw new Error(uploadResult.error || "Gagal mengupload gambar");
+        const uploadResult = await uploadFile({
+          bucket: "promo",
+          folder: "images",
+          file: formData.pictureFile,
+        });
+        if (!uploadResult.success)
+          throw new Error(uploadResult.error || "Gagal mengupload gambar");
         pictureUrl = uploadResult.url || "";
       }
 
@@ -403,7 +477,11 @@ export default function PromoPage() {
       if (selectedPromo) {
         const { error } = await supabase
           .from("promo")
-          .update({ ...payload, updated_by: currentUserId, updated_at: new Date().toISOString() })
+          .update({
+            ...payload,
+            updated_by: currentUserId,
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", selectedPromo.id);
         if (error) throw error;
         toast.success("Promo berhasil diperbarui");
@@ -434,7 +512,10 @@ export default function PromoPage() {
         const path = getFilePathFromUrl(selectedPromo.picture, "promo");
         if (path) await deleteFile("promo", path);
       }
-      const { error } = await supabase.from("promo").delete().eq("id", selectedPromo.id);
+      const { error } = await supabase
+        .from("promo")
+        .delete()
+        .eq("id", selectedPromo.id);
       if (error) throw error;
       toast.success("Promo berhasil dihapus");
       setDeleteDialogOpen(false);
@@ -466,7 +547,10 @@ export default function PromoPage() {
   const getStatusBadge = (item: PromoWithCreator) => {
     if (item.status === "non_active") {
       return (
-        <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700">
+        <Badge
+          variant="outline"
+          className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700"
+        >
           Tidak Aktif
         </Badge>
       );
@@ -474,20 +558,29 @@ export default function PromoPage() {
     const ds = getDateStatus(item.start_date, item.end_date);
     if (ds === "upcoming") {
       return (
-        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
+        <Badge
+          variant="outline"
+          className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700"
+        >
           Belum Mulai
         </Badge>
       );
     }
     if (ds === "expired") {
       return (
-        <Badge variant="outline" className="bg-gray-100 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
+        <Badge
+          variant="outline"
+          className="bg-gray-100 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400 border border-gray-300 dark:border-gray-600"
+        >
           Kadaluarsa
         </Badge>
       );
     }
     return (
-      <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700">
+      <Badge
+        variant="outline"
+        className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700"
+      >
         Aktif
       </Badge>
     );
@@ -560,10 +653,16 @@ export default function PromoPage() {
                 <Trash2 className="h-4 w-4 sm:mr-2 shrink-0" />
                 <span className="hidden sm:inline truncate">Hapus</span>
                 <span className="sm:hidden">({selectedItems.length})</span>
-                <span className="hidden sm:inline">({selectedItems.length})</span>
+                <span className="hidden sm:inline">
+                  ({selectedItems.length})
+                </span>
               </Button>
             )}
-            <Button size="sm" onClick={() => handleOpenDialog()} className="flex-1 sm:flex-initial min-w-0">
+            <Button
+              size="sm"
+              onClick={() => handleOpenDialog()}
+              className="flex-1 sm:flex-initial min-w-0"
+            >
               <Plus className="h-4 w-4 sm:mr-2 shrink-0" />
               <span className="hidden sm:inline truncate">Tambah Promo</span>
               <span className="sm:hidden truncate">Tambah</span>
@@ -578,30 +677,61 @@ export default function PromoPage() {
           {paginatedPromo.length > 0 && (
             <div className="flex items-center gap-2">
               <Checkbox
-                checked={selectedItems.length === paginatedPromo.length && paginatedPromo.length > 0}
+                checked={
+                  selectedItems.length === paginatedPromo.length &&
+                  paginatedPromo.length > 0
+                }
                 onCheckedChange={handleSelectAll}
                 id="select-all"
               />
-              <Label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">All</Label>
+              <Label
+                htmlFor="select-all"
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
+                All
+              </Label>
             </div>
           )}
           <div className="hidden sm:flex sm:items-center sm:gap-2 sm:ml-auto">
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="w-[120px] h-9"><SelectValue placeholder="Urutan" /></SelectTrigger>
+            <Select
+              value={sortBy}
+              onValueChange={(v) => setSortBy(v as typeof sortBy)}
+            >
+              <SelectTrigger className="w-[120px] h-9">
+                <SelectValue placeholder="Urutan" />
+              </SelectTrigger>
               <SelectContent>
-                {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {SORT_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as PromoStatus | "all")}>
-              <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as PromoStatus | "all")}
+            >
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Status</SelectItem>
-                {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="relative w-[200px] lg:w-[250px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Cari promo..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9" />
+              <Input
+                placeholder="Cari promo..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9"
+              />
             </div>
           </div>
         </div>
@@ -609,23 +739,46 @@ export default function PromoPage() {
         {/* Mobile filters */}
         <div className="flex sm:hidden flex-col gap-2">
           <div className="flex gap-2">
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="flex-1 h-9 text-sm"><SelectValue placeholder="Urutan" /></SelectTrigger>
+            <Select
+              value={sortBy}
+              onValueChange={(v) => setSortBy(v as typeof sortBy)}
+            >
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Urutan" />
+              </SelectTrigger>
               <SelectContent>
-                {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {SORT_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as PromoStatus | "all")}>
-              <SelectTrigger className="flex-1 h-9 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as PromoStatus | "all")}
+            >
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua</SelectItem>
-                {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Cari promo..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9 text-sm" />
+            <Input
+              placeholder="Cari promo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
           </div>
         </div>
       </div>
@@ -641,7 +794,9 @@ export default function PromoPage() {
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-2/3" />
-                  <div className="flex gap-2"><Skeleton className="h-6 w-20" /></div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-20" />
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -652,9 +807,13 @@ export default function PromoPage() {
               <div className="rounded-full bg-muted p-3 mb-3 sm:mb-4">
                 <File className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
               </div>
-              <p className="text-base sm:text-lg font-semibold text-muted-foreground">Tidak ada promo ditemukan</p>
+              <p className="text-base sm:text-lg font-semibold text-muted-foreground">
+                Tidak ada promo ditemukan
+              </p>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {searchQuery || statusFilter !== "all" ? "Coba ubah filter pencarian" : "Mulai dengan menambahkan promo baru"}
+                {searchQuery || statusFilter !== "all"
+                  ? "Coba ubah filter pencarian"
+                  : "Mulai dengan menambahkan promo baru"}
               </p>
             </CardContent>
           </Card>
@@ -669,7 +828,10 @@ export default function PromoPage() {
                     className={`group overflow-hidden transition-all hover:shadow-lg cursor-pointer relative ${dimmed ? "opacity-60 grayscale" : ""}`}
                     onClick={() => handleOpenDetailDialog(item)}
                   >
-                    <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
+                    <div
+                      className="absolute top-3 left-3 z-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Checkbox
                         checked={selectedItems.includes(item.id)}
                         onCheckedChange={() => handleSelectItem(item.id)}
@@ -678,10 +840,16 @@ export default function PromoPage() {
                     </div>
                     <div className="relative h-48 bg-muted overflow-hidden rounded-t-xl -mt-6">
                       {item.picture ? (
-                        <Image src={item.picture} alt={item.title} fill
+                        <CachedImage
+                          src={item.picture}
+                          alt={item.title}
+                          fill
                           className="object-cover transition-transform group-hover:scale-105"
                           style={{ objectPosition: "center 30%" }}
-                          sizes="(max-width: 640px) 100vw, 512px" unoptimized />
+                          sizes="(max-width: 640px) 100vw, 512px"
+                          unoptimized
+                          bucket={""}
+                        />
                       ) : (
                         <div className="flex h-full items-center justify-center">
                           <Eye className="h-12 w-12 text-muted-foreground/20" />
@@ -690,11 +858,15 @@ export default function PromoPage() {
                     </div>
                     <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                       <div>
-                        <div className="flex gap-2 flex-wrap mb-2">{getStatusBadge(item)}</div>
+                        <div className="flex gap-2 flex-wrap mb-2">
+                          {getStatusBadge(item)}
+                        </div>
                         <h3 className="font-semibold text-base lg:text-lg line-clamp-2 group-hover:text-primary transition-colors">
                           {item.title}
                         </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{item.description}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                          {item.description}
+                        </p>
                         {(item.start_date || item.end_date) && (
                           <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                             <Calendar className="w-3 h-3 shrink-0" />
@@ -702,9 +874,8 @@ export default function PromoPage() {
                               {item.start_date && item.end_date
                                 ? `${new Date(item.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })} – ${new Date(item.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
                                 : item.start_date
-                                ? `Mulai ${new Date(item.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
-                                : `Hingga ${new Date(item.end_date!).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
-                              }
+                                  ? `Mulai ${new Date(item.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
+                                  : `Hingga ${new Date(item.end_date!).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`}
                             </span>
                           </div>
                         )}
@@ -712,22 +883,47 @@ export default function PromoPage() {
                       <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <Avatar className="h-5 w-5 shrink-0">
-                            <AvatarImage src={item.created_by_user?.avatar} alt={item.created_by_user?.nama || "User"} />
-                            <AvatarFallback className="text-xs">{item.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                            <AvatarImage
+                              src={item.created_by_user?.avatar}
+                              alt={item.created_by_user?.nama || "User"}
+                            />
+                            <AvatarFallback className="text-xs">
+                              {item.created_by_user?.nama
+                                ?.charAt(0)
+                                .toUpperCase() || "U"}
+                            </AvatarFallback>
                           </Avatar>
-                          <span className="truncate text-xs text-muted-foreground">{item.created_by_user?.nama}</span>
-                          <span className="text-muted-foreground hidden sm:inline">•</span>
+                          <span className="truncate text-xs text-muted-foreground">
+                            {item.created_by_user?.nama}
+                          </span>
+                          <span className="text-muted-foreground hidden sm:inline">
+                            •
+                          </span>
                           <Calendar className="h-3 w-3 shrink-0 hidden sm:block" />
                           <span className="text-xs text-muted-foreground hidden sm:inline">
-                            {new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                            {new Date(item.created_at).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )}
                           </span>
                         </div>
                         <div className="flex gap-2 shrink-0">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="secondary" size="icon" className="h-8 w-8 shadow-md"
-                                  onClick={(e) => { e.stopPropagation(); handleOpenDialog(item); }}>
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8 shadow-md"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDialog(item);
+                                  }}
+                                >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
@@ -737,8 +933,15 @@ export default function PromoPage() {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="destructive" size="icon" className="h-8 w-8 shadow-md"
-                                  onClick={(e) => { e.stopPropagation(); handleOpenDeleteDialog(item); }}>
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="h-8 w-8 shadow-md"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDeleteDialog(item);
+                                  }}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
@@ -759,26 +962,45 @@ export default function PromoPage() {
                 <div className="hidden sm:flex items-center justify-between gap-4">
                   <div className="text-sm text-muted-foreground shrink-0">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredPromo.length)} dari {filteredPromo.length} data promo
+                    {Math.min(currentPage * itemsPerPage, filteredPromo.length)}{" "}
+                    dari {filteredPromo.length} data promo
                   </div>
                   <div className="flex-1" />
                   <div className="shrink-0">
                     <Pagination>
                       <PaginationContent className="gap-1">
                         <PaginationItem>
-                          <PaginationPrevious onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                            className={`h-9 px-3 text-sm ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`} />
+                          <PaginationPrevious
+                            onClick={() =>
+                              currentPage > 1 &&
+                              handlePageChange(currentPage - 1)
+                            }
+                            className={`h-9 px-3 text-sm ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                          />
                         </PaginationItem>
                         {getPageNumbers().map((page, index) => (
                           <PaginationItem key={index}>
-                            {page === "ellipsis" ? <PaginationEllipsis /> : (
-                              <PaginationLink onClick={() => handlePageChange(page as number)} isActive={currentPage === page} className="cursor-pointer h-9">{page}</PaginationLink>
+                            {page === "ellipsis" ? (
+                              <PaginationEllipsis />
+                            ) : (
+                              <PaginationLink
+                                onClick={() => handlePageChange(page as number)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer h-9"
+                              >
+                                {page}
+                              </PaginationLink>
                             )}
                           </PaginationItem>
                         ))}
                         <PaginationItem>
-                          <PaginationNext onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                            className={`h-9 px-3 text-sm ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`} />
+                          <PaginationNext
+                            onClick={() =>
+                              currentPage < totalPages &&
+                              handlePageChange(currentPage + 1)
+                            }
+                            className={`h-9 px-3 text-sm ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                          />
                         </PaginationItem>
                       </PaginationContent>
                     </Pagination>
@@ -787,13 +1009,18 @@ export default function PromoPage() {
                 <div className="flex sm:hidden flex-col items-center gap-3">
                   <div className="text-xs text-muted-foreground text-center px-2">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredPromo.length)} dari {filteredPromo.length} data promo
+                    {Math.min(currentPage * itemsPerPage, filteredPromo.length)}{" "}
+                    dari {filteredPromo.length} data promo
                   </div>
                   <Pagination>
                     <PaginationContent className="gap-1">
                       <PaginationItem>
-                        <PaginationPrevious onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                          className={`h-8 px-2 text-xs ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`} />
+                        <PaginationPrevious
+                          onClick={() =>
+                            currentPage > 1 && handlePageChange(currentPage - 1)
+                          }
+                          className={`h-8 px-2 text-xs ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                        />
                       </PaginationItem>
                       <PaginationItem>
                         <div className="h-8 px-2 flex items-center justify-center text-xs font-medium min-w-[60px]">
@@ -801,8 +1028,13 @@ export default function PromoPage() {
                         </div>
                       </PaginationItem>
                       <PaginationItem>
-                        <PaginationNext onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                          className={`h-8 px-2 text-xs ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`} />
+                        <PaginationNext
+                          onClick={() =>
+                            currentPage < totalPages &&
+                            handlePageChange(currentPage + 1)
+                          }
+                          className={`h-8 px-2 text-xs ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                        />
                       </PaginationItem>
                     </PaginationContent>
                   </Pagination>
@@ -823,144 +1055,306 @@ export default function PromoPage() {
               {selectedPromo ? "Edit Promo" : "Tambah Promo Baru"}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              {selectedPromo ? "Perbarui informasi promo" : "Isi form di bawah untuk menambahkan promo baru"}
+              {selectedPromo
+                ? "Perbarui informasi promo"
+                : "Isi form di bawah untuk menambahkan promo baru"}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-
             {/* Gambar */}
             <div className="space-y-2">
-              <Label htmlFor="picture" className="text-sm">Gambar Promo</Label>
-              {(formData.picture || formData.pictureFile) && !formData.pictureDeleted ? (
+              <Label htmlFor="picture" className="text-sm">
+                Gambar Promo
+              </Label>
+              {(formData.picture || formData.pictureFile) &&
+              !formData.pictureDeleted ? (
                 <div className="relative w-full h-48 rounded-md overflow-hidden border">
-                  <Image
-                    src={formData.pictureFile ? URL.createObjectURL(formData.pictureFile) : formData.picture}
-                    alt="Preview" fill className="object-cover" unoptimized
+                  <CachedImage
+                    src={
+                      formData.pictureFile
+                        ? URL.createObjectURL(formData.pictureFile)
+                        : formData.picture
+                    }
+                    alt="Preview"
+                    fill
+                    className="object-cover"
+                    unoptimized
+                    bucket={""}
                   />
-                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8"
-                    onClick={() => setFormData({ ...formData, pictureFile: null, pictureDeleted: true })}
-                    disabled={submitting}>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        pictureFile: null,
+                        pictureDeleted: true,
+                      })
+                    }
+                    disabled={submitting}
+                  >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
                 <>
-                  <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors"
+                  <div
+                    className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors"
                     onDrop={(e) => {
                       e.preventDefault();
                       const file = e.dataTransfer.files[0];
                       if (!file) return;
                       const validation = validateImage(file);
-                      if (!validation.valid) { setFormErrors({ ...formErrors, picture: validation.error || "" }); toast.error(validation.error || "File tidak valid"); return; }
-                      setFormData({ ...formData, pictureFile: file, pictureDeleted: false });
+                      if (!validation.valid) {
+                        setFormErrors({
+                          ...formErrors,
+                          picture: validation.error || "",
+                        });
+                        toast.error(validation.error || "File tidak valid");
+                        return;
+                      }
+                      setFormData({
+                        ...formData,
+                        pictureFile: file,
+                        pictureDeleted: false,
+                      });
                       setFormErrors({ ...formErrors, picture: "" });
                     }}
                     onDragOver={(e) => e.preventDefault()}
                   >
-                    <Input id="picture" type="file" accept="image/webp" onChange={handlePictureChange} disabled={submitting} className="hidden" />
-                    <label htmlFor="picture" className="flex flex-col items-center justify-center cursor-pointer">
-                      <div className="rounded-full bg-muted p-3 mb-2"><Upload className="h-6 w-6 text-muted-foreground" /></div>
-                      <p className="text-sm font-medium mb-1">Klik untuk upload atau drag & drop</p>
-                      <p className="text-xs text-muted-foreground">Format: WebP, Max: 300KB</p>
+                    <Input
+                      id="picture"
+                      type="file"
+                      accept="image/webp"
+                      onChange={handlePictureChange}
+                      disabled={submitting}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="picture"
+                      className="flex flex-col items-center justify-center cursor-pointer"
+                    >
+                      <div className="rounded-full bg-muted p-3 mb-2">
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium mb-1">
+                        Klik untuk upload atau drag & drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Format: WebP, Max: 300KB
+                      </p>
                     </label>
                   </div>
-                  {formErrors.picture && <p className="text-sm text-red-500">{formErrors.picture}</p>}
+                  {formErrors.picture && (
+                    <p className="text-sm text-red-500">{formErrors.picture}</p>
+                  )}
                 </>
               )}
             </div>
 
             {/* Judul */}
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-sm">Judul Promo <span className="text-red-500">*</span></Label>
-              <Input id="title" value={formData.title}
-                onChange={(e) => { setFormData({ ...formData, title: e.target.value }); if (formErrors.title) setFormErrors({ ...formErrors, title: "" }); }}
-                disabled={submitting} placeholder="Masukkan judul promo" className={formErrors.title ? "border-red-500" : ""} />
-              {formErrors.title && <p className="text-sm text-red-500">{formErrors.title}</p>}
+              <Label htmlFor="title" className="text-sm">
+                Judul Promo <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  if (formErrors.title)
+                    setFormErrors({ ...formErrors, title: "" });
+                }}
+                disabled={submitting}
+                placeholder="Masukkan judul promo"
+                className={formErrors.title ? "border-red-500" : ""}
+              />
+              {formErrors.title && (
+                <p className="text-sm text-red-500">{formErrors.title}</p>
+              )}
             </div>
 
             {/* Deskripsi */}
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm">Deskripsi <span className="text-red-500">*</span></Label>
-              <Textarea id="description" value={formData.description}
-                onChange={(e) => { setFormData({ ...formData, description: e.target.value }); if (formErrors.description) setFormErrors({ ...formErrors, description: "" }); }}
-                disabled={submitting} placeholder="Masukkan deskripsi promo"
-                className={`min-h-[150px] resize-y ${formErrors.description ? "border-red-500" : ""}`} />
-              {formErrors.description && <p className="text-sm text-red-500">{formErrors.description}</p>}
+              <Label htmlFor="description" className="text-sm">
+                Deskripsi <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => {
+                  setFormData({ ...formData, description: e.target.value });
+                  if (formErrors.description)
+                    setFormErrors({ ...formErrors, description: "" });
+                }}
+                disabled={submitting}
+                placeholder="Masukkan deskripsi promo"
+                className={`min-h-[150px] resize-y ${formErrors.description ? "border-red-500" : ""}`}
+              />
+              {formErrors.description && (
+                <p className="text-sm text-red-500">{formErrors.description}</p>
+              )}
             </div>
 
             {/* Tanggal mulai & berakhir */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-sm">Tanggal Mulai <span className="text-red-500">*</span></Label>
+                <Label className="text-sm">
+                  Tanggal Mulai <span className="text-red-500">*</span>
+                </Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button type="button" variant="outline" disabled={submitting}
-                      className={cn("w-full justify-start text-left font-normal", !formData.start_date && "text-muted-foreground", formErrors.start_date && "border-red-500")}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={submitting}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.start_date && "text-muted-foreground",
+                        formErrors.start_date && "border-red-500",
+                      )}
+                    >
                       <Calendar className="mr-2 h-4 w-4" />
                       {formData.start_date
-                        ? new Date(formData.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+                        ? new Date(formData.start_date).toLocaleDateString(
+                            "id-ID",
+                            { day: "numeric", month: "long", year: "numeric" },
+                          )
                         : "Pilih tanggal mulai"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <CalendarComponent mode="single"
-                      selected={formData.start_date ? new Date(formData.start_date) : undefined}
+                    <CalendarComponent
+                      mode="single"
+                      selected={
+                        formData.start_date
+                          ? new Date(formData.start_date)
+                          : undefined
+                      }
                       onSelect={(date) => {
-                        setFormData({ ...formData, start_date: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : "" });
-                        if (formErrors.start_date) setFormErrors({ ...formErrors, start_date: "" });
-                      }} />
+                        setFormData({
+                          ...formData,
+                          start_date: date
+                            ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                            : "",
+                        });
+                        if (formErrors.start_date)
+                          setFormErrors({ ...formErrors, start_date: "" });
+                      }}
+                    />
                   </PopoverContent>
                 </Popover>
-                {formErrors.start_date && <p className="text-sm text-red-500">{formErrors.start_date}</p>}
+                {formErrors.start_date && (
+                  <p className="text-sm text-red-500">
+                    {formErrors.start_date}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm">Tanggal Berakhir <span className="text-red-500">*</span></Label>
+                <Label className="text-sm">
+                  Tanggal Berakhir <span className="text-red-500">*</span>
+                </Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button type="button" variant="outline" disabled={submitting}
-                      className={cn("w-full justify-start text-left font-normal", !formData.end_date && "text-muted-foreground", formErrors.end_date && "border-red-500")}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={submitting}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.end_date && "text-muted-foreground",
+                        formErrors.end_date && "border-red-500",
+                      )}
+                    >
                       <Calendar className="mr-2 h-4 w-4" />
                       {formData.end_date
-                        ? new Date(formData.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+                        ? new Date(formData.end_date).toLocaleDateString(
+                            "id-ID",
+                            { day: "numeric", month: "long", year: "numeric" },
+                          )
                         : "Pilih tanggal berakhir"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <CalendarComponent mode="single"
-                      selected={formData.end_date ? new Date(formData.end_date) : undefined}
-                      disabled={(date) => formData.start_date ? date < new Date(formData.start_date) : false}
+                    <CalendarComponent
+                      mode="single"
+                      selected={
+                        formData.end_date
+                          ? new Date(formData.end_date)
+                          : undefined
+                      }
+                      disabled={(date) =>
+                        formData.start_date
+                          ? date < new Date(formData.start_date)
+                          : false
+                      }
                       onSelect={(date) => {
-                        setFormData({ ...formData, end_date: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : "" });
-                        if (formErrors.end_date) setFormErrors({ ...formErrors, end_date: "" });
-                      }} />
+                        setFormData({
+                          ...formData,
+                          end_date: date
+                            ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                            : "",
+                        });
+                        if (formErrors.end_date)
+                          setFormErrors({ ...formErrors, end_date: "" });
+                      }}
+                    />
                   </PopoverContent>
                 </Popover>
-                {formErrors.end_date && <p className="text-sm text-red-500">{formErrors.end_date}</p>}
+                {formErrors.end_date && (
+                  <p className="text-sm text-red-500">{formErrors.end_date}</p>
+                )}
               </div>
             </div>
 
             <p className="text-xs text-muted-foreground -mt-1">
-              Promo akan otomatis tampil abu-abu jika belum mencapai tanggal mulai atau sudah melewati tanggal berakhir.
+              Promo akan otomatis tampil abu-abu jika belum mencapai tanggal
+              mulai atau sudah melewati tanggal berakhir.
             </p>
 
             {/* Status (edit only) */}
             {selectedPromo && (
               <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm">Status <span className="text-red-500">*</span></Label>
-                <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as PromoStatus })} disabled={submitting}>
-                  <SelectTrigger><SelectValue placeholder="Pilih status" /></SelectTrigger>
+                <Label htmlFor="status" className="text-sm">
+                  Status <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) =>
+                    setFormData({ ...formData, status: v as PromoStatus })
+                  }
+                  disabled={submitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih status" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    {STATUS_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
 
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={submitting}>Batal</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseDialog}
+                disabled={submitting}
+              >
+                Batal
+              </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
@@ -974,21 +1368,33 @@ export default function PromoPage() {
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Detail Promo</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
+              Detail Promo
+            </DialogTitle>
           </DialogHeader>
           {selectedPromo && (
             <div className="space-y-4">
               {/* Gambar */}
               {selectedPromo.picture && (
                 <div className="relative w-full h-48 sm:h-56 md:h-64 rounded-lg overflow-hidden">
-                  <Image src={selectedPromo.picture} alt={selectedPromo.title} fill
-                    className="object-cover" sizes="(max-width: 768px) 100vw, 800px" priority unoptimized />
+                  <CachedImage
+                    src={selectedPromo.picture}
+                    alt={selectedPromo.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 800px"
+                    priority
+                    unoptimized
+                    bucket={""}
+                  />
                 </div>
               )}
 
               {/* Judul + Badge + Audit box — struktur identik dengan jadwal dokter */}
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold">{selectedPromo.title}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold">
+                  {selectedPromo.title}
+                </h2>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {getStatusBadge(selectedPromo)}
                 </div>
@@ -1001,9 +1407,8 @@ export default function PromoPage() {
                       {selectedPromo.start_date && selectedPromo.end_date
                         ? `${new Date(selectedPromo.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} – ${new Date(selectedPromo.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`
                         : selectedPromo.start_date
-                        ? `Mulai ${new Date(selectedPromo.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`
-                        : `Hingga ${new Date(selectedPromo.end_date!).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`
-                      }
+                          ? `Mulai ${new Date(selectedPromo.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`
+                          : `Hingga ${new Date(selectedPromo.end_date!).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`}
                     </span>
                   </div>
                 )}
@@ -1013,9 +1418,14 @@ export default function PromoPage() {
                   {/* Dibuat oleh */}
                   <div className="flex items-center gap-2">
                     <Avatar className="h-5 w-5 shrink-0">
-                      <AvatarImage src={selectedPromo.created_by_user?.avatar} alt={selectedPromo.created_by_user?.nama || "User"} />
+                      <AvatarImage
+                        src={selectedPromo.created_by_user?.avatar}
+                        alt={selectedPromo.created_by_user?.nama || "User"}
+                      />
                       <AvatarFallback className="text-[10px]">
-                        {selectedPromo.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}
+                        {selectedPromo.created_by_user?.nama
+                          ?.charAt(0)
+                          .toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                     <span>
@@ -1033,9 +1443,14 @@ export default function PromoPage() {
                   {selectedPromo.updated_by_user && (
                     <div className="flex items-center gap-2">
                       <Avatar className="h-5 w-5 shrink-0">
-                        <AvatarImage src={selectedPromo.updated_by_user.avatar} alt={selectedPromo.updated_by_user.nama || "User"} />
+                        <AvatarImage
+                          src={selectedPromo.updated_by_user.avatar}
+                          alt={selectedPromo.updated_by_user.nama || "User"}
+                        />
                         <AvatarFallback className="text-[10px]">
-                          {selectedPromo.updated_by_user.nama?.charAt(0).toUpperCase() || "U"}
+                          {selectedPromo.updated_by_user.nama
+                            ?.charAt(0)
+                            .toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <span>
@@ -1054,12 +1469,16 @@ export default function PromoPage() {
 
               {/* Deskripsi */}
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <p className="whitespace-pre-wrap text-sm sm:text-base">{selectedPromo.description}</p>
+                <p className="whitespace-pre-wrap text-sm sm:text-base">
+                  {selectedPromo.description}
+                </p>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDetailDialog}>Tutup</Button>
+            <Button variant="outline" onClick={handleCloseDetailDialog}>
+              Tutup
+            </Button>
             {selectedPromo && (
               <Button
                 onClick={() => {
@@ -1078,14 +1497,27 @@ export default function PromoPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">Hapus Promo?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base sm:text-lg">
+              Hapus Promo?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
-              Apakah Anda yakin ingin menghapus promo <strong>{selectedPromo?.title}</strong>? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus promo{" "}
+              <strong>{selectedPromo?.title}</strong>? Tindakan ini tidak dapat
+              dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={submitting} className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={submitting}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white w-full sm:w-auto"
+            >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitting ? "Menghapus..." : "Hapus"}
             </AlertDialogAction>
@@ -1094,25 +1526,46 @@ export default function PromoPage() {
       </AlertDialog>
 
       {/* ── Bulk Delete Dialog ── */}
-      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+      <AlertDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+      >
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">Hapus Beberapa Promo?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base sm:text-lg">
+              Hapus Beberapa Promo?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
-              Apakah Anda yakin ingin menghapus <strong>{selectedItems.length} promo</strong> yang dipilih? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus{" "}
+              <strong>{selectedItems.length} promo</strong> yang dipilih?
+              Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} disabled={submitting} className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={submitting}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white w-full sm:w-auto"
+            >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {submitting ? "Menghapus..." : `Hapus ${selectedItems.length} Promo`}
+              {submitting
+                ? "Menghapus..."
+                : `Hapus ${selectedItems.length} Promo`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
+      <AccessDeniedDialog
+        open={showAccessDenied}
+        onOpenChange={setShowAccessDenied}
+      />
     </div>
   );
 }

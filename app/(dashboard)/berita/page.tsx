@@ -2,6 +2,8 @@
 "use client";
 
 import { AccessDeniedDialog } from "@/components/access-denied-dialog";
+import CachedImage from "@/components/ui/custom/cached-image";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,18 +126,21 @@ const DEFAULT_FORM_ERRORS: FormErrorsType = {
 /* ─────────────────────────────────────────
    Constants
 ───────────────────────────────────────── */
-const STATUS_OPTIONS: { value: BeritaStatus; label: string; color: string }[] = [
-  {
-    value: "active",
-    label: "Aktif",
-    color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700",
-  },
-  {
-    value: "non_active",
-    label: "Tidak Aktif",
-    color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700",
-  },
-];
+const STATUS_OPTIONS: { value: BeritaStatus; label: string; color: string }[] =
+  [
+    {
+      value: "active",
+      label: "Aktif",
+      color:
+        "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700",
+    },
+    {
+      value: "non_active",
+      label: "Tidak Aktif",
+      color:
+        "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700",
+    },
+  ];
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Terbaru" },
@@ -174,7 +179,9 @@ export default function BeritaPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [selectedBerita, setSelectedBerita] = useState<BeritaWithAuthor | null>(null);
+  const [selectedBerita, setSelectedBerita] = useState<BeritaWithAuthor | null>(
+    null,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [showAccessDenied, setShowAccessDenied] = useState(false);
@@ -183,10 +190,13 @@ export default function BeritaPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<BeritaStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">(
+    "newest",
+  );
 
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
-  const [formErrors, setFormErrors] = useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
+  const [formErrors, setFormErrors] =
+    useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
 
@@ -227,11 +237,13 @@ export default function BeritaPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("berita")
-        .select(`
+        .select(
+          `
           *,
           author_detail:users!berita_author_fkey(id, nama, username, avatar),
           updated_by_user:users!berita_updated_by_fkey(id, nama, username, avatar)
-        `)
+        `,
+        )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -258,7 +270,9 @@ export default function BeritaPage() {
       filtered = filtered.filter(
         (item) =>
           item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          item.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          item.description
+            .toLowerCase()
+            .includes(debouncedSearch.toLowerCase()) ||
           item.category.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
           item.tags.some((tag: string) =>
             tag.toLowerCase().includes(debouncedSearch.toLowerCase()),
@@ -276,11 +290,20 @@ export default function BeritaPage() {
 
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case "newest": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case "oldest": return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case "a-z": return a.title.localeCompare(b.title, "id");
-        case "z-a": return b.title.localeCompare(a.title, "id");
-        default: return 0;
+        case "newest":
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        case "a-z":
+          return a.title.localeCompare(b.title, "id");
+        case "z-a":
+          return b.title.localeCompare(a.title, "id");
+        default:
+          return 0;
       }
     });
 
@@ -303,7 +326,9 @@ export default function BeritaPage() {
 
   /* ── Selection ── */
   const handleSelectItem = (id: string) =>
-    setSelectedItems((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]);
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
 
   const handleSelectAll = (checked: boolean) =>
     setSelectedItems(checked ? paginatedBerita.map((item) => item.id) : []);
@@ -396,13 +421,25 @@ export default function BeritaPage() {
     const errors: FormErrorsType = { ...DEFAULT_FORM_ERRORS };
     let isValid = true;
 
-    if (!formData.title.trim()) { errors.title = "Judul berita wajib diisi"; isValid = false; }
-    if (!formData.description.trim()) { errors.description = "Deskripsi berita wajib diisi"; isValid = false; }
-    if (!formData.category.trim()) { errors.category = "Kategori wajib dipilih"; isValid = false; }
+    if (!formData.title.trim()) {
+      errors.title = "Judul berita wajib diisi";
+      isValid = false;
+    }
+    if (!formData.description.trim()) {
+      errors.description = "Deskripsi berita wajib diisi";
+      isValid = false;
+    }
+    if (!formData.category.trim()) {
+      errors.category = "Kategori wajib dipilih";
+      isValid = false;
+    }
 
     if (formData.thumbnailFile) {
       const validation = validateImage(formData.thumbnailFile);
-      if (!validation.valid) { errors.thumbnail = validation.error || "File tidak valid"; isValid = false; }
+      if (!validation.valid) {
+        errors.thumbnail = validation.error || "File tidak valid";
+        isValid = false;
+      }
     }
 
     setFormErrors(errors);
@@ -412,7 +449,10 @@ export default function BeritaPage() {
   /* ── Submit ── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) { toast.error("Mohon lengkapi semua field yang wajib diisi"); return; }
+    if (!validateForm()) {
+      toast.error("Mohon lengkapi semua field yang wajib diisi");
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -426,7 +466,10 @@ export default function BeritaPage() {
 
       if (formData.thumbnailFile) {
         if (selectedBerita?.thumbnail) {
-          const oldPath = getFilePathFromUrl(selectedBerita.thumbnail, "berita");
+          const oldPath = getFilePathFromUrl(
+            selectedBerita.thumbnail,
+            "berita",
+          );
           if (oldPath) await deleteFile("berita", oldPath);
         }
         const uploadResult = await uploadFile({
@@ -434,7 +477,8 @@ export default function BeritaPage() {
           folder: "images",
           file: formData.thumbnailFile,
         });
-        if (!uploadResult.success) throw new Error(uploadResult.error || "Gagal mengupload gambar");
+        if (!uploadResult.success)
+          throw new Error(uploadResult.error || "Gagal mengupload gambar");
         thumbnailUrl = uploadResult.url || "";
       }
 
@@ -452,7 +496,7 @@ export default function BeritaPage() {
             tags: formData.tags,
             thumbnail: thumbnailUrl,
             status: formData.status,
-            updated_by: currentUserId,        // ← simpan siapa yang update
+            updated_by: currentUserId, // ← simpan siapa yang update
             updated_at: new Date().toISOString(),
           })
           .eq("id", selectedBerita.id);
@@ -468,7 +512,7 @@ export default function BeritaPage() {
           tags: formData.tags,
           thumbnail: thumbnailUrl,
           status: "active",
-          author: currentUserId,              // ← created_by
+          author: currentUserId, // ← created_by
         });
         if (error) throw error;
         toast.success("Berita berhasil ditambahkan");
@@ -493,7 +537,10 @@ export default function BeritaPage() {
         const path = getFilePathFromUrl(selectedBerita.thumbnail, "berita");
         if (path) await deleteFile("berita", path);
       }
-      const { error } = await supabase.from("berita").delete().eq("id", selectedBerita.id);
+      const { error } = await supabase
+        .from("berita")
+        .delete()
+        .eq("id", selectedBerita.id);
       if (error) throw error;
       toast.success("Berita berhasil dihapus");
       setDeleteDialogOpen(false);
@@ -531,7 +578,10 @@ export default function BeritaPage() {
   };
 
   const handleRemoveTag = (tagToRemove: string) =>
-    setFormData({ ...formData, tags: formData.tags.filter((tag) => tag !== tagToRemove) });
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter((tag) => tag !== tagToRemove),
+    });
 
   const handleSelectSuggestedTag = (tag: string) => {
     if (!formData.tags.includes(tag))
@@ -542,7 +592,11 @@ export default function BeritaPage() {
   const getStatusBadge = (status: BeritaStatus) => {
     const opt = STATUS_OPTIONS.find((o) => o.value === status);
     if (!opt) return null;
-    return <Badge variant="outline" className={opt.color}>{opt.label}</Badge>;
+    return (
+      <Badge variant="outline" className={opt.color}>
+        {opt.label}
+      </Badge>
+    );
   };
 
   /* ── Pagination pages ── */
@@ -588,22 +642,35 @@ export default function BeritaPage() {
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Berita</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+              Berita
+            </h1>
             <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">
               Kelola berita dan artikel
             </p>
           </div>
           <div className="flex gap-2 flex-wrap sm:flex-nowrap">
             {selectedItems.length > 0 && (
-              <Button variant="destructive" size="sm" onClick={() => setBulkDeleteDialogOpen(true)}
-                disabled={submitting} className="flex-1 sm:flex-initial min-w-0">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setBulkDeleteDialogOpen(true)}
+                disabled={submitting}
+                className="flex-1 sm:flex-initial min-w-0"
+              >
                 <Trash2 className="h-4 w-4 sm:mr-2 shrink-0" />
                 <span className="hidden sm:inline truncate">Hapus</span>
                 <span className="sm:hidden">({selectedItems.length})</span>
-                <span className="hidden sm:inline">({selectedItems.length})</span>
+                <span className="hidden sm:inline">
+                  ({selectedItems.length})
+                </span>
               </Button>
             )}
-            <Button size="sm" onClick={() => handleOpenDialog()} className="flex-1 sm:flex-initial min-w-0">
+            <Button
+              size="sm"
+              onClick={() => handleOpenDialog()}
+              className="flex-1 sm:flex-initial min-w-0"
+            >
               <Plus className="h-4 w-4 sm:mr-2 shrink-0" />
               <span className="hidden sm:inline truncate">Tambah Berita</span>
               <span className="sm:hidden truncate">Tambah</span>
@@ -618,37 +685,75 @@ export default function BeritaPage() {
           {paginatedBerita.length > 0 && (
             <div className="flex items-center gap-2">
               <Checkbox
-                checked={selectedItems.length === paginatedBerita.length && paginatedBerita.length > 0}
-                onCheckedChange={handleSelectAll} id="select-all"
+                checked={
+                  selectedItems.length === paginatedBerita.length &&
+                  paginatedBerita.length > 0
+                }
+                onCheckedChange={handleSelectAll}
+                id="select-all"
               />
-              <Label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">All</Label>
+              <Label
+                htmlFor="select-all"
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
+                All
+              </Label>
             </div>
           )}
           {/* Desktop filters */}
           <div className="hidden sm:flex sm:items-center sm:gap-2 sm:ml-auto">
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="w-[120px] h-9"><SelectValue placeholder="Urutan" /></SelectTrigger>
+            <Select
+              value={sortBy}
+              onValueChange={(v) => setSortBy(v as typeof sortBy)}
+            >
+              <SelectTrigger className="w-[120px] h-9">
+                <SelectValue placeholder="Urutan" />
+              </SelectTrigger>
               <SelectContent>
-                {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {SORT_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Kategori" /></SelectTrigger>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Kategori" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Kategori</SelectItem>
-                {kategoriList.map((k) => <SelectItem key={k.id} value={k.title}>{k.title}</SelectItem>)}
+                {kategoriList.map((k) => (
+                  <SelectItem key={k.id} value={k.title}>
+                    {k.title}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as BeritaStatus | "all")}>
-              <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as BeritaStatus | "all")}
+            >
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Status</SelectItem>
-                {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="relative w-[200px] lg:w-[250px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Cari berita..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9" />
+              <Input
+                placeholder="Cari berita..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9"
+              />
             </div>
           </div>
         </div>
@@ -656,32 +761,61 @@ export default function BeritaPage() {
         {/* Mobile filters */}
         <div className="flex sm:hidden flex-col gap-2">
           <div className="flex gap-2">
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="flex-1 h-9 text-sm"><SelectValue placeholder="Urutan" /></SelectTrigger>
+            <Select
+              value={sortBy}
+              onValueChange={(v) => setSortBy(v as typeof sortBy)}
+            >
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Urutan" />
+              </SelectTrigger>
               <SelectContent>
-                {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {SORT_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="flex-1 h-9 text-sm"><SelectValue placeholder="Kategori" /></SelectTrigger>
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Kategori" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua</SelectItem>
-                {kategoriList.map((k) => <SelectItem key={k.id} value={k.title}>{k.title}</SelectItem>)}
+                {kategoriList.map((k) => (
+                  <SelectItem key={k.id} value={k.title}>
+                    {k.title}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="flex gap-2">
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as BeritaStatus | "all")}>
-              <SelectTrigger className="flex-1 h-9 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as BeritaStatus | "all")}
+            >
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua</SelectItem>
-                {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Cari berita..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9 text-sm" />
+            <Input
+              placeholder="Cari berita..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
           </div>
         </div>
       </div>
@@ -697,7 +831,9 @@ export default function BeritaPage() {
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-2/3" />
-                  <div className="flex gap-2"><Skeleton className="h-6 w-20" /></div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-20" />
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -708,9 +844,13 @@ export default function BeritaPage() {
               <div className="rounded-full bg-muted p-3 mb-3 sm:mb-4">
                 <File className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
               </div>
-              <p className="text-base sm:text-lg font-semibold text-muted-foreground">Tidak ada berita ditemukan</p>
+              <p className="text-base sm:text-lg font-semibold text-muted-foreground">
+                Tidak ada berita ditemukan
+              </p>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {searchQuery || statusFilter !== "all" ? "Coba ubah filter pencarian" : "Mulai dengan menambahkan berita baru"}
+                {searchQuery || statusFilter !== "all"
+                  ? "Coba ubah filter pencarian"
+                  : "Mulai dengan menambahkan berita baru"}
               </p>
             </CardContent>
           </Card>
@@ -718,19 +858,33 @@ export default function BeritaPage() {
           <>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedBerita.map((item) => (
-                <Card key={item.id}
+                <Card
+                  key={item.id}
                   className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer relative"
-                  onClick={() => handleOpenDetailDialog(item)}>
-                  <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox checked={selectedItems.includes(item.id)}
-                      onCheckedChange={() => handleSelectItem(item.id)} className="shadow-md h-5 w-5" />
+                  onClick={() => handleOpenDetailDialog(item)}
+                >
+                  <div
+                    className="absolute top-3 left-3 z-10"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={selectedItems.includes(item.id)}
+                      onCheckedChange={() => handleSelectItem(item.id)}
+                      className="shadow-md h-5 w-5"
+                    />
                   </div>
                   <div className="relative h-48 bg-muted overflow-hidden rounded-t-xl -mt-6">
                     {item.thumbnail ? (
-                      <Image src={item.thumbnail} alt={item.title} fill
+                      <CachedImage
+                        src={item.thumbnail}
+                        alt={item.title}
+                        fill
                         className="object-cover transition-transform group-hover:scale-105"
                         style={{ objectPosition: "center 30%" }}
-                        sizes="(max-width: 640px) 100vw, 512px" unoptimized />
+                        sizes="(max-width: 640px) 100vw, 512px"
+                        unoptimized
+                        bucket={""}
+                      />
                     ) : (
                       <div className="flex h-full items-center justify-center">
                         <Eye className="h-12 w-12 text-muted-foreground/20" />
@@ -741,19 +895,33 @@ export default function BeritaPage() {
                     <div>
                       <div className="flex gap-2 flex-wrap mb-2">
                         {getStatusBadge(item.status)}
-                        <Badge variant="outline" className="text-xs">{item.category}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {item.category}
+                        </Badge>
                       </div>
                       <h3 className="font-semibold text-base lg:text-lg line-clamp-2 group-hover:text-primary transition-colors">
                         {item.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{item.description}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                        {item.description}
+                      </p>
                       {item.tags && item.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {item.tags.slice(0, 2).map((tag: string, idx: number) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">{tag}</Badge>
-                          ))}
+                          {item.tags
+                            .slice(0, 2)
+                            .map((tag: string, idx: number) => (
+                              <Badge
+                                key={idx}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
                           {item.tags.length > 2 && (
-                            <Badge variant="secondary" className="text-xs">+{item.tags.length - 2}</Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              +{item.tags.length - 2}
+                            </Badge>
                           )}
                         </div>
                       )}
@@ -761,22 +929,43 @@ export default function BeritaPage() {
                     <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <Avatar className="h-5 w-5 shrink-0">
-                          <AvatarImage src={item.author_detail?.avatar} alt={item.author_detail?.nama || "User"} />
-                          <AvatarFallback className="text-xs">{item.author_detail?.nama?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                          <AvatarImage
+                            src={item.author_detail?.avatar}
+                            alt={item.author_detail?.nama || "User"}
+                          />
+                          <AvatarFallback className="text-xs">
+                            {item.author_detail?.nama
+                              ?.charAt(0)
+                              .toUpperCase() || "U"}
+                          </AvatarFallback>
                         </Avatar>
-                        <span className="truncate text-xs text-muted-foreground">{item.author_detail?.nama}</span>
-                        <span className="text-muted-foreground hidden sm:inline">•</span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {item.author_detail?.nama}
+                        </span>
+                        <span className="text-muted-foreground hidden sm:inline">
+                          •
+                        </span>
                         <Calendar className="h-3 w-3 shrink-0 hidden sm:block" />
                         <span className="text-xs text-muted-foreground hidden sm:inline">
-                          {new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                          {new Date(item.created_at).toLocaleDateString(
+                            "id-ID",
+                            { day: "numeric", month: "short", year: "numeric" },
+                          )}
                         </span>
                       </div>
                       <div className="flex gap-2 shrink-0">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="secondary" size="icon" className="h-8 w-8 shadow-md"
-                                onClick={(e) => { e.stopPropagation(); handleOpenDialog(item); }}>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 shadow-md"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenDialog(item);
+                                }}
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
@@ -786,8 +975,15 @@ export default function BeritaPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="destructive" size="icon" className="h-8 w-8 shadow-md"
-                                onClick={(e) => { e.stopPropagation(); handleOpenDeleteDialog(item); }}>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-8 w-8 shadow-md"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenDeleteDialog(item);
+                                }}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
@@ -807,26 +1003,48 @@ export default function BeritaPage() {
                 <div className="hidden sm:flex items-center justify-between gap-4">
                   <div className="text-sm text-muted-foreground shrink-0">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredBerita.length)} dari {filteredBerita.length} data berita
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredBerita.length,
+                    )}{" "}
+                    dari {filteredBerita.length} data berita
                   </div>
                   <div className="flex-1" />
                   <div className="shrink-0">
                     <Pagination>
                       <PaginationContent className="gap-1">
                         <PaginationItem>
-                          <PaginationPrevious onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                            className={`h-9 px-3 text-sm ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`} />
+                          <PaginationPrevious
+                            onClick={() =>
+                              currentPage > 1 &&
+                              handlePageChange(currentPage - 1)
+                            }
+                            className={`h-9 px-3 text-sm ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                          />
                         </PaginationItem>
                         {getPageNumbers().map((page, index) => (
                           <PaginationItem key={index}>
-                            {page === "ellipsis" ? <PaginationEllipsis /> : (
-                              <PaginationLink onClick={() => handlePageChange(page as number)} isActive={currentPage === page} className="cursor-pointer h-9">{page}</PaginationLink>
+                            {page === "ellipsis" ? (
+                              <PaginationEllipsis />
+                            ) : (
+                              <PaginationLink
+                                onClick={() => handlePageChange(page as number)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer h-9"
+                              >
+                                {page}
+                              </PaginationLink>
                             )}
                           </PaginationItem>
                         ))}
                         <PaginationItem>
-                          <PaginationNext onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                            className={`h-9 px-3 text-sm ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`} />
+                          <PaginationNext
+                            onClick={() =>
+                              currentPage < totalPages &&
+                              handlePageChange(currentPage + 1)
+                            }
+                            className={`h-9 px-3 text-sm ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                          />
                         </PaginationItem>
                       </PaginationContent>
                     </Pagination>
@@ -835,24 +1053,45 @@ export default function BeritaPage() {
                 <div className="flex sm:hidden flex-col items-center gap-3">
                   <div className="text-xs text-muted-foreground text-center">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredBerita.length)} dari {filteredBerita.length}
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredBerita.length,
+                    )}{" "}
+                    dari {filteredBerita.length}
                   </div>
                   <Pagination>
                     <PaginationContent className="gap-1">
                       <PaginationItem>
-                        <PaginationPrevious onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                          className={`h-9 px-2 text-sm ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`} />
+                        <PaginationPrevious
+                          onClick={() =>
+                            currentPage > 1 && handlePageChange(currentPage - 1)
+                          }
+                          className={`h-9 px-2 text-sm ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                        />
                       </PaginationItem>
                       {getPageNumbers().map((page, index) => (
                         <PaginationItem key={index}>
-                          {page === "ellipsis" ? <PaginationEllipsis /> : (
-                            <PaginationLink onClick={() => handlePageChange(page as number)} isActive={currentPage === page} className="cursor-pointer h-9">{page}</PaginationLink>
+                          {page === "ellipsis" ? (
+                            <PaginationEllipsis />
+                          ) : (
+                            <PaginationLink
+                              onClick={() => handlePageChange(page as number)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer h-9"
+                            >
+                              {page}
+                            </PaginationLink>
                           )}
                         </PaginationItem>
                       ))}
                       <PaginationItem>
-                        <PaginationNext onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                          className={`h-9 px-2 text-sm ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`} />
+                        <PaginationNext
+                          onClick={() =>
+                            currentPage < totalPages &&
+                            handlePageChange(currentPage + 1)
+                          }
+                          className={`h-9 px-2 text-sm ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                        />
                       </PaginationItem>
                     </PaginationContent>
                   </Pagination>
@@ -873,7 +1112,9 @@ export default function BeritaPage() {
               {selectedBerita ? "Edit Berita" : "Tambah Berita"}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              {selectedBerita ? "Perbarui informasi berita" : "Tambahkan berita baru"}
+              {selectedBerita
+                ? "Perbarui informasi berita"
+                : "Tambahkan berita baru"}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -882,118 +1123,245 @@ export default function BeritaPage() {
               <Label htmlFor="thumbnail" className="text-sm">
                 Thumbnail <span className="text-red-500">*</span>
               </Label>
-              {(formData.thumbnailFile || (formData.thumbnail && !formData.thumbnailDeleted)) && (
+              {(formData.thumbnailFile ||
+                (formData.thumbnail && !formData.thumbnailDeleted)) && (
                 <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                  <Image
-                    src={formData.thumbnailFile ? URL.createObjectURL(formData.thumbnailFile) : formData.thumbnail}
-                    alt="Preview" fill className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 600px" unoptimized
+                  <CachedImage
+                    src={
+                      formData.thumbnailFile
+                        ? URL.createObjectURL(formData.thumbnailFile)
+                        : formData.thumbnail
+                    }
+                    alt="Preview"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 600px"
+                    unoptimized
+                    bucket={""}
                   />
-                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2"
-                    onClick={() => setFormData({ ...formData, thumbnailFile: null, thumbnail: "", thumbnailDeleted: true })}
-                    disabled={submitting}>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        thumbnailFile: null,
+                        thumbnail: "",
+                        thumbnailDeleted: true,
+                      })
+                    }
+                    disabled={submitting}
+                  >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               )}
-              {!formData.thumbnailFile && (!formData.thumbnail || formData.thumbnailDeleted) && (
-                <>
-                  <div className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${formErrors.thumbnail ? "border-red-500" : ""}`}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const file = e.dataTransfer.files[0];
-                      if (file) {
-                        const validation = validateImage(file);
-                        if (!validation.valid) { setFormErrors({ ...formErrors, thumbnail: validation.error || "" }); toast.error(validation.error || "File tidak valid"); return; }
-                        setFormData({ ...formData, thumbnailFile: file, thumbnailDeleted: false });
-                        setFormErrors({ ...formErrors, thumbnail: "" });
-                      }
-                    }}
-                    onDragOver={(e) => e.preventDefault()}>
-                    <Input id="thumbnail" type="file" accept="image/webp" onChange={handleThumbnailChange} disabled={submitting} className="hidden" />
-                    <label htmlFor="thumbnail" className="flex flex-col items-center justify-center cursor-pointer">
-                      <div className="rounded-full bg-muted p-3 mb-2"><Upload className="h-6 w-6 text-muted-foreground" /></div>
-                      <p className="text-sm font-medium mb-1">Klik untuk upload atau drag & drop</p>
-                      <p className="text-xs text-muted-foreground">Format: WebP, Max: 300KB</p>
-                    </label>
-                  </div>
-                  {formErrors.thumbnail && <p className="text-sm text-red-500">{formErrors.thumbnail}</p>}
-                </>
-              )}
+              {!formData.thumbnailFile &&
+                (!formData.thumbnail || formData.thumbnailDeleted) && (
+                  <>
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${formErrors.thumbnail ? "border-red-500" : ""}`}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files[0];
+                        if (file) {
+                          const validation = validateImage(file);
+                          if (!validation.valid) {
+                            setFormErrors({
+                              ...formErrors,
+                              thumbnail: validation.error || "",
+                            });
+                            toast.error(validation.error || "File tidak valid");
+                            return;
+                          }
+                          setFormData({
+                            ...formData,
+                            thumbnailFile: file,
+                            thumbnailDeleted: false,
+                          });
+                          setFormErrors({ ...formErrors, thumbnail: "" });
+                        }
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                    >
+                      <Input
+                        id="thumbnail"
+                        type="file"
+                        accept="image/webp"
+                        onChange={handleThumbnailChange}
+                        disabled={submitting}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="thumbnail"
+                        className="flex flex-col items-center justify-center cursor-pointer"
+                      >
+                        <div className="rounded-full bg-muted p-3 mb-2">
+                          <Upload className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm font-medium mb-1">
+                          Klik untuk upload atau drag & drop
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Format: WebP, Max: 300KB
+                        </p>
+                      </label>
+                    </div>
+                    {formErrors.thumbnail && (
+                      <p className="text-sm text-red-500">
+                        {formErrors.thumbnail}
+                      </p>
+                    )}
+                  </>
+                )}
             </div>
 
             {/* Judul */}
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-sm">Judul <span className="text-red-500">*</span></Label>
-              <Input id="title" placeholder="Masukkan judul berita" value={formData.title}
-                onChange={(e) => { setFormData({ ...formData, title: e.target.value }); if (formErrors.title) setFormErrors({ ...formErrors, title: "" }); }}
-                disabled={submitting} className={formErrors.title ? "border-red-500" : ""} />
-              {formErrors.title && <p className="text-sm text-red-500">{formErrors.title}</p>}
+              <Label htmlFor="title" className="text-sm">
+                Judul <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="title"
+                placeholder="Masukkan judul berita"
+                value={formData.title}
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  if (formErrors.title)
+                    setFormErrors({ ...formErrors, title: "" });
+                }}
+                disabled={submitting}
+                className={formErrors.title ? "border-red-500" : ""}
+              />
+              {formErrors.title && (
+                <p className="text-sm text-red-500">{formErrors.title}</p>
+              )}
             </div>
 
             {/* Kategori */}
             <div className="space-y-2">
-              <Label htmlFor="category" className="text-sm">Kategori <span className="text-red-500">*</span></Label>
-              <Select value={formData.category}
-                onValueChange={(value) => { setFormData({ ...formData, category: value }); if (formErrors.category) setFormErrors({ ...formErrors, category: "" }); }}
-                disabled={submitting}>
-                <SelectTrigger className={formErrors.category ? "border-red-500" : ""}>
+              <Label htmlFor="category" className="text-sm">
+                Kategori <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => {
+                  setFormData({ ...formData, category: value });
+                  if (formErrors.category)
+                    setFormErrors({ ...formErrors, category: "" });
+                }}
+                disabled={submitting}
+              >
+                <SelectTrigger
+                  className={formErrors.category ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Pilih kategori" />
                 </SelectTrigger>
                 <SelectContent>
-                  {kategoriList.map((k) => <SelectItem key={k.id} value={k.title}>{k.title}</SelectItem>)}
+                  {kategoriList.map((k) => (
+                    <SelectItem key={k.id} value={k.title}>
+                      {k.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              {formErrors.category && <p className="text-sm text-red-500">{formErrors.category}</p>}
+              {formErrors.category && (
+                <p className="text-sm text-red-500">{formErrors.category}</p>
+              )}
             </div>
 
             {/* Deskripsi */}
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm">Deskripsi <span className="text-red-500">*</span></Label>
-              <Textarea id="description" placeholder="Masukkan deskripsi berita"
+              <Label htmlFor="description" className="text-sm">
+                Deskripsi <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Masukkan deskripsi berita"
                 className={`min-h-[150px] resize-y ${formErrors.description ? "border-red-500" : ""}`}
                 value={formData.description}
-                onChange={(e) => { setFormData({ ...formData, description: e.target.value }); if (formErrors.description) setFormErrors({ ...formErrors, description: "" }); }}
-                disabled={submitting} />
-              {formErrors.description && <p className="text-sm text-red-500">{formErrors.description}</p>}
+                onChange={(e) => {
+                  setFormData({ ...formData, description: e.target.value });
+                  if (formErrors.description)
+                    setFormErrors({ ...formErrors, description: "" });
+                }}
+                disabled={submitting}
+              />
+              {formErrors.description && (
+                <p className="text-sm text-red-500">{formErrors.description}</p>
+              )}
             </div>
 
             {/* Tags */}
             <div className="space-y-2">
-              <Label htmlFor="tags" className="text-sm">Tags</Label>
+              <Label htmlFor="tags" className="text-sm">
+                Tags
+              </Label>
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Pilih tag yang tersedia:</p>
+                <p className="text-xs text-muted-foreground">
+                  Pilih tag yang tersedia:
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTED_TAGS.map((suggestedTag) => {
                     const isSelected = formData.tags.includes(suggestedTag);
                     return (
-                      <Badge key={suggestedTag} variant="secondary"
+                      <Badge
+                        key={suggestedTag}
+                        variant="secondary"
                         className={`cursor-pointer transition-all ${isSelected ? "opacity-50 cursor-not-allowed bg-muted" : "hover:bg-secondary/80"}`}
-                        onClick={() => { if (!isSelected && !submitting) handleSelectSuggestedTag(suggestedTag); }}>
-                        {suggestedTag}{isSelected && <span className="ml-1 text-xs">✓</span>}
+                        onClick={() => {
+                          if (!isSelected && !submitting)
+                            handleSelectSuggestedTag(suggestedTag);
+                        }}
+                      >
+                        {suggestedTag}
+                        {isSelected && <span className="ml-1 text-xs">✓</span>}
                       </Badge>
                     );
                   })}
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Atau tambahkan tag manual:</p>
+                <p className="text-xs text-muted-foreground">
+                  Atau tambahkan tag manual:
+                </p>
                 <div className="flex gap-2">
-                  <Input id="tags" placeholder="Ketik tag baru dan tekan Enter" value={tagInput}
+                  <Input
+                    id="tags"
+                    placeholder="Ketik tag baru dan tekan Enter"
+                    value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddTag(); } }}
-                    disabled={submitting} />
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                    disabled={submitting}
+                  />
                 </div>
               </div>
               {formData.tags.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Tag yang dipilih:</p>
+                  <p className="text-xs text-muted-foreground">
+                    Tag yang dipilih:
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {formData.tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="gap-1 pr-1">
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="gap-1 pr-1"
+                      >
                         {tag}
-                        <button type="button" className="ml-1 rounded-full hover:bg-secondary-foreground/20 p-0.5"
-                          onClick={() => handleRemoveTag(tag)} disabled={submitting}>
+                        <button
+                          type="button"
+                          className="ml-1 rounded-full hover:bg-secondary-foreground/20 p-0.5"
+                          onClick={() => handleRemoveTag(tag)}
+                          disabled={submitting}
+                        >
                           <X className="h-3 w-3" />
                         </button>
                       </Badge>
@@ -1006,22 +1374,43 @@ export default function BeritaPage() {
             {/* Status (edit only) */}
             {selectedBerita && (
               <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm">Status <span className="text-red-500">*</span></Label>
-                <Select value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value as BeritaStatus })}
-                  disabled={submitting}>
-                  <SelectTrigger><SelectValue placeholder="Pilih status" /></SelectTrigger>
+                <Label htmlFor="status" className="text-sm">
+                  Status <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, status: value as BeritaStatus })
+                  }
+                  disabled={submitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih status" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    {STATUS_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
 
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={submitting}>Batal</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseDialog}
+                disabled={submitting}
+              >
+                Batal
+              </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
@@ -1035,21 +1424,33 @@ export default function BeritaPage() {
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Detail Berita</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
+              Detail Berita
+            </DialogTitle>
           </DialogHeader>
           {selectedBerita && (
             <div className="space-y-4">
               {/* Thumbnail */}
               {selectedBerita.thumbnail && (
                 <div className="relative w-full h-48 sm:h-56 md:h-64 rounded-lg overflow-hidden">
-                  <Image src={selectedBerita.thumbnail} alt={selectedBerita.title} fill
-                    className="object-cover" sizes="(max-width: 768px) 100vw, 800px" priority unoptimized />
+                  <CachedImage
+                    src={selectedBerita.thumbnail}
+                    alt={selectedBerita.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 800px"
+                    priority
+                    unoptimized
+                    bucket={""}
+                  />
                 </div>
               )}
 
               {/* Judul + Badge + Tags + Audit box — identik dengan jadwal dokter */}
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold">{selectedBerita.title}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold">
+                  {selectedBerita.title}
+                </h2>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {getStatusBadge(selectedBerita.status)}
                   <Badge variant="outline">{selectedBerita.category}</Badge>
@@ -1057,7 +1458,9 @@ export default function BeritaPage() {
                 {selectedBerita.tags && selectedBerita.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {selectedBerita.tags.map((tag: string, idx: number) => (
-                      <Badge key={idx} variant="secondary">{tag}</Badge>
+                      <Badge key={idx} variant="secondary">
+                        {tag}
+                      </Badge>
                     ))}
                   </div>
                 )}
@@ -1067,9 +1470,14 @@ export default function BeritaPage() {
                   {/* Dibuat oleh (author) */}
                   <div className="flex items-center gap-2">
                     <Avatar className="h-5 w-5 shrink-0">
-                      <AvatarImage src={selectedBerita.author_detail?.avatar} alt={selectedBerita.author_detail?.nama || "User"} />
+                      <AvatarImage
+                        src={selectedBerita.author_detail?.avatar}
+                        alt={selectedBerita.author_detail?.nama || "User"}
+                      />
                       <AvatarFallback className="text-[10px]">
-                        {selectedBerita.author_detail?.nama?.charAt(0).toUpperCase() || "U"}
+                        {selectedBerita.author_detail?.nama
+                          ?.charAt(0)
+                          .toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                     <span>
@@ -1087,9 +1495,14 @@ export default function BeritaPage() {
                   {selectedBerita.updated_by_user && (
                     <div className="flex items-center gap-2">
                       <Avatar className="h-5 w-5 shrink-0">
-                        <AvatarImage src={selectedBerita.updated_by_user.avatar} alt={selectedBerita.updated_by_user.nama || "User"} />
+                        <AvatarImage
+                          src={selectedBerita.updated_by_user.avatar}
+                          alt={selectedBerita.updated_by_user.nama || "User"}
+                        />
                         <AvatarFallback className="text-[10px]">
-                          {selectedBerita.updated_by_user.nama?.charAt(0).toUpperCase() || "U"}
+                          {selectedBerita.updated_by_user.nama
+                            ?.charAt(0)
+                            .toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <span>
@@ -1108,12 +1521,16 @@ export default function BeritaPage() {
 
               {/* Deskripsi */}
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <p className="whitespace-pre-wrap text-sm sm:text-base">{selectedBerita.description}</p>
+                <p className="whitespace-pre-wrap text-sm sm:text-base">
+                  {selectedBerita.description}
+                </p>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDetailDialog}>Tutup</Button>
+            <Button variant="outline" onClick={handleCloseDetailDialog}>
+              Tutup
+            </Button>
             {selectedBerita && (
               <Button
                 onClick={() => {
@@ -1132,16 +1549,27 @@ export default function BeritaPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">Hapus Berita?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base sm:text-lg">
+              Hapus Berita?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
               Apakah Anda yakin ingin menghapus berita{" "}
-              <strong>{selectedBerita?.title}</strong>? Tindakan ini tidak dapat dibatalkan.
+              <strong>{selectedBerita?.title}</strong>? Tindakan ini tidak dapat
+              dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={submitting}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto"
+            >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitting ? "Menghapus..." : "Hapus"}
             </AlertDialogAction>
@@ -1150,27 +1578,46 @@ export default function BeritaPage() {
       </AlertDialog>
 
       {/* ── Bulk Delete Dialog ── */}
-      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+      <AlertDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+      >
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">Hapus Beberapa Berita?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base sm:text-lg">
+              Hapus Beberapa Berita?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
               Apakah Anda yakin ingin menghapus{" "}
-              <strong>{selectedItems.length} berita</strong> yang dipilih? Tindakan ini tidak dapat dibatalkan.
+              <strong>{selectedItems.length} berita</strong> yang dipilih?
+              Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={submitting}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white w-full sm:w-auto"
+            >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {submitting ? "Menghapus..." : `Hapus ${selectedItems.length} Berita`}
+              {submitting
+                ? "Menghapus..."
+                : `Hapus ${selectedItems.length} Berita`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
+      <AccessDeniedDialog
+        open={showAccessDenied}
+        onOpenChange={setShowAccessDenied}
+      />
     </div>
   );
 }

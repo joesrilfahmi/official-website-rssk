@@ -1,70 +1,59 @@
 // ============================================
 // FILE: src/components/ui/custom/cached-image.tsx
 // ============================================
-// Drop-in replacement untuk <Image> dari next/image yang menggunakan
-// Redis cache untuk URL Supabase Storage.
+// Drop-in replacement untuk <Image> yang routing gambar
+// melalui proxy /api/image/[...path] untuk mengurangi
+// Supabase Cached Egress.
 //
-// Cara pakai (sama seperti <Image> biasa):
-//
-//   import CachedImage from "@/components/ui/custom/cached-image";
+// CARA PAKAI:
 //
 //   <CachedImage
-//     src={dokter.profile}         // path atau full URL
-//     bucket="dokter"              // nama bucket Supabase
+//     src={dokter.profile}
+//     bucket="dokter"
 //     alt={dokter.nama}
 //     fill
 //     className="object-cover"
-//     fallback={<UserRound />}     // optional: tampilkan ini saat loading/error
+//     fallback={<UserRound className="w-16 h-16 text-gray-300" />}
 //   />
+//
+// Props sama persis dengan next/image, tambahan:
+//   - bucket: string      → nama bucket Supabase
+//   - fallback: ReactNode → tampil saat src null/error
 
 "use client";
 
-import { useCachedImage, type ImageBucket } from "@/hooks/useCachedImage";
+import { proxyUrl } from "@/lib/image-proxy";
 import Image, { type ImageProps } from "next/image";
-import React from "react";
-
-// ── Types ──────────────────────────────────────────────────────────────────
+import React, { useState } from "react";
 
 export interface CachedImageProps extends Omit<ImageProps, "src"> {
-  /** Path atau full URL gambar (dari kolom profile/thumbnail/avatar) */
+  /** Path atau full URL dari kolom profile/thumbnail/avatar */
   src: string | null | undefined;
   /** Nama bucket Supabase Storage */
-  bucket: ImageBucket;
-  /** Apakah bucket public? Default true */
-  usePublic?: boolean;
-  /** Fallback yang ditampilkan saat gambar tidak ada / loading */
+  bucket: string;
+  /** Tampil saat src null atau gagal load */
   fallback?: React.ReactNode;
-  /** Wrapper className */
-  wrapperClassName?: string;
 }
-
-// ── Component ──────────────────────────────────────────────────────────────
 
 const CachedImage: React.FC<CachedImageProps> = ({
   src,
   bucket,
-  usePublic = true,
   fallback,
-  wrapperClassName,
   alt,
   className,
   onError,
   ...imageProps
 }) => {
-  const { url, loading } = useCachedImage(src, bucket, usePublic);
-  const [imgError, setImgError] = React.useState(false);
+  const [hasError, setHasError] = useState(false);
 
-  // Reset error state saat src berubah
   React.useEffect(() => {
-    setImgError(false);
+    setHasError(false);
   }, [src]);
 
-  // Tampilkan fallback saat: loading, tidak ada URL, atau error load gambar
-  if (loading || !url || imgError) {
-    if (fallback) {
-      return <>{fallback}</>;
-    }
-    return null;
+  const url = proxyUrl(bucket, src);
+
+  if (!url || hasError) {
+    return fallback ? <>{fallback}</> : null;
   }
 
   return (
@@ -73,7 +62,7 @@ const CachedImage: React.FC<CachedImageProps> = ({
       alt={alt}
       className={className}
       onError={(e) => {
-        setImgError(true);
+        setHasError(true);
         onError?.(e);
       }}
       {...imageProps}

@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import CachedImage from "@/components/ui/custom/cached-image";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -145,13 +147,16 @@ const SUGGESTED_FACILITIES = [
 
 export default function KamarInapPage() {
   const [kamarInap, setKamarInap] = useState<KamarInapWithCreator[]>([]);
-  const [filteredKamarInap, setFilteredKamarInap] = useState<KamarInapWithCreator[]>([]);
+  const [filteredKamarInap, setFilteredKamarInap] = useState<
+    KamarInapWithCreator[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [selectedKamarInap, setSelectedKamarInap] = useState<KamarInapWithCreator | null>(null);
+  const [selectedKamarInap, setSelectedKamarInap] =
+    useState<KamarInapWithCreator | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
@@ -159,11 +164,16 @@ export default function KamarInapPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [recommendedFilter, setRecommendedFilter] = useState<"all" | "recommended">("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
+  const [recommendedFilter, setRecommendedFilter] = useState<
+    "all" | "recommended"
+  >("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">(
+    "newest",
+  );
 
   const [formData, setFormData] = useState<FormDataType>(DEFAULT_FORM_DATA);
-  const [formErrors, setFormErrors] = useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
+  const [formErrors, setFormErrors] =
+    useState<FormErrorsType>(DEFAULT_FORM_ERRORS);
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [facilityInput, setFacilityInput] = useState("");
@@ -238,7 +248,9 @@ export default function KamarInapPage() {
       filtered = filtered.filter(
         (item) =>
           item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          item.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          item.description
+            .toLowerCase()
+            .includes(debouncedSearch.toLowerCase()) ||
           item.facilities.some((facility: string) =>
             facility.toLowerCase().includes(debouncedSearch.toLowerCase()),
           ),
@@ -252,9 +264,13 @@ export default function KamarInapPage() {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "newest":
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
         case "oldest":
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         case "a-z":
           return a.title.localeCompare(b.title, "id");
         case "z-a":
@@ -311,7 +327,10 @@ export default function KamarInapPage() {
           }
         }
 
-        const { error } = await supabase.from("kamar_inap").delete().eq("id", id);
+        const { error } = await supabase
+          .from("kamar_inap")
+          .delete()
+          .eq("id", id);
 
         if (error) throw error;
       }
@@ -425,7 +444,10 @@ export default function KamarInapPage() {
       let imageUrl = formData.image;
 
       if (formData.imageDeleted && selectedKamarInap?.image) {
-        const oldPath = getFilePathFromUrl(selectedKamarInap.image, "kamar-inap");
+        const oldPath = getFilePathFromUrl(
+          selectedKamarInap.image,
+          "kamar-inap",
+        );
         if (oldPath) {
           await deleteFile("kamar-inap", oldPath);
         }
@@ -434,7 +456,10 @@ export default function KamarInapPage() {
 
       if (formData.imageFile) {
         if (selectedKamarInap?.image) {
-          const oldPath = getFilePathFromUrl(selectedKamarInap.image, "kamar-inap");
+          const oldPath = getFilePathFromUrl(
+            selectedKamarInap.image,
+            "kamar-inap",
+          );
           if (oldPath) {
             await deleteFile("kamar-inap", oldPath);
           }
@@ -464,7 +489,7 @@ export default function KamarInapPage() {
             facilities: formData.facilities,
             is_recommended: formData.is_recommended,
             image: imageUrl,
-            updated_by: currentUserId,          // ← simpan siapa yang update
+            updated_by: currentUserId, // ← simpan siapa yang update
             updated_at: new Date().toISOString(),
           })
           .eq("id", selectedKamarInap.id);
@@ -481,7 +506,7 @@ export default function KamarInapPage() {
           facilities: formData.facilities,
           is_recommended: formData.is_recommended,
           image: imageUrl,
-          created_by: currentUserId,             // ← simpan siapa yang buat
+          created_by: currentUserId, // ← simpan siapa yang buat
         });
 
         if (error) throw error;
@@ -564,7 +589,9 @@ export default function KamarInapPage() {
   const handleRemoveFacility = (facilityToRemove: string) => {
     setFormData({
       ...formData,
-      facilities: formData.facilities.filter((facility) => facility !== facilityToRemove),
+      facilities: formData.facilities.filter(
+        (facility) => facility !== facilityToRemove,
+      ),
     });
   };
 
@@ -639,7 +666,9 @@ export default function KamarInapPage() {
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Kamar Inap</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+              Kamar Inap
+            </h1>
             <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">
               Kelola data kamar inap
             </p>
@@ -656,7 +685,9 @@ export default function KamarInapPage() {
                 <Trash2 className="h-4 w-4 sm:mr-2 shrink-0" />
                 <span className="hidden sm:inline truncate">Hapus</span>
                 <span className="sm:hidden">({selectedItems.length})</span>
-                <span className="hidden sm:inline">({selectedItems.length})</span>
+                <span className="hidden sm:inline">
+                  ({selectedItems.length})
+                </span>
               </Button>
             )}
             <Button
@@ -665,7 +696,9 @@ export default function KamarInapPage() {
               className="flex-1 sm:flex-initial min-w-0"
             >
               <Plus className="h-4 w-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline truncate">Tambah Kamar Inap</span>
+              <span className="hidden sm:inline truncate">
+                Tambah Kamar Inap
+              </span>
               <span className="sm:hidden truncate">Tambah</span>
             </Button>
           </div>
@@ -848,7 +881,7 @@ export default function KamarInapPage() {
                   {/* Image */}
                   <div className="relative h-48 bg-muted overflow-hidden rounded-t-xl -mt-6">
                     {item.image ? (
-                      <Image
+                      <CachedImage
                         src={item.image}
                         alt={item.title}
                         fill
@@ -856,6 +889,7 @@ export default function KamarInapPage() {
                         style={{ objectPosition: "center 30%" }}
                         sizes="(max-width: 640px) 100vw, 512px"
                         unoptimized
+                        bucket={""}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
@@ -891,7 +925,11 @@ export default function KamarInapPage() {
                           {item.facilities
                             .slice(0, 2)
                             .map((facility: string, idx: number) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
+                              <Badge
+                                key={idx}
+                                variant="secondary"
+                                className="text-xs"
+                              >
                                 {facility}
                               </Badge>
                             ))}
@@ -913,20 +951,27 @@ export default function KamarInapPage() {
                             alt={item.created_by_user?.nama || "User"}
                           />
                           <AvatarFallback className="text-xs">
-                            {item.created_by_user?.nama?.charAt(0).toUpperCase() || "U"}
+                            {item.created_by_user?.nama
+                              ?.charAt(0)
+                              .toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
                         <span className="truncate text-xs text-muted-foreground">
                           {item.created_by_user?.nama}
                         </span>
-                        <span className="text-muted-foreground hidden sm:inline">•</span>
+                        <span className="text-muted-foreground hidden sm:inline">
+                          •
+                        </span>
                         <Calendar className="h-3 w-3 shrink-0 hidden sm:block" />
                         <span className="text-xs text-muted-foreground hidden sm:inline">
-                          {new Date(item.created_at).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {new Date(item.created_at).toLocaleDateString(
+                            "id-ID",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )}
                         </span>
                       </div>
 
@@ -983,8 +1028,11 @@ export default function KamarInapPage() {
                 <div className="hidden sm:flex items-center justify-between gap-4">
                   <div className="text-sm text-muted-foreground shrink-0">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredKamarInap.length)} dari{" "}
-                    {filteredKamarInap.length} data kamar inap
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredKamarInap.length,
+                    )}{" "}
+                    dari {filteredKamarInap.length} data kamar inap
                   </div>
                   <div className="flex-1" />
                   <div className="shrink-0">
@@ -993,7 +1041,8 @@ export default function KamarInapPage() {
                         <PaginationItem>
                           <PaginationPrevious
                             onClick={() =>
-                              currentPage > 1 && handlePageChange(currentPage - 1)
+                              currentPage > 1 &&
+                              handlePageChange(currentPage - 1)
                             }
                             className={`h-9 px-3 text-sm ${
                               currentPage === 1
@@ -1039,8 +1088,11 @@ export default function KamarInapPage() {
                 <div className="flex sm:hidden flex-col gap-3">
                   <div className="text-sm text-muted-foreground text-center">
                     Menampilkan {(currentPage - 1) * itemsPerPage + 1} –{" "}
-                    {Math.min(currentPage * itemsPerPage, filteredKamarInap.length)} dari{" "}
-                    {filteredKamarInap.length}
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredKamarInap.length,
+                    )}{" "}
+                    dari {filteredKamarInap.length}
                   </div>
                   <Pagination>
                     <PaginationContent className="gap-1">
@@ -1119,7 +1171,7 @@ export default function KamarInapPage() {
               {(formData.imageFile ||
                 (formData.image && !formData.imageDeleted)) && (
                 <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                  <Image
+                  <CachedImage
                     src={
                       formData.imageFile
                         ? URL.createObjectURL(formData.imageFile)
@@ -1130,6 +1182,7 @@ export default function KamarInapPage() {
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 600px"
                     unoptimized
+                    bucket={""}
                   />
                   <Button
                     type="button"
@@ -1150,56 +1203,64 @@ export default function KamarInapPage() {
                   </Button>
                 </div>
               )}
-              {!formData.imageFile && (!formData.image || formData.imageDeleted) && (
-                <>
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${
-                      formErrors.image ? "border-red-500" : ""
-                    }`}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const file = e.dataTransfer.files[0];
-                      if (file) {
-                        const validation = validateImage(file);
-                        if (!validation.valid) {
-                          setFormErrors({ ...formErrors, image: validation.error || "" });
-                          toast.error(validation.error || "File tidak valid");
-                          return;
+              {!formData.imageFile &&
+                (!formData.image || formData.imageDeleted) && (
+                  <>
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors ${
+                        formErrors.image ? "border-red-500" : ""
+                      }`}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files[0];
+                        if (file) {
+                          const validation = validateImage(file);
+                          if (!validation.valid) {
+                            setFormErrors({
+                              ...formErrors,
+                              image: validation.error || "",
+                            });
+                            toast.error(validation.error || "File tidak valid");
+                            return;
+                          }
+                          setFormData({
+                            ...formData,
+                            imageFile: file,
+                            imageDeleted: false,
+                          });
+                          setFormErrors({ ...formErrors, image: "" });
                         }
-                        setFormData({ ...formData, imageFile: file, imageDeleted: false });
-                        setFormErrors({ ...formErrors, image: "" });
-                      }
-                    }}
-                    onDragOver={(e) => e.preventDefault()}
-                  >
-                    <Input
-                      id="image"
-                      type="file"
-                      accept="image/webp"
-                      onChange={handleImageChange}
-                      disabled={submitting}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="image"
-                      className="flex flex-col items-center justify-center cursor-pointer"
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
                     >
-                      <div className="rounded-full bg-muted p-3 mb-2">
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <p className="text-sm font-medium mb-1">
-                        Klik untuk upload atau drag & drop
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Format: WebP, Max: 300KB
-                      </p>
-                    </label>
-                  </div>
-                  {formErrors.image && (
-                    <p className="text-sm text-red-500">{formErrors.image}</p>
-                  )}
-                </>
-              )}
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/webp"
+                        onChange={handleImageChange}
+                        disabled={submitting}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="image"
+                        className="flex flex-col items-center justify-center cursor-pointer"
+                      >
+                        <div className="rounded-full bg-muted p-3 mb-2">
+                          <Upload className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm font-medium mb-1">
+                          Klik untuk upload atau drag & drop
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Format: WebP, Max: 300KB
+                        </p>
+                      </label>
+                    </div>
+                    {formErrors.image && (
+                      <p className="text-sm text-red-500">{formErrors.image}</p>
+                    )}
+                  </>
+                )}
             </div>
 
             {/* Nama Kamar */}
@@ -1213,7 +1274,8 @@ export default function KamarInapPage() {
                 value={formData.title}
                 onChange={(e) => {
                   setFormData({ ...formData, title: e.target.value });
-                  if (formErrors.title) setFormErrors({ ...formErrors, title: "" });
+                  if (formErrors.title)
+                    setFormErrors({ ...formErrors, title: "" });
                 }}
                 disabled={submitting}
                 className={formErrors.title ? "border-red-500" : ""}
@@ -1235,7 +1297,8 @@ export default function KamarInapPage() {
                 value={formData.price}
                 onChange={(e) => {
                   setFormData({ ...formData, price: e.target.value });
-                  if (formErrors.price) setFormErrors({ ...formErrors, price: "" });
+                  if (formErrors.price)
+                    setFormErrors({ ...formErrors, price: "" });
                 }}
                 disabled={submitting}
                 className={formErrors.price ? "border-red-500" : ""}
@@ -1281,7 +1344,8 @@ export default function KamarInapPage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTED_FACILITIES.map((suggestedFacility) => {
-                    const isSelected = formData.facilities.includes(suggestedFacility);
+                    const isSelected =
+                      formData.facilities.includes(suggestedFacility);
                     return (
                       <Badge
                         key={suggestedFacility}
@@ -1333,7 +1397,11 @@ export default function KamarInapPage() {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {formData.facilities.map((facility, index) => (
-                      <Badge key={index} variant="secondary" className="gap-1 pr-1">
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="gap-1 pr-1"
+                      >
                         {facility}
                         <button
                           type="button"
@@ -1357,7 +1425,10 @@ export default function KamarInapPage() {
                   id="is_recommended"
                   checked={formData.is_recommended}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_recommended: checked as boolean })
+                    setFormData({
+                      ...formData,
+                      is_recommended: checked as boolean,
+                    })
                   }
                   disabled={submitting}
                 />
@@ -1380,7 +1451,9 @@ export default function KamarInapPage() {
                 Batal
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {submitting ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
@@ -1394,14 +1467,16 @@ export default function KamarInapPage() {
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Detail Kamar Inap</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
+              Detail Kamar Inap
+            </DialogTitle>
           </DialogHeader>
           {selectedKamarInap && (
             <div className="space-y-4">
               {/* Image */}
               {selectedKamarInap.image && (
                 <div className="relative w-full h-48 sm:h-56 md:h-64 rounded-lg overflow-hidden">
-                  <Image
+                  <CachedImage
                     src={selectedKamarInap.image}
                     alt={selectedKamarInap.title}
                     fill
@@ -1409,6 +1484,7 @@ export default function KamarInapPage() {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
                     priority
                     unoptimized
+                    bucket={""}
                   />
                 </div>
               )}
@@ -1493,7 +1569,9 @@ export default function KamarInapPage() {
                       </span>
                       <span className="text-muted-foreground/50">•</span>
                       <Clock className="h-3 w-3 shrink-0" />
-                      <span>{formatDateTime(selectedKamarInap.updated_at)}</span>
+                      <span>
+                        {formatDateTime(selectedKamarInap.updated_at)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1539,7 +1617,10 @@ export default function KamarInapPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -1555,7 +1636,10 @@ export default function KamarInapPage() {
       </AlertDialog>
 
       {/* ── Bulk Delete Dialog ── */}
-      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+      <AlertDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+      >
         <AlertDialogContent className="max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base sm:text-lg">
@@ -1568,7 +1652,10 @@ export default function KamarInapPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
-            <AlertDialogCancel disabled={submitting} className="w-full sm:w-auto">
+            <AlertDialogCancel
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -1585,7 +1672,10 @@ export default function KamarInapPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
+      <AccessDeniedDialog
+        open={showAccessDenied}
+        onOpenChange={setShowAccessDenied}
+      />
     </div>
   );
 }
