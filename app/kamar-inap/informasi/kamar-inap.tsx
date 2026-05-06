@@ -6,7 +6,7 @@ import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import { KamarInap as KamarInapType } from "@/types/index";
 import { Bed, CheckCircle2, Star } from "lucide-react";
-import Image from "next/image";
+import CachedImage from "@/components/ui/custom/cached-image";
 import { useEffect, useState } from "react";
 
 const InformasiKamarInap = () => {
@@ -67,7 +67,7 @@ const InformasiKamarInap = () => {
         {/* Gambar */}
         <div className="relative w-full h-52 bg-gray-100 overflow-hidden">
           {kamar.image ? (
-            <Image
+            <CachedImage
               src={kamar.image}
               alt={kamar.title}
               fill
@@ -77,6 +77,7 @@ const InformasiKamarInap = () => {
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}
+              bucket={""}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -142,7 +143,7 @@ const InformasiKamarInap = () => {
         {/* Gambar */}
         <div className="relative w-56 shrink-0 bg-gray-100 overflow-hidden">
           {kamar.image ? (
-            <Image
+            <CachedImage
               src={kamar.image}
               alt={kamar.title}
               fill
@@ -152,6 +153,7 @@ const InformasiKamarInap = () => {
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}
+              bucket={""}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -252,7 +254,7 @@ const InformasiKamarInap = () => {
         <div className="w-[340px] xl:w-[390px] shrink-0 bg-gray-50 flex flex-col border-l border-gray-100">
           <div className="relative w-full h-64 xl:h-72 bg-gray-100 overflow-hidden">
             {kamar.image ? (
-              <Image
+              <CachedImage
                 src={kamar.image}
                 alt={kamar.title}
                 fill
@@ -262,6 +264,7 @@ const InformasiKamarInap = () => {
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}
+                bucket={""}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">

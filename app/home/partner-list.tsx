@@ -6,7 +6,7 @@ import Title from "@/components/ui/custom/title";
 import { supabase } from "@/lib/supabase/client";
 import { animate, motion, useMotionValue, useSpring } from "framer-motion";
 import { ArrowRight, Building2 } from "lucide-react";
-import Image from "next/image";
+import CachedImage from "@/components/ui/custom/cached-image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -96,13 +96,14 @@ const PartnerCard = ({ partner }: { partner: Partner }) => {
         />
 
         {partner.picture ? (
-          <Image
+          <CachedImage
             src={partner.picture}
             alt={partner.nama}
             width={200}
             height={120}
             className="w-full h-full object-contain relative z-10"
             draggable={false}
+            bucket={""}
           />
         ) : (
           <div className="flex flex-col items-center gap-2 relative z-10">

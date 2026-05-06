@@ -18,7 +18,7 @@ import {
   Twitter,
   User,
 } from "lucide-react";
-import Image from "next/image";
+import CachedImage from "@/components/ui/custom/cached-image";
 import { useParams, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 
@@ -273,13 +273,14 @@ const BeritaDetailPage = () => {
                 {/* Hero image */}
                 {berita.thumbnail && (
                   <div className="relative w-full h-72 sm:h-96">
-                    <Image
+                    <CachedImage
                       src={berita.thumbnail}
                       alt={berita.title}
                       fill
                       className="object-cover"
                       priority
                       sizes="(max-width:768px) 100vw, 896px"
+                      bucket={""}
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
                     <span className="absolute bottom-5 left-6 px-3 py-1.5 bg-bittersweet-500 text-white text-xs font-bold rounded-full shadow">
@@ -317,12 +318,13 @@ const BeritaDetailPage = () => {
                       <div className="flex items-center gap-2.5">
                         <div className="relative w-9 h-9 rounded-full overflow-hidden bg-mariner-100 shrink-0">
                           {berita.author_detail?.avatar ? (
-                            <Image
+                            <CachedImage
                               src={berita.author_detail.avatar}
                               alt={berita.author_detail.nama}
                               fill
                               className="object-cover"
                               sizes="36px"
+                              bucket={""}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -472,12 +474,13 @@ const BeritaDetailPage = () => {
                       >
                         <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                           {post.thumbnail ? (
-                            <Image
+                            <CachedImage
                               src={post.thumbnail}
                               alt={post.title}
                               fill
                               className="object-cover group-hover:scale-110 transition-transform duration-300"
                               sizes="56px"
+                              bucket={""}
                             />
                           ) : (
                             <div className="w-full h-full bg-linear-to-br from-mariner-200 to-mariner-400" />

@@ -1,10 +1,11 @@
-// app/dokter/dokter.tsx
+// app/jadwal/dokter.tsx
 "use client";
 import Animate, {
   ease,
   type BezierEase,
 } from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
+import CachedImage from "@/components/ui/custom/cached-image";
 import Input from "@/components/ui/custom/input";
 import Pagination from "@/components/ui/custom/pagination";
 import Select from "@/components/ui/custom/select";
@@ -24,7 +25,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, {
   useCallback,
@@ -36,40 +36,21 @@ import React, {
 
 const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
 
-/* ─────────────────────────────────────────
-   PAGINATION CONFIG
-───────────────────────────────────────── */
 const ITEMS_PER_PAGE = 12;
 
-/* ─────────────────────────────────────────
-   useDebounce — generic debounce hook
-   Menunda pembaruan nilai selama `delay` ms
-   setelah perubahan terakhir.
-───────────────────────────────────────── */
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(timer);
-    };
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
   }, [value, delay]);
-
   return debouncedValue;
 }
 
-/* ─────────────────────────────────────────
-   useScrollIndicator — vertical scroll tracking
-───────────────────────────────────────── */
 function useScrollIndicator() {
   const ref = useRef<HTMLDivElement>(null);
   const [canScrollUp, setCanScrollUp] = useState(false);
   const [canScrollDown, setCanScrollDown] = useState(false);
-
   const update = useCallback(() => {
     const el = ref.current;
     if (!el) return;
@@ -77,7 +58,6 @@ function useScrollIndicator() {
     setCanScrollUp(scrollTop > 4);
     setCanScrollDown(scrollTop + clientHeight < scrollHeight - 4);
   }, []);
-
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -90,13 +70,9 @@ function useScrollIndicator() {
       ro.disconnect();
     };
   }, [update]);
-
   return { ref, canScrollUp, canScrollDown };
 }
 
-/* ─────────────────────────────────────────
-   ScrollFadeWrapper — reusable scroll area
-───────────────────────────────────────── */
 interface ScrollFadeWrapperProps {
   children: React.ReactNode;
   maxHeight: number;
@@ -109,7 +85,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
   className = "",
 }) => {
   const { ref, canScrollUp, canScrollDown } = useScrollIndicator();
-
   useEffect(() => {
     const id = "dokter-scrollbar-style";
     if (document.getElementById(id)) return;
@@ -123,7 +98,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
     `;
     document.head.appendChild(style);
   }, []);
-
   return (
     <div className="relative">
       <div
@@ -170,9 +144,6 @@ const ScrollFadeWrapper: React.FC<ScrollFadeWrapperProps> = ({
   );
 };
 
-/* ─────────────────────────────────────────
-   INTERFACES
-───────────────────────────────────────── */
 interface Poli {
   id: string;
   nama_poli: string;
@@ -205,11 +176,7 @@ interface JadwalGroup {
   }[];
 }
 
-/* ─────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────── */
 const formatTime = (t: string) => (t.includes(".") ? t.replace(".", ":") : t);
-
 const HARI_ORDER: Record<string, number> = {
   Senin: 1,
   Selasa: 2,
@@ -237,25 +204,17 @@ function groupJadwalByHari(jadwalList: JadwalDokter[]): JadwalGroup[] {
   return Array.from(map.values());
 }
 
-/* ─────────────────────────────────────────
-   GREATEST updated_at dari seluruh data dokter + jadwal
-───────────────────────────────────────── */
 function getGlobalLastUpdated(dokterList: Dokter[]): string | null {
   if (dokterList.length === 0) return null;
-
   const allDates: Date[] = [];
-
   for (const dokter of dokterList) {
     if (dokter.updated_at) allDates.push(new Date(dokter.updated_at));
     for (const jadwal of dokter.jadwal_dokter) {
       if (jadwal.updated_at) allDates.push(new Date(jadwal.updated_at));
     }
   }
-
   if (allDates.length === 0) return null;
-
   const latest = new Date(Math.max(...allDates.map((d) => d.getTime())));
-
   return latest.toLocaleDateString("id-ID", {
     day: "numeric",
     month: "long",
@@ -263,32 +222,13 @@ function getGlobalLastUpdated(dokterList: Dokter[]): string | null {
   });
 }
 
-/* ─────────────────────────────────────────
-   STATUS BADGE HELPER
-───────────────────────────────────────── */
-
-// Set status yang dianggap "tidak aktif" — gambar akan di-grayscale
 const INACTIVE_STATUSES = new Set(["inactive", "cuti", "libur"]);
-
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  active: {
-    label: "Aktif",
-    className: "bg-emerald-500 text-white",
-  },
-  inactive: {
-    label: "Tidak Aktif",
-    className: "bg-red-500 text-white",
-  },
-  cuti: {
-    label: "Cuti",
-    className: "bg-red-500 text-white",
-  },
-  libur: {
-    label: "Libur",
-    className: "bg-red-500 text-white",
-  },
+  active: { label: "Aktif", className: "bg-emerald-500 text-white" },
+  inactive: { label: "Tidak Aktif", className: "bg-red-500 text-white" },
+  cuti: { label: "Cuti", className: "bg-red-500 text-white" },
+  libur: { label: "Libur", className: "bg-red-500 text-white" },
 };
-
 const getStatusConfig = (status: string) =>
   STATUS_CONFIG[status] ?? {
     label: status,
@@ -306,9 +246,8 @@ const HARI_OPTIONS = [
   { value: "Minggu", label: "Minggu" },
 ];
 
-/* ─────────────────────────────────────────
-   JADWAL DIALOG
-───────────────────────────────────────── */
+// ── JadwalDialog ────────────────────────────────────────────────────────────
+
 interface JadwalDialogProps {
   dokter: Dokter;
   onClose: () => void;
@@ -407,8 +346,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                     }
                     className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-bittersweet-500 hover:bg-bittersweet-600 px-3 py-1.5 rounded-full shadow-sm shadow-bittersweet-500/20 transition-colors duration-150 shrink-0"
                   >
-                    Daftar
-                    <ArrowRight className="w-3 h-3" />
+                    Daftar <ArrowRight className="w-3 h-3" />
                   </motion.button>
                 )}
               </div>
@@ -419,172 +357,165 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
     ));
 
   return (
-    <>
-      {/* ── Dialog jadwal dokter ── */}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
+      className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25, ease: easeOut } satisfies Transition}
-        className="fixed inset-0 z-120 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
+        initial={{ opacity: 0, y: 60, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.97 }}
+        transition={{ duration: 0.45, ease } satisfies Transition}
+        className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
       >
         <motion.div
-          initial={{ opacity: 0, y: 60, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 40, scale: 0.97 }}
-          transition={{ duration: 0.45, ease } satisfies Transition}
-          className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
-          onClick={(e) => e.stopPropagation()}
+          key="jadwal"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease } satisfies Transition}
+          className="flex flex-col max-h-[85vh]"
         >
-          <motion.div
-            key="jadwal"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease } satisfies Transition}
-            className="flex flex-col max-h-[85vh]"
-          >
-            {/* Hero image */}
-            <div className="relative shrink-0 overflow-hidden">
-              {/* ── Tombol Lihat Profil — kiri atas ── */}
-              <motion.button
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={
-                  { delay: 0.3, duration: 0.4, ease } satisfies Transition
-                }
-                whileHover={{
-                  scale: 1.05,
-                  backgroundColor: "rgba(255,255,255,0.28)",
-                }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleNavigateToDetail}
-                aria-label="Lihat profil lengkap"
-                className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Lihat Profil
-              </motion.button>
+          {/* Hero image */}
+          <div className="relative shrink-0 overflow-hidden">
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={
+                { delay: 0.3, duration: 0.4, ease } satisfies Transition
+              }
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "rgba(255,255,255,0.28)",
+              }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleNavigateToDetail}
+              aria-label="Lihat profil lengkap"
+              className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 bg-black/40 hover:bg-black/60 border border-white/15 text-white text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full transition-colors duration-150 cursor-pointer"
+            >
+              <ExternalLink className="w-3 h-3" /> Lihat Profil
+            </motion.button>
 
-              {/* ── Tombol tutup — kanan atas ── */}
-              <button
-                onClick={onClose}
-                aria-label="Tutup"
-                className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
+            <button
+              onClick={onClose}
+              aria-label="Tutup"
+              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/45 active:bg-black/60 border border-white/20 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
 
-              <motion.div
-                initial={{ scale: 1.06, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, ease } satisfies Transition}
-                className="relative w-full"
-                style={{ paddingBottom: "min(56%, 280px)" }}
-              >
-                <div className="absolute inset-0 bg-gray-100">
-                  {dokter.profile ? (
-                    <Image
-                      src={dokter.profile}
-                      alt={dokter.nama}
-                      fill
-                      className="object-cover"
-                      style={{ objectPosition: "center 55%" }}
-                      sizes="(max-width: 640px) 100vw, 512px"
-                    />
-                  ) : (
+            <motion.div
+              initial={{ scale: 1.06, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6, ease } satisfies Transition}
+              className="relative w-full"
+              style={{ paddingBottom: "min(56%, 280px)" }}
+            >
+              {/* ── DIUBAH: pakai CachedImage ── */}
+              <div className="absolute inset-0 bg-gray-100">
+                <CachedImage
+                  src={dokter.profile}
+                  bucket="dokter"
+                  alt={dokter.nama}
+                  fill
+                  className="object-cover"
+                  style={{ objectPosition: "center 55%" }}
+                  sizes="(max-width: 640px) 100vw, 512px"
+                  fallback={
                     <div className="w-full h-full flex items-center justify-center bg-mariner-50">
                       <UserRound className="w-24 h-24 text-mariner-200" />
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
-                </div>
-              </motion.div>
+                  }
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
+              </div>
+            </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={
-                  { delay: 0.2, duration: 0.45, ease } satisfies Transition
-                }
-                className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
-              >
-                <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
-                  Jadwal Praktek
-                </p>
-                <p className="text-white font-bold text-xl leading-snug drop-shadow-sm">
-                  {dokter.nama}
-                </p>
-                <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
-                  <span className="inline-block text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
-                    {dokter.poli?.nama_poli || "–"}
-                  </span>
-                  <span
-                    className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status).className}`}
-                  >
-                    {getStatusConfig(dokter.status).label}
-                  </span>
-                </div>
-              </motion.div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                { delay: 0.2, duration: 0.45, ease } satisfies Transition
+              }
+              className="absolute bottom-0 inset-x-0 px-6 pb-4 text-center"
+            >
+              <p className="text-white/65 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+                Jadwal Praktek
+              </p>
+              <p className="text-white font-bold text-xl leading-snug drop-shadow-sm">
+                {dokter.nama}
+              </p>
+              <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
+                <span className="inline-block text-xs font-medium text-mariner-200 bg-mariner-900/40 px-3 py-0.5 rounded-full">
+                  {dokter.poli?.nama_poli || "–"}
+                </span>
+                <span
+                  className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getStatusConfig(dokter.status).className}`}
+                >
+                  {getStatusConfig(dokter.status).label}
+                </span>
+              </div>
+            </motion.div>
+          </div>
 
-            {/* Jadwal content — tanpa last updated di sini */}
-            <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
-              {dokter.jadwal_dokter.length === 0 ? (
-                <div className="text-center py-10">
-                  <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
-                    <Calendar className="w-8 h-8 text-gray-400" />
+          <ScrollFadeWrapper maxHeight={320} className="px-6 py-5 space-y-5">
+            {dokter.jadwal_dokter.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="inline-flex p-4 rounded-full bg-gray-100 mb-3">
+                  <Calendar className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">
+                  Belum ada jadwal tersedia
+                </p>
+              </div>
+            ) : (
+              <>
+                {groupedReguler.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
+                        BPJS / Reguler
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {renderGrouped(groupedReguler, "reguler")}
+                    </div>
                   </div>
-                  <p className="text-gray-500 font-medium">
-                    Belum ada jadwal tersedia
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {groupedReguler.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs font-bold uppercase tracking-widest text-mariner-600 bg-mariner-50 px-3 py-1 rounded-full">
-                          BPJS / Reguler
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        {renderGrouped(groupedReguler, "reguler")}
-                      </div>
+                )}
+                {groupedEksekutif.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
+                        Eksekutif
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        Klik{" "}
+                        <span className="font-semibold text-bittersweet-500">
+                          Daftar
+                        </span>{" "}
+                        untuk membuat janji
+                      </span>
                     </div>
-                  )}
-                  {groupedEksekutif.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs font-bold uppercase tracking-widest text-bittersweet-600 bg-bittersweet-50 px-3 py-1 rounded-full">
-                          Eksekutif
-                        </span>
-                        <span className="text-[10px] text-gray-400">
-                          Klik{" "}
-                          <span className="font-semibold text-bittersweet-500">
-                            Daftar
-                          </span>{" "}
-                          untuk membuat janji
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        {renderGrouped(groupedEksekutif, "eksekutif")}
-                      </div>
+                    <div className="space-y-2">
+                      {renderGrouped(groupedEksekutif, "eksekutif")}
                     </div>
-                  )}
-                </>
-              )}
-            </ScrollFadeWrapper>
-          </motion.div>
+                  </div>
+                )}
+              </>
+            )}
+          </ScrollFadeWrapper>
         </motion.div>
       </motion.div>
-    </>
+    </motion.div>
   );
 };
 
-/* ─────────────────────────────────────────
-   DOKTER CARD
-───────────────────────────────────────── */
+// ── DokterCard ──────────────────────────────────────────────────────────────
+
 const cardWrapVariants = {
   hidden: { opacity: 0, y: 28, scale: 0.96 },
   visible: {
@@ -602,8 +533,6 @@ const DokterCard: React.FC<{
   const hariList = [...new Set(dokter.jadwal_dokter.map((j) => j.hari))].sort(
     (a, b) => (HARI_ORDER[a] ?? 99) - (HARI_ORDER[b] ?? 99),
   );
-
-  // Flag untuk status non-aktif: gambar di-grayscale
   const isInactive = INACTIVE_STATUSES.has(dokter.status);
 
   return (
@@ -616,45 +545,32 @@ const DokterCard: React.FC<{
       onClick={() => onClick(dokter)}
       className="group bg-white rounded-3xl overflow-hidden shadow-sm ring-1 ring-gray-100 hover:shadow-xl hover:ring-mariner-100 transition-all duration-300 cursor-pointer flex flex-col"
     >
-      {/* ── Foto dokter ── */}
       <div
         className="relative w-full overflow-hidden"
         style={{ paddingBottom: "115%" }}
       >
-        {/*
-         * Saat inactive/cuti/libur:
-         * - wrapper mendapat grayscale + brightness gelap
-         * - Image mendapat opacity-70 untuk efek pudar
-         */}
         <div
-          className={`absolute inset-0 bg-linear-to-br from-mariner-100 to-mariner-200 transition-all duration-300 ${
-            isInactive ? "grayscale brightness-75" : ""
-          }`}
+          className={`absolute inset-0 bg-linear-to-br from-mariner-100 to-mariner-200 transition-all duration-300 ${isInactive ? "grayscale brightness-75" : ""}`}
         >
-          {dokter.profile ? (
-            <Image
-              src={dokter.profile}
-              alt={dokter.nama}
-              fill
-              className={`object-cover object-top transition-all duration-500 group-hover:scale-105 ${
-                isInactive ? "opacity-70" : ""
-              }`}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <UserRound
-                className={`w-16 h-16 ${
-                  isInactive ? "text-gray-300" : "text-mariner-400"
-                }`}
-              />
-            </div>
-          )}
+          {/* ── DIUBAH: pakai CachedImage ── */}
+          <CachedImage
+            src={dokter.profile}
+            bucket="dokter"
+            alt={dokter.nama}
+            fill
+            className={`object-cover object-top transition-all duration-500 group-hover:scale-105 ${isInactive ? "opacity-70" : ""}`}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            fallback={
+              <div className="w-full h-full flex items-center justify-center">
+                <UserRound
+                  className={`w-16 h-16 ${isInactive ? "text-gray-300" : "text-mariner-400"}`}
+                />
+              </div>
+            }
+          />
 
-          {/* Gradient overlay */}
           <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/10 to-transparent" />
 
-          {/* Top badges */}
           <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2">
             <span
               className={`inline-block text-[10px] font-bold px-2.5 py-1 rounded-full leading-none ${getStatusConfig(dokter.status).className}`}
@@ -666,15 +582,12 @@ const DokterCard: React.FC<{
             </span>
           </div>
 
-          {/* Hover overlay */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20">
             <div className="bg-white text-mariner-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shadow-lg">
-              Lihat Jadwal
-              <ChevronRight className="w-3.5 h-3.5" />
+              Lihat Jadwal <ChevronRight className="w-3.5 h-3.5" />
             </div>
           </div>
 
-          {/* Bottom: nama dokter */}
           <div className="absolute bottom-0 inset-x-0 px-3 pb-3">
             <h3 className="text-white font-bold text-sm leading-snug drop-shadow-sm line-clamp-2 group-hover:text-mariner-100 transition-colors duration-200">
               {dokter.nama}
@@ -683,7 +596,6 @@ const DokterCard: React.FC<{
         </div>
       </div>
 
-      {/* ── Info bawah: hari praktek ── */}
       <div className="px-3 py-3 flex items-center justify-between gap-2 min-h-11">
         <div className="flex flex-wrap gap-1 flex-1 min-w-0">
           {hariList.length === 0 ? (
@@ -707,9 +619,8 @@ const DokterCard: React.FC<{
   );
 };
 
-/* ─────────────────────────────────────────
-   SKELETON CARD
-───────────────────────────────────────── */
+// ── SkeletonCard ────────────────────────────────────────────────────────────
+
 const SkeletonCard = () => (
   <div className="bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100 animate-pulse">
     <div className="w-full bg-gray-100" style={{ paddingBottom: "115%" }} />
@@ -721,10 +632,8 @@ const SkeletonCard = () => (
   </div>
 );
 
-/* ─────────────────────────────────────────
-   LAST UPDATED BADGE
-   Posisi: di antara Title dan Filter bar
-───────────────────────────────────────── */
+// ── LastUpdatedBadge ────────────────────────────────────────────────────────
+
 interface LastUpdatedBadgeProps {
   dokterList: Dokter[];
   loading: boolean;
@@ -738,17 +647,13 @@ const LastUpdatedBadge: React.FC<LastUpdatedBadgeProps> = ({
     () => getGlobalLastUpdated(dokterList),
     [dokterList],
   );
-
-  if (loading) {
+  if (loading)
     return (
       <div className="flex justify-center">
         <div className="h-7 w-52 bg-gray-100 rounded-full animate-pulse" />
       </div>
     );
-  }
-
   if (!lastUpdated) return null;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -767,9 +672,8 @@ const LastUpdatedBadge: React.FC<LastUpdatedBadgeProps> = ({
   );
 };
 
-/* ─────────────────────────────────────────
-   MAIN COMPONENT
-───────────────────────────────────────── */
+// ── Main ────────────────────────────────────────────────────────────────────
+
 const DokterSpesialis = () => {
   const [poliList, setPoliList] = useState<Poli[]>([]);
   const [dokterList, setDokterList] = useState<Dokter[]>([]);
@@ -777,17 +681,12 @@ const DokterSpesialis = () => {
   const [dataReady, setDataReady] = useState(false);
   const [selectedDokter, setSelectedDokter] = useState<Dokter | null>(null);
 
-  // ── Raw input state (langsung terupdate saat user mengetik/memilih) ──
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedPoli, setSelectedPoli] = useState<string>("all");
   const [selectedHari, setSelectedHari] = useState<string>("all");
-
   const [currentPage, setCurrentPage] = useState(1);
 
-  // ── Debounced state (digunakan untuk filtering, 300 ms delay) ──
-  // Pencarian teks: 300 ms agar tidak filter setiap ketukan
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  // Filter poli & hari: 200 ms untuk select yang biasanya lebih cepat
   const debouncedSelectedPoli = useDebounce(selectedPoli, 200);
   const debouncedSelectedHari = useDebounce(selectedHari, 200);
 
@@ -849,7 +748,6 @@ const DokterSpesialis = () => {
     }
   };
 
-  // ── Filter menggunakan nilai debounced, bukan nilai raw ──
   const filteredDokter = useMemo(
     () =>
       dokterList.filter((d) => {
@@ -881,13 +779,11 @@ const DokterSpesialis = () => {
     ],
   );
 
-  // ── Reset ke halaman 1 saat debounced filter berubah ──
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearchQuery, debouncedSelectedPoli, debouncedSelectedHari]);
 
   const totalPages = Math.ceil(filteredDokter.length / ITEMS_PER_PAGE);
-
   const paginatedDokter = useMemo(
     () =>
       filteredDokter.slice(
@@ -902,11 +798,8 @@ const DokterSpesialis = () => {
     gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // ── Handler input: update raw state saja ──
-  // Debounce akan otomatis meneruskan ke debouncedSearchQuery setelah delay
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    // Jika ada teks pencarian, reset filter poli & hari (raw state)
     if (value) {
       setSelectedPoli("all");
       setSelectedHari("all");
@@ -915,7 +808,6 @@ const DokterSpesialis = () => {
 
   const handlePoliChange = (poliId: string) => {
     setSelectedPoli(poliId);
-    // Jika memilih poli tertentu, bersihkan pencarian teks (raw state)
     if (poliId !== "all") setSearchQuery("");
   };
 
@@ -956,11 +848,6 @@ const DokterSpesialis = () => {
             />
           </Animate>
 
-          {/*
-           * ── LAST UPDATED BADGE ──────────────────────────────────
-           * Satu-satunya tempat info "diperbarui" ditampilkan.
-           * Tidak ada duplikasi di card maupun di dalam dialog.
-           * ──────────────────────────────────────────────────────── */}
           <Animate
             type="fadein"
             ready={dataReady}
@@ -970,7 +857,6 @@ const DokterSpesialis = () => {
             <LastUpdatedBadge dokterList={dokterList} loading={loading} />
           </Animate>
 
-          {/* Filters */}
           <Animate
             type="slideup"
             ready={dataReady}
@@ -979,7 +865,6 @@ const DokterSpesialis = () => {
           >
             <div className="flex justify-center">
               <div className="w-full max-w-4xl flex flex-col sm:flex-row gap-3">
-                {/* Search — raw state di-bind ke input, debounced state untuk filter */}
                 <div className="relative flex-1">
                   <Input
                     type="text"
@@ -1001,8 +886,6 @@ const DokterSpesialis = () => {
                     </button>
                   )}
                 </div>
-
-                {/* Filter Poli — raw state di-bind ke select */}
                 <div className="w-full sm:w-52 shrink-0">
                   <Select
                     icon={Stethoscope}
@@ -1022,8 +905,6 @@ const DokterSpesialis = () => {
                     loading={loading}
                   />
                 </div>
-
-                {/* Filter Hari — raw state di-bind ke select */}
                 <div className="w-full sm:w-44 shrink-0">
                   <Select
                     icon={Calendar}
@@ -1040,7 +921,6 @@ const DokterSpesialis = () => {
             </div>
           </Animate>
 
-          {/* Loading skeleton */}
           <AnimatePresence>
             {loading && (
               <motion.div
@@ -1060,7 +940,6 @@ const DokterSpesialis = () => {
             )}
           </AnimatePresence>
 
-          {/* Empty state */}
           {!loading && filteredDokter.length === 0 && (
             <Animate
               type="slideup"
@@ -1079,11 +958,9 @@ const DokterSpesialis = () => {
             </Animate>
           )}
 
-          {/* Grid */}
           {!loading && filteredDokter.length > 0 && (
             <>
               <div ref={gridRef} className="-mt-4 pt-4" />
-
               <Animate
                 key={`${debouncedSelectedPoli}-${debouncedSelectedHari}-${debouncedSearchQuery}-${currentPage}`}
                 type="stagger"
@@ -1101,7 +978,6 @@ const DokterSpesialis = () => {
                   />
                 ))}
               </Animate>
-
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}

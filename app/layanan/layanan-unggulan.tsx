@@ -21,7 +21,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import Image from "next/image";
+import CachedImage from "@/components/ui/custom/cached-image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -205,7 +205,9 @@ function TabCarousel({ activeTab, onTabChange }: TabCarouselProps) {
     const activeBtn = activeRef.current;
     if (!container || !activeBtn) return;
     const scrollTarget =
-      activeBtn.offsetLeft - container.offsetWidth / 2 + activeBtn.offsetWidth / 2;
+      activeBtn.offsetLeft -
+      container.offsetWidth / 2 +
+      activeBtn.offsetWidth / 2;
     container.scrollTo({ left: scrollTarget, behavior: "smooth" });
   }, [activeTab]);
 
@@ -218,13 +220,15 @@ function TabCarousel({ activeTab, onTabChange }: TabCarouselProps) {
     <div
       ref={containerRef}
       className="flex mb-6 border-b border-gray-200"
-      style={{
-        overflowX: "auto",
-        overflowY: "visible",
-        WebkitOverflowScrolling: "touch",
-        msOverflowStyle: "none",
-        scrollbarWidth: "none",
-      } as React.CSSProperties}
+      style={
+        {
+          overflowX: "auto",
+          overflowY: "visible",
+          WebkitOverflowScrolling: "touch",
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
+        } as React.CSSProperties
+      }
     >
       {TAB_LIST.map((tab) => {
         const isActive = activeTab === tab.key;
@@ -475,13 +479,14 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
           >
             <div className="absolute inset-0 bg-gray-100">
               {dokter.profile ? (
-                <Image
+                <CachedImage
                   src={dokter.profile}
                   alt={dokter.nama}
                   fill
                   className="object-cover"
                   style={{ objectPosition: "center 55%" }}
                   sizes="(max-width: 640px) 100vw, 512px"
+                  bucket={""}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-mariner-50">
@@ -614,12 +619,13 @@ const DokterCard: React.FC<DokterCardProps> = ({ item, poliId, poliNama }) => {
         {/* Avatar: foto dokter jika ada, fallback icon */}
         <div className="w-10 h-10 rounded-full bg-mariner-50 overflow-hidden ring-2 ring-mariner-100 shrink-0 flex items-center justify-center">
           {item.dokter.profile ? (
-            <Image
+            <CachedImage
               src={item.dokter.profile}
               alt={item.dokter.nama}
               width={40}
               height={40}
               className="w-full h-full object-cover"
+              bucket={""}
             />
           ) : (
             <User className="w-5 h-5 text-mariner-400" />

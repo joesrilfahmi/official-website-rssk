@@ -24,6 +24,7 @@ import {
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import CachedImage from "@/components/ui/custom/cached-image";
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -175,13 +176,14 @@ const ImageLightbox: React.FC<{
           <X className="w-4 h-4 text-white" />
         </motion.button>
         <div className="relative max-w-[88vw] max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl border border-white/10">
-          <Image
+          <CachedImage
             src={src}
             alt={alt}
             width={1200}
             height={1600}
             className="object-contain max-w-[88vw] max-h-[85vh]"
             style={{ width: "auto", height: "auto" }}
+            bucket={""}
           />
         </div>
       </motion.div>
@@ -371,13 +373,14 @@ const DokterProfile: React.FC<{
       >
         {dokter.profile ? (
           <>
-            <Image
+            <CachedImage
               src={dokter.profile}
               alt={dokter.nama}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               style={{ objectPosition: "center 20%" }}
               sizes="(max-width: 1024px) 80vw, 320px"
+              bucket={""}
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300 flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-300 w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">

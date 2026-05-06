@@ -1,5 +1,6 @@
 // app/blog/blog.tsx
 "use client";
+import CachedImage from "@/components/ui/custom/cached-image";
 import Animate from "@/components/animations/animate";
 import Banner from "@/components/ui/custom/banner";
 import Input from "@/components/ui/custom/input";
@@ -241,12 +242,13 @@ const Blog = () => {
     >
       <div className="relative shrink-0 overflow-hidden bg-gray-100 h-56 w-full">
         {berita.thumbnail ? (
-          <Image
+          <CachedImage
             src={berita.thumbnail}
             alt={berita.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-500"
             sizes="100vw"
+            bucket={""}
           />
         ) : (
           <div className="w-full h-full bg-linear-to-br from-mariner-200 to-mariner-400 flex items-center justify-center">
@@ -590,12 +592,13 @@ const Blog = () => {
                       >
                         <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                           {post.thumbnail ? (
-                            <Image
+                            <CachedImage
                               src={post.thumbnail}
                               alt={post.title}
                               fill
                               className="object-cover group-hover:scale-110 transition-transform duration-300"
                               sizes="56px"
+                              bucket={""}
                             />
                           ) : (
                             <div className="w-full h-full bg-linear-to-br from-mariner-200 to-mariner-400" />

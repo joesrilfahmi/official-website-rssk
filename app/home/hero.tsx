@@ -20,7 +20,7 @@ import {
   X,
   ZoomIn,
 } from "lucide-react";
-import Image from "next/image";
+import CachedImage from "@/components/ui/custom/cached-image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -204,13 +204,14 @@ const ImageLightbox: React.FC<{
           <X className="w-4 h-4 text-white" />
         </motion.button>
         <div className="relative max-w-[88vw] max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl border border-white/10">
-          <Image
+          <CachedImage
             src={src}
             alt={alt}
             width={1200}
             height={900}
             className="object-contain max-w-[88vw] max-h-[85vh]"
             style={{ width: "auto", height: "auto" }}
+            bucket={""}
           />
         </div>
       </motion.div>
@@ -392,11 +393,12 @@ const PromoDialog: React.FC<{ promo: Promo; onClose: () => void }> = ({
           <div className="relative w-full h-72 sm:h-auto sm:w-72 md:w-80 shrink-0 bg-linear-to-br from-easternblue-500 to-easternblue-700 overflow-hidden">
             {promo.picture ? (
               <>
-                <Image
+                <CachedImage
                   src={promo.picture}
                   alt={promo.title}
                   fill
                   className="object-cover"
+                  bucket={""}
                 />
                 <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -760,13 +762,14 @@ const Hero: React.FC = () => {
                               onClick={() => handleSlideClick(promo)}
                             >
                               {promo.picture ? (
-                                <Image
+                                <CachedImage
                                   src={promo.picture}
                                   alt={promo.title}
                                   fill
                                   className="object-cover pointer-events-none"
                                   priority={index === 0}
                                   draggable={false}
+                                  bucket={""}
                                 />
                               ) : (
                                 <div className="absolute inset-0 bg-linear-to-br from-easternblue-400 to-easternblue-700" />

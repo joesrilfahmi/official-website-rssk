@@ -8,7 +8,7 @@ import Input from "@/components/ui/custom/input";
 import { supabase } from "@/lib/supabase/client";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
 import { Search, Users, X } from "lucide-react";
-import Image from "next/image";
+import CachedImage from "@/components/ui/custom/cached-image";
 import React, { useEffect, useMemo, useState } from "react";
 
 const easeOut: BezierEase = [0.0, 0.0, 0.2, 1];
@@ -85,12 +85,13 @@ const PartnerCard: React.FC<{ partner: Partner }> = ({ partner }) => {
       >
         <div className="absolute inset-0 bg-white">
           {partner.picture ? (
-            <Image
+            <CachedImage
               src={partner.picture}
               alt={partner.nama}
               fill
               className="object-cover object-top transition-transform duration-700 group-hover:scale-110"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+              bucket={""}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">

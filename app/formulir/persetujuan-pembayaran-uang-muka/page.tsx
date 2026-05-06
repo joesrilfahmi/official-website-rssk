@@ -7,6 +7,7 @@ import Textarea from "@/components/ui/custom/textarea";
 import Profile from "@/config/profile";
 import { supabase } from "@/lib/supabase/client";
 import Image from "next/image";
+import CachedImage from "@/components/ui/custom/cached-image";
 import { useRef, useState } from "react";
 
 /* ─────────────────────────────────────────
@@ -73,8 +74,18 @@ interface InsertedRow {
 function getTodayFormatted(): string {
   const now = new Date();
   const months = [
-    "Januari","Februari","Maret","April","Mei","Juni",
-    "Juli","Agustus","September","Oktober","November","Desember",
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
   ];
   return `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
 }
@@ -90,8 +101,18 @@ function getTodayISO(): string {
 function formatDateLong(dateStr: string): string {
   if (!dateStr) return "";
   const months = [
-    "Januari","Februari","Maret","April","Mei","Juni",
-    "Juli","Agustus","September","Oktober","November","Desember",
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
   ];
   const d = new Date(dateStr + "T00:00:00");
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
@@ -129,13 +150,25 @@ const JENIS_TINDAKAN_OPTIONS = [
   { value: "sc", label: "SC (Sesar)" },
 ];
 const DOKTER_OPTIONS = [
-  { value: "dr. ADITYA HERLAMBANG, SP.OG", label: "dr. ADITYA HERLAMBANG, SP.OG" },
+  {
+    value: "dr. ADITYA HERLAMBANG, SP.OG",
+    label: "dr. ADITYA HERLAMBANG, SP.OG",
+  },
   { value: "dr. AMIK YULIATI, SP.OG", label: "dr. AMIK YULIATI, SP.OG" },
-  { value: "dr. ANDI BUDI HERIANTO, SP.OG", label: "dr. ANDI BUDI HERIANTO, SP.OG" },
+  {
+    value: "dr. ANDI BUDI HERIANTO, SP.OG",
+    label: "dr. ANDI BUDI HERIANTO, SP.OG",
+  },
   { value: "dr. IKA MARET TANIA, SP.OG", label: "dr. IKA MARET TANIA, SP.OG" },
-  { value: "dr. PRASTI SULANJARI, SP.OG", label: "dr. PRASTI SULANJARI, SP.OG" },
+  {
+    value: "dr. PRASTI SULANJARI, SP.OG",
+    label: "dr. PRASTI SULANJARI, SP.OG",
+  },
   { value: "dr. RODIYAH, SP.OG", label: "dr. RODIYAH, SP.OG" },
-  { value: "dr. SETYO BUDI PAMUNGKAS, SP.OG", label: "dr. SETYO BUDI PAMUNGKAS, SP.OG" },
+  {
+    value: "dr. SETYO BUDI PAMUNGKAS, SP.OG",
+    label: "dr. SETYO BUDI PAMUNGKAS, SP.OG",
+  },
   { value: "dr. WAHYU WIDOYOKO, SP.OG", label: "dr. WAHYU WIDOYOKO, SP.OG" },
 ];
 
@@ -176,7 +209,10 @@ function buildFileName(item: InsertedRow): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const sanitize = (s: string) =>
-    s.trim().replace(/\s+/g, "-").replace(/[^a-zA-Z0-9\-_]/g, "");
+    s
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9\-_]/g, "");
   const noRm = item.no_rm ? sanitize(item.no_rm) : "NoRM";
   const nama = sanitize(item.nama_pasien);
   const stamp = `${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
@@ -291,9 +327,13 @@ function buildDocumentHTML(item: InsertedRow, logoBase64?: string): string {
 
 function loadScript(src: string, id: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (document.getElementById(id)) { resolve(); return; }
+    if (document.getElementById(id)) {
+      resolve();
+      return;
+    }
     const s = document.createElement("script");
-    s.id = id; s.src = src;
+    s.id = id;
+    s.src = src;
     s.onload = () => resolve();
     s.onerror = () => reject(new Error(`Failed to load: ${src}`));
     document.head.appendChild(s);
@@ -301,8 +341,14 @@ function loadScript(src: string, id: string): Promise<void> {
 }
 
 async function downloadPDFFromRow(item: InsertedRow): Promise<void> {
-  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", "html2canvas-script");
-  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js", "jspdf-script");
+  await loadScript(
+    "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+    "html2canvas-script",
+  );
+  await loadScript(
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+    "jspdf-script",
+  );
 
   let logoBase64: string | undefined;
   try {
@@ -313,16 +359,22 @@ async function downloadPDFFromRow(item: InsertedRow): Promise<void> {
       r.onload = () => res(r.result as string);
       r.readAsDataURL(blob);
     });
-  } catch { /* fallback to Profile.logo path */ }
+  } catch {
+    /* fallback to Profile.logo path */
+  }
 
   const htmlContent = buildDocumentHTML(item, logoBase64);
   const fileName = buildFileName(item);
 
   const iframe = document.createElement("iframe");
-  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;visibility:hidden;";
+  iframe.style.cssText =
+    "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;visibility:hidden;";
   document.body.appendChild(iframe);
 
-  await new Promise<void>((resolve) => { iframe.onload = () => resolve(); iframe.srcdoc = htmlContent; });
+  await new Promise<void>((resolve) => {
+    iframe.onload = () => resolve();
+    iframe.srcdoc = htmlContent;
+  });
   await new Promise((r) => setTimeout(r, 1000));
 
   const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -339,9 +391,17 @@ async function downloadPDFFromRow(item: InsertedRow): Promise<void> {
   const renderH = Math.min(iframeBody.scrollHeight, A4_PX);
 
   const canvas = await html2canvas(iframeBody, {
-    scale: 2.5, useCORS: true, allowTaint: true, backgroundColor: "#ffffff",
-    width: 794, height: renderH, windowWidth: 794, windowHeight: A4_PX,
-    scrollX: 0, scrollY: 0, logging: false,
+    scale: 2.5,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: "#ffffff",
+    width: 794,
+    height: renderH,
+    windowWidth: 794,
+    windowHeight: A4_PX,
+    scrollX: 0,
+    scrollY: 0,
+    logging: false,
   });
 
   document.body.removeChild(iframe);
@@ -351,7 +411,10 @@ async function downloadPDFFromRow(item: InsertedRow): Promise<void> {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   // Always fit to 1 page — scale height proportionally, never exceed pageHeight
-  const imgHeight = Math.min(pageWidth * (canvas.height / canvas.width), pageHeight);
+  const imgHeight = Math.min(
+    pageWidth * (canvas.height / canvas.width),
+    pageHeight,
+  );
   pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeight);
 
   pdf.save(`${fileName}.pdf`);
@@ -360,7 +423,9 @@ async function downloadPDFFromRow(item: InsertedRow): Promise<void> {
 /* ─────────────────────────────────────────
    SECTION LABEL
 ───────────────────────────────────────── */
-const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const SectionLabel: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
   <div className="flex items-center gap-2 mb-4">
     <span className="text-[10px] font-bold tracking-widest uppercase text-curiousblue-500 whitespace-nowrap">
       {children}
@@ -405,31 +470,57 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef, onClear }) => {
   const last = useRef<{ x: number; y: number } | null>(null);
   const [hasDrawn, setHasDrawn] = useState(false);
 
-  const pos = (e: React.MouseEvent | React.TouchEvent, c: HTMLCanvasElement) => {
-    const r = c.getBoundingClientRect(), sx = c.width / r.width, sy = c.height / r.height;
+  const pos = (
+    e: React.MouseEvent | React.TouchEvent,
+    c: HTMLCanvasElement,
+  ) => {
+    const r = c.getBoundingClientRect(),
+      sx = c.width / r.width,
+      sy = c.height / r.height;
     if ("touches" in e)
-      return { x: (e.touches[0].clientX - r.left) * sx, y: (e.touches[0].clientY - r.top) * sy };
-    return { x: ((e as React.MouseEvent).clientX - r.left) * sx, y: ((e as React.MouseEvent).clientY - r.top) * sy };
+      return {
+        x: (e.touches[0].clientX - r.left) * sx,
+        y: (e.touches[0].clientY - r.top) * sy,
+      };
+    return {
+      x: ((e as React.MouseEvent).clientX - r.left) * sx,
+      y: ((e as React.MouseEvent).clientY - r.top) * sy,
+    };
   };
   const start = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
-    const c = canvasRef.current; if (!c) return;
-    drawing.current = true; last.current = pos(e, c); setHasDrawn(true);
+    const c = canvasRef.current;
+    if (!c) return;
+    drawing.current = true;
+    last.current = pos(e, c);
+    setHasDrawn(true);
   };
   const move = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     if (!drawing.current || !last.current) return;
-    const c = canvasRef.current; if (!c) return;
-    const ctx = c.getContext("2d"); if (!ctx) return;
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
     const p = pos(e, c);
-    ctx.beginPath(); ctx.moveTo(last.current.x, last.current.y); ctx.lineTo(p.x, p.y);
-    ctx.strokeStyle = "#202124"; ctx.lineWidth = 1.8; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.stroke(); last.current = p;
+    ctx.beginPath();
+    ctx.moveTo(last.current.x, last.current.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.strokeStyle = "#202124";
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    last.current = p;
   };
-  const stop = () => { drawing.current = false; last.current = null; };
+  const stop = () => {
+    drawing.current = false;
+    last.current = null;
+  };
 
   const handleClear = () => {
-    const c = canvasRef.current; if (!c) return;
+    const c = canvasRef.current;
+    if (!c) return;
     c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
     setHasDrawn(false);
     onClear();
@@ -437,28 +528,55 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef, onClear }) => {
 
   // Expose clear function via ref pattern - store in canvas dataset
   if (canvasRef.current) {
-    (canvasRef.current as HTMLCanvasElement & { __clearFn?: () => void }).__clearFn = handleClear;
+    (
+      canvasRef.current as HTMLCanvasElement & { __clearFn?: () => void }
+    ).__clearFn = handleClear;
   }
 
   return (
     <div>
       <div className="relative border border-catskillwhite-700 rounded-lg bg-white overflow-hidden cursor-crosshair touch-none h-56 hover:border-curiousblue-500 hover:shadow-[0_0_0_2px_rgba(52,152,219,0.12)] transition-all">
-        <div aria-hidden className="absolute inset-0 pointer-events-none opacity-[0.04]"
-          style={{ backgroundImage: "linear-gradient(#6b7280 1px,transparent 1px),linear-gradient(90deg,#6b7280 1px,transparent 1px)", backgroundSize: "24px 24px" }}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(#6b7280 1px,transparent 1px),linear-gradient(90deg,#6b7280 1px,transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
         />
         <div className="absolute bottom-10 left-6 right-6 border-b border-dashed border-gray-200 pointer-events-none" />
-        <canvas ref={canvasRef} width={1200} height={224}
+        <canvas
+          ref={canvasRef}
+          width={1200}
+          height={224}
           className="w-full h-full relative z-10 block"
-          onMouseDown={start} onMouseMove={move} onMouseUp={stop} onMouseLeave={stop}
-          onTouchStart={start} onTouchMove={move} onTouchEnd={stop}
+          onMouseDown={start}
+          onMouseMove={move}
+          onMouseUp={stop}
+          onMouseLeave={stop}
+          onTouchStart={start}
+          onTouchMove={move}
+          onTouchEnd={stop}
         />
         {!hasDrawn && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 pointer-events-none z-20">
-            <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            <svg
+              className="w-5 h-5 text-gray-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
             </svg>
-            <span className="text-xs text-gray-300 select-none">Tanda tangan di sini</span>
+            <span className="text-xs text-gray-300 select-none">
+              Tanda tangan di sini
+            </span>
           </div>
         )}
       </div>
@@ -470,7 +588,14 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ canvasRef, onClear }) => {
    CONFIRM DIALOG
 ───────────────────────────────────────── */
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
-  open, onClose, onConfirm, form, penjaminLabel, kelasLabel, jenisTindakanLabel, isSubmitting,
+  open,
+  onClose,
+  onConfirm,
+  form,
+  penjaminLabel,
+  kelasLabel,
+  jenisTindakanLabel,
+  isSubmitting,
 }) => {
   if (!open) return null;
   const rows: [string, string][] = [
@@ -480,30 +605,68 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     ["Penanggung Jawab", form.namaPJ || "—"],
     ["No. KTP / Identitas", form.noKTP || "—"],
     ["No. HP", form.noHP || "—"],
-    ["Rencana Persalinan", form.tglRencanaPersalinan ? formatDateLong(form.tglRencanaPersalinan) : "—"],
+    [
+      "Rencana Persalinan",
+      form.tglRencanaPersalinan
+        ? formatDateLong(form.tglRencanaPersalinan)
+        : "—",
+    ],
     ["Jenis Tindakan", jenisTindakanLabel || "—"],
     ["Dokter Penanggung Jawab", form.dokterPJ || "—"],
     ["Jenis Penjamin", penjaminLabel || "—"],
     ["Rencana Kelas/Kamar", kelasLabel || "—"],
   ];
   return (
-    <div className="fixed inset-0 z-9999 bg-gray-800/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-9999 bg-gray-800/40 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-curiousblue-500/10 flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-curiousblue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-4 h-4 text-curiousblue-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
             <div>
-              <div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Konfirmasi</div>
-              <div className="text-[15px] font-semibold text-gray-800">Periksa Data Anda</div>
+              <div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                Konfirmasi
+              </div>
+              <div className="text-[15px] font-semibold text-gray-800">
+                Periksa Data Anda
+              </div>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded cursor-pointer bg-transparent border-none transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded cursor-pointer bg-transparent border-none transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -512,30 +675,73 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             <tbody>
               {rows.map(([k, v]) => (
                 <tr key={k} className="border-b border-gray-50 last:border-b-0">
-                  <td className="py-2 text-xs text-gray-500 w-[46%] align-middle">{k}</td>
-                  <td className="py-2 text-[13px] font-medium text-gray-800 text-right">{v}</td>
+                  <td className="py-2 text-xs text-gray-500 w-[46%] align-middle">
+                    {k}
+                  </td>
+                  <td className="py-2 text-[13px] font-medium text-gray-800 text-right">
+                    {v}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="mt-3 text-[11px] text-gray-400 text-center">Pastikan semua data sudah benar sebelum mengirim.</p>
+          <p className="mt-3 text-[11px] text-gray-400 text-center">
+            Pastikan semua data sudah benar sebelum mengirim.
+          </p>
         </div>
         <div className="flex gap-2.5 justify-end flex-wrap px-6 py-4 border-t border-gray-200">
-          <Button variant="secondary" size="sm" onClick={onClose} disabled={isSubmitting}>Periksa Lagi</Button>
-          <Button variant="primary" size="sm" onClick={onConfirm} disabled={isSubmitting}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Periksa Lagi
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onConfirm}
+            disabled={isSubmitting}
+          >
             {isSubmitting ? (
               <>
-                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <svg
+                  className="w-3.5 h-3.5 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
                 Memproses...
               </>
             ) : (
               <>
                 Ya, Kirim Formulir
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
                 </svg>
               </>
             )}
@@ -565,13 +771,26 @@ const SuccessDialog: React.FC<{
       >
         <div className="px-8 pt-9 pb-7">
           <div className="w-14 h-14 rounded-full bg-pastelgreen-500/10 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-pastelgreen-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-7 h-7 text-pastelgreen-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
-          <div className="text-[17px] font-bold text-gray-800 mb-2">Formulir Terkirim!</div>
+          <div className="text-[17px] font-bold text-gray-800 mb-2">
+            Formulir Terkirim!
+          </div>
           <p className="text-[13px] text-gray-500 leading-relaxed mb-2">
-            Data Anda telah diterima dan akan diproses oleh tim administrasi {Profile.shortName}.
+            Data Anda telah diterima dan akan diproses oleh tim administrasi{" "}
+            {Profile.shortName}.
           </p>
           <p className="text-[12px] text-gray-400 leading-relaxed mb-6">
             PDF formulir telah otomatis diunduh ke perangkat Anda.
@@ -581,8 +800,18 @@ const SuccessDialog: React.FC<{
             onClick={onClose}
             className="w-full justify-center"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             Selesai
           </Button>
@@ -610,9 +839,18 @@ export default function FormulirDP() {
   const today = getTodayFormatted();
   const todayISO = getTodayISO();
 
-  const setField = (k: keyof FormState) => (v: string) => setForm((p) => ({ ...p, [k]: v }));
-  const setInputField = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setField(k)(e.target.value);
-  const clearError = (k: keyof FormState) => () => setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
+  const setField = (k: keyof FormState) => (v: string) =>
+    setForm((p) => ({ ...p, [k]: v }));
+  const setInputField =
+    (k: keyof FormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setField(k)(e.target.value);
+  const clearError = (k: keyof FormState) => () =>
+    setErrors((p) => {
+      const n = { ...p };
+      delete n[k];
+      return n;
+    });
 
   /* ── Validasi tanggal lahir: tidak boleh lebih dari hari ini ── */
   const validateTglLahir = (val: string): string | undefined => {
@@ -624,7 +862,8 @@ export default function FormulirDP() {
   /* ── Validasi tanggal rencana: tidak boleh kurang dari hari ini ── */
   const validateTglRencana = (val: string): string | undefined => {
     if (!val) return undefined;
-    if (val < todayISO) return "Tanggal rencana tidak boleh kurang dari hari ini";
+    if (val < todayISO)
+      return "Tanggal rencana tidak boleh kurang dari hari ini";
     return undefined;
   };
 
@@ -680,20 +919,20 @@ export default function FormulirDP() {
         .from("fmo_1")
         .insert([
           {
-            nama_pasien:             form.namaPasien.trim(),
-            tgl_lahir:               form.tglLahir || null,
-            no_rm:                   form.noRM.trim() || null,
-            nama_penanggung_jawab:   form.namaPJ.trim(),
-            no_ktp:                  form.noKTP.trim() || null,
-            no_hp:                   form.noHP.trim() || null,
-            alamat:                  form.alamat.trim() || null,
-            tgl_rencana_persalinan:  form.tglRencanaPersalinan || null,
-            jenis_tindakan:          form.jenisTindakan || null,
+            nama_pasien: form.namaPasien.trim(),
+            tgl_lahir: form.tglLahir || null,
+            no_rm: form.noRM.trim() || null,
+            nama_penanggung_jawab: form.namaPJ.trim(),
+            no_ktp: form.noKTP.trim() || null,
+            no_hp: form.noHP.trim() || null,
+            alamat: form.alamat.trim() || null,
+            tgl_rencana_persalinan: form.tglRencanaPersalinan || null,
+            jenis_tindakan: form.jenisTindakan || null,
             dokter_penanggung_jawab: form.dokterPJ || null,
-            jenis_penjamin:          form.penjamin,
-            rencana_kelas:           form.kelas,
-            deskripsi:               form.deskripsi.trim() || null,
-            ttd:                     ttdDataUrl,
+            jenis_penjamin: form.penjamin,
+            rencana_kelas: form.kelas,
+            deskripsi: form.deskripsi.trim() || null,
+            ttd: ttdDataUrl,
           },
         ])
         .select()
@@ -713,22 +952,25 @@ export default function FormulirDP() {
 
       // ── 3. Kirim notifikasi Telegram (fire & forget) ───────────
       fetch("/api/notify-telegram-formulir-persetujuan-pembayaran-uang-muka", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(insertedRow),
+        body: JSON.stringify(insertedRow),
       })
         .then(async (res) => {
           const json = await res.json();
-          if (!json.ok) console.error("[notify-telegram] response error:", json);
+          if (!json.ok)
+            console.error("[notify-telegram] response error:", json);
         })
         .catch((err) => console.error("[notify-telegram] fetch failed:", err));
 
       // ── 4. Tampilkan sukses & reset form ──────────────────────
       handleReset();
       setShowSuccess(true);
-
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Gagal mengirim formulir. Silakan coba lagi.";
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "Gagal mengirim formulir. Silakan coba lagi.";
       setSubmitError(msg);
       setShowConfirm(false);
     } finally {
@@ -736,13 +978,16 @@ export default function FormulirDP() {
     }
   };
 
-  const penjaminLabel = PENJAMIN_OPTIONS.find((o) => o.value === form.penjamin)?.label ?? "";
-  const kelasLabel = KELAS_OPTIONS.find((o) => o.value === form.kelas)?.label ?? "";
-  const jenisTindakanLabel = JENIS_TINDAKAN_OPTIONS.find((o) => o.value === form.jenisTindakan)?.label ?? "";
+  const penjaminLabel =
+    PENJAMIN_OPTIONS.find((o) => o.value === form.penjamin)?.label ?? "";
+  const kelasLabel =
+    KELAS_OPTIONS.find((o) => o.value === form.kelas)?.label ?? "";
+  const jenisTindakanLabel =
+    JENIS_TINDAKAN_OPTIONS.find((o) => o.value === form.jenisTindakan)?.label ??
+    "";
 
   return (
     <div className="font-sans text-sm text-mineshaft-500 bg-catskillwhite-500 min-h-screen antialiased">
-
       <ConfirmDialog
         open={showConfirm}
         onClose={() => setShowConfirm(false)}
@@ -754,28 +999,42 @@ export default function FormulirDP() {
         isSubmitting={isSubmitting}
       />
 
-      <SuccessDialog
-        open={showSuccess}
-        onClose={() => setShowSuccess(false)}
-      />
+      <SuccessDialog open={showSuccess} onClose={() => setShowSuccess(false)} />
 
       <div className="py-8 px-4 sm:py-10 sm:px-6 lg:py-12 lg:px-10 xl:px-16 2xl:px-0">
         <div className="bg-white w-full max-w-[960px] mx-auto shadow-[0_2px_8px_rgba(0,0,0,0.07),0_8px_32px_rgba(0,0,0,0.05)] rounded-xl overflow-hidden">
-
           {/* Letterhead */}
           <div className="px-6 pt-7 pb-6 sm:px-10 sm:pt-8 sm:pb-7 lg:px-14 lg:pt-10 lg:pb-8 border-b border-catskillwhite-600 bg-linear-to-br from-white to-catskillwhite-400">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden border border-catskillwhite-600 bg-white p-1">
-                <Image src={Profile.logo} alt={Profile.shortName} width={60} height={60} className="w-full h-full object-contain"
+                <CachedImage
+                  src={Profile.logo}
+                  alt={Profile.shortName}
+                  width={60}
+                  height={60}
+                  className="w-full h-full object-contain"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = "none";
-                    const next = e.currentTarget.nextElementSibling as HTMLElement | null;
+                    (e.currentTarget as HTMLImageElement).style.display =
+                      "none";
+                    const next = e.currentTarget
+                      .nextElementSibling as HTMLElement | null;
                     if (next) next.style.display = "flex";
                   }}
+                  bucket={""}
                 />
                 <div className="w-full h-full items-center justify-center hidden">
-                  <svg className="w-7 h-7 text-catskillwhite-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1" />
+                  <svg
+                    className="w-7 h-7 text-catskillwhite-800"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"
+                    />
                   </svg>
                 </div>
               </div>
@@ -785,7 +1044,9 @@ export default function FormulirDP() {
                 </div>
                 <h1 className="text-[20px] sm:text-[22px] lg:text-[24px] font-bold text-mineshaft-500 leading-tight">
                   Formulir Persetujuan Pembayaran{" "}
-                  <span className="text-curiousblue-500">Uang Muka (DP) Persalinan</span>
+                  <span className="text-curiousblue-500">
+                    Uang Muka (DP) Persalinan
+                  </span>
                 </h1>
               </div>
             </div>
@@ -793,24 +1054,44 @@ export default function FormulirDP() {
 
           {/* Body */}
           <div className="px-6 py-7 sm:px-10 sm:py-8 lg:px-14 lg:py-10">
-
             {submitError && (
               <div className="mb-6 flex items-start gap-3 bg-bittersweet-500/5 border border-bittersweet-500/30 rounded-xl px-4 py-3.5">
-                <svg className="w-4 h-4 text-bittersweet-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-4 h-4 text-bittersweet-500 shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
-                <p className="text-[12px] text-bittersweet-600">{submitError}</p>
+                <p className="text-[12px] text-bittersweet-600">
+                  {submitError}
+                </p>
               </div>
             )}
 
             {/* §1 Data Identitas */}
             <div className="mb-8">
               <SectionLabel>Data Identitas</SectionLabel>
-              <p className="text-[13px] text-gray-500 mb-3.5 leading-relaxed">Yang bertanda tangan di bawah ini:</p>
+              <p className="text-[13px] text-gray-500 mb-3.5 leading-relaxed">
+                Yang bertanda tangan di bawah ini:
+              </p>
               <div className="border border-catskillwhite-600 rounded-xl overflow-hidden">
                 <FieldRow label="Nama Pasien" required>
-                  <Input value={form.namaPasien} onChange={setInputField("namaPasien")} onFocus={clearError("namaPasien")}
-                    placeholder="Isi nama pasien" error={errors.namaPasien} rounded="md" inputSize="sm" />
+                  <Input
+                    value={form.namaPasien}
+                    onChange={setInputField("namaPasien")}
+                    onFocus={clearError("namaPasien")}
+                    placeholder="Isi nama pasien"
+                    error={errors.namaPasien}
+                    rounded="md"
+                    inputSize="sm"
+                  />
                 </FieldRow>
                 <FieldRow label="Tanggal Lahir">
                   <DatePicker
@@ -827,29 +1108,62 @@ export default function FormulirDP() {
                     }}
                     placeholder="Pilih tanggal lahir"
                     maxDate={todayISO}
-                    rounded="md" selectSize="sm"
+                    rounded="md"
+                    selectSize="sm"
                     error={errors.tglLahir}
                   />
                 </FieldRow>
                 <FieldRow label="No. Rekam Medis">
-                  <Input type="tel" value={form.noRM} onChange={setInputField("noRM")}
-                    placeholder="Isi nomor rekam medis" rounded="md" inputSize="sm" />
+                  <Input
+                    type="tel"
+                    value={form.noRM}
+                    onChange={setInputField("noRM")}
+                    placeholder="Isi nomor rekam medis"
+                    rounded="md"
+                    inputSize="sm"
+                  />
                 </FieldRow>
                 <FieldRow label="Nama Penanggung Jawab" required>
-                  <Input value={form.namaPJ} onChange={setInputField("namaPJ")} onFocus={clearError("namaPJ")}
-                    placeholder="Isi nama penanggung jawab" error={errors.namaPJ} rounded="md" inputSize="sm" />
+                  <Input
+                    value={form.namaPJ}
+                    onChange={setInputField("namaPJ")}
+                    onFocus={clearError("namaPJ")}
+                    placeholder="Isi nama penanggung jawab"
+                    error={errors.namaPJ}
+                    rounded="md"
+                    inputSize="sm"
+                  />
                 </FieldRow>
                 <FieldRow label="No. KTP / Identitas">
-                  <Input type="tel" value={form.noKTP} onChange={setInputField("noKTP")}
-                    placeholder="Isi nomor KTP / identitas" rounded="md" inputSize="sm" />
+                  <Input
+                    type="tel"
+                    value={form.noKTP}
+                    onChange={setInputField("noKTP")}
+                    placeholder="Isi nomor KTP / identitas"
+                    rounded="md"
+                    inputSize="sm"
+                  />
                 </FieldRow>
                 <FieldRow label="No. HP">
-                  <Input type="tel" value={form.noHP} onChange={setInputField("noHP")}
-                    placeholder="Isi nomor HP" rounded="md" inputSize="sm" />
+                  <Input
+                    type="tel"
+                    value={form.noHP}
+                    onChange={setInputField("noHP")}
+                    placeholder="Isi nomor HP"
+                    rounded="md"
+                    inputSize="sm"
+                  />
                 </FieldRow>
                 <FieldRow label="Alamat" alignTop>
-                  <Textarea value={form.alamat} onChange={setInputField("alamat")}
-                    placeholder="Isi alamat lengkap" rows={3} resize="vertical" rounded="md" textareaSize="sm" />
+                  <Textarea
+                    value={form.alamat}
+                    onChange={setInputField("alamat")}
+                    placeholder="Isi alamat lengkap"
+                    rows={3}
+                    resize="vertical"
+                    rounded="md"
+                    textareaSize="sm"
+                  />
                 </FieldRow>
                 <FieldRow label="Tgl. Rencana Persalinan">
                   <DatePicker
@@ -866,7 +1180,8 @@ export default function FormulirDP() {
                     }}
                     placeholder="Pilih tanggal rencana"
                     minDate={todayISO}
-                    rounded="md" selectSize="sm"
+                    rounded="md"
+                    selectSize="sm"
                     error={errors.tglRencanaPersalinan}
                   />
                 </FieldRow>
@@ -874,21 +1189,31 @@ export default function FormulirDP() {
                   <Select
                     placeholder="Pilih jenis tindakan"
                     value={form.jenisTindakan}
-                    onChange={(v) => { setField("jenisTindakan")(v); clearError("jenisTindakan")(); }}
+                    onChange={(v) => {
+                      setField("jenisTindakan")(v);
+                      clearError("jenisTindakan")();
+                    }}
                     options={JENIS_TINDAKAN_OPTIONS}
                     error={errors.jenisTindakan}
-                    required rounded="md" selectSize="sm"
+                    required
+                    rounded="md"
+                    selectSize="sm"
                   />
                 </FieldRow>
                 <FieldRow label="Dokter Penanggung Jawab" required>
                   <Select
                     placeholder="Pilih dokter"
                     value={form.dokterPJ}
-                    onChange={(v) => { setField("dokterPJ")(v); clearError("dokterPJ")(); }}
+                    onChange={(v) => {
+                      setField("dokterPJ")(v);
+                      clearError("dokterPJ")();
+                    }}
                     options={DOKTER_OPTIONS}
                     error={errors.dokterPJ}
                     searchable
-                    required rounded="md" selectSize="sm"
+                    required
+                    rounded="md"
+                    selectSize="sm"
                   />
                 </FieldRow>
               </div>
@@ -899,62 +1224,135 @@ export default function FormulirDP() {
               <SectionLabel>Pernyataan Persetujuan</SectionLabel>
               <div className="text-[13px] text-gray-700 leading-[1.8] mb-3.5">
                 <p className="mb-2.5">
-                  Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan mengenai rencana tindakan
-                  persalinan yang akan dilakukan di{" "}
-                  <strong className="text-gray-800">{Profile.institusi} {Profile.name}, {Profile.subtitle}</strong>,
-                  termasuk estimasi biaya pelayanan medis, fasilitas perawatan, serta ketentuan administrasi yang berlaku.
+                  Dengan ini menyatakan bahwa saya telah mendapatkan penjelasan
+                  mengenai rencana tindakan persalinan yang akan dilakukan di{" "}
+                  <strong className="text-gray-800">
+                    {Profile.institusi} {Profile.name}, {Profile.subtitle}
+                  </strong>
+                  , termasuk estimasi biaya pelayanan medis, fasilitas
+                  perawatan, serta ketentuan administrasi yang berlaku.
                 </p>
-                <p>Sehubungan dengan hal tersebut, saya menyetujui untuk melakukan pembayaran uang muka (DP) persalinan sebesar:</p>
+                <p>
+                  Sehubungan dengan hal tersebut, saya menyetujui untuk
+                  melakukan pembayaran uang muka (DP) persalinan sebesar:
+                </p>
               </div>
               <div className="flex gap-3 items-start bg-curiousblue-500/8 border border-curiousblue-500/20 rounded-xl px-5 py-4 mb-4">
-                <svg className="w-5 h-5 text-curiousblue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5 text-curiousblue-500 shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <div>
-                  <div className="text-[18px] font-bold text-curiousblue-500">Rp 1.000.000,–</div>
-                  <div className="text-[11px] text-catskillwhite-900 mt-0.5">Satu Juta Rupiah</div>
+                  <div className="text-[18px] font-bold text-curiousblue-500">
+                    Rp 1.000.000,–
+                  </div>
+                  <div className="text-[11px] text-catskillwhite-900 mt-0.5">
+                    Satu Juta Rupiah
+                  </div>
                 </div>
               </div>
-              <p className="text-[13px] text-gray-700 font-medium mb-2.5">Saya memahami dan menyetujui bahwa:</p>
+              <p className="text-[13px] text-gray-700 font-medium mb-2.5">
+                Saya memahami dan menyetujui bahwa:
+              </p>
               <ul className="list-disc pl-5 text-[13px] text-gray-500 leading-[2.1] space-y-0.5">
-                <li>Uang muka (DP) merupakan bagian dari total biaya persalinan.</li>
-                <li>Pembayaran DP dilakukan sebagai bentuk konfirmasi dan komitmen pelayanan persalinan.</li>
-                <li>Uang muka yang telah dibayarkan{" "}
-                  <strong className="text-gray-700">tidak dapat dikembalikan (non-refundable)</strong>{" "}
-                  dengan alasan apa pun, termasuk apabila terjadi pembatalan dari pihak pasien.</li>
+                <li>
+                  Uang muka (DP) merupakan bagian dari total biaya persalinan.
+                </li>
+                <li>
+                  Pembayaran DP dilakukan sebagai bentuk konfirmasi dan komitmen
+                  pelayanan persalinan.
+                </li>
+                <li>
+                  Uang muka yang telah dibayarkan{" "}
+                  <strong className="text-gray-700">
+                    tidak dapat dikembalikan (non-refundable)
+                  </strong>{" "}
+                  dengan alasan apa pun, termasuk apabila terjadi pembatalan
+                  dari pihak pasien.
+                </li>
               </ul>
             </div>
 
             {/* §3 Penjamin & Kelas */}
             <div className="mb-8">
-              <SectionLabel>Rencana Penjamin &amp; Kelas Perawatan</SectionLabel>
+              <SectionLabel>
+                Rencana Penjamin &amp; Kelas Perawatan
+              </SectionLabel>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 {[
-                  { alpha: "A", title: "Jenis Penjamin", key: "penjamin" as const, opts: PENJAMIN_OPTIONS, ph: "Pilih jenis penjamin" },
-                  { alpha: "B", title: "Rencana Kelas / Kamar", key: "kelas" as const, opts: KELAS_OPTIONS, ph: "Pilih kelas perawatan" },
+                  {
+                    alpha: "A",
+                    title: "Jenis Penjamin",
+                    key: "penjamin" as const,
+                    opts: PENJAMIN_OPTIONS,
+                    ph: "Pilih jenis penjamin",
+                  },
+                  {
+                    alpha: "B",
+                    title: "Rencana Kelas / Kamar",
+                    key: "kelas" as const,
+                    opts: KELAS_OPTIONS,
+                    ph: "Pilih kelas perawatan",
+                  },
                 ].map(({ alpha, title, key, opts, ph }) => (
-                  <div key={key} className="bg-catskillwhite-400 border border-catskillwhite-600 rounded-xl px-5 py-4">
-                    <div className="text-[10px] font-bold text-curiousblue-500/70 uppercase tracking-[0.08em] mb-2.5">{alpha}. {title}</div>
-                    <Select placeholder={ph} value={form[key]}
-                      onChange={(v) => { setField(key)(v); clearError(key)(); }}
-                      options={opts} error={errors[key]} required rounded="xl" selectSize="sm"
+                  <div
+                    key={key}
+                    className="bg-catskillwhite-400 border border-catskillwhite-600 rounded-xl px-5 py-4"
+                  >
+                    <div className="text-[10px] font-bold text-curiousblue-500/70 uppercase tracking-[0.08em] mb-2.5">
+                      {alpha}. {title}
+                    </div>
+                    <Select
+                      placeholder={ph}
+                      value={form[key]}
+                      onChange={(v) => {
+                        setField(key)(v);
+                        clearError(key)();
+                      }}
+                      options={opts}
+                      error={errors[key]}
+                      required
+                      rounded="xl"
+                      selectSize="sm"
                     />
                   </div>
                 ))}
               </div>
               <div className="flex gap-3 items-start bg-mariner-500/6 border border-mariner-500/20 rounded-xl px-5 py-4">
-                <svg className="w-4 h-4 text-mariner-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                <svg
+                  className="w-4 h-4 text-mariner-500 shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                  />
                 </svg>
                 <p className="text-[12px] text-mariner-500 leading-relaxed">
-                  Apabila terjadi perubahan kelas perawatan selama masa rawat inap, pasien/penanggung jawab bersedia mengikuti ketentuan biaya sesuai kelas yang ditempati.
+                  Apabila terjadi perubahan kelas perawatan selama masa rawat
+                  inap, pasien/penanggung jawab bersedia mengikuti ketentuan
+                  biaya sesuai kelas yang ditempati.
                 </p>
               </div>
             </div>
 
             {/* Closing */}
             <p className="text-[13px] text-gray-500 leading-[1.8] mb-8">
-              Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.
+              Demikian pernyataan ini saya buat dengan sadar, tanpa paksaan dari
+              pihak mana pun, dan dapat dipergunakan sebagaimana mestinya.
             </p>
 
             {/* §4 Tanda Tangan */}
@@ -967,12 +1365,19 @@ export default function FormulirDP() {
                     Pasien / Penanggung Jawab
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[11px] text-gray-400">Sepanjang,</span>
-                    <span className="text-[12px] font-semibold text-gray-700">{today}</span>
+                    <span className="text-[11px] text-gray-400">
+                      Sepanjang,
+                    </span>
+                    <span className="text-[12px] font-semibold text-gray-700">
+                      {today}
+                    </span>
                   </div>
                 </div>
                 {/* Box tanda tangan */}
-                <SignaturePad canvasRef={canvasRef} onClear={handleClearSignature} />
+                <SignaturePad
+                  canvasRef={canvasRef}
+                  onClear={handleClearSignature}
+                />
                 {/* Baris bawah: tombol hapus kiri, nama kanan — keduanya di LUAR box */}
                 <div className="flex items-start justify-between mt-1.5">
                   <button
@@ -980,16 +1385,30 @@ export default function FormulirDP() {
                     onClick={handleClearSignatureBtn}
                     className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer px-0 py-0.5 rounded"
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                     Hapus tanda tangan
                   </button>
                   <div className="border-t-2 border-gray-800 pt-1.5 text-center min-w-[200px]">
                     {form.namaPJ ? (
-                      <span className="text-[13px] font-semibold text-gray-800">( {form.namaPJ} )</span>
+                      <span className="text-[13px] font-semibold text-gray-800">
+                        ( {form.namaPJ} )
+                      </span>
                     ) : (
-                      <span className="text-[11px] text-gray-300 italic">(nama penanggung jawab)</span>
+                      <span className="text-[11px] text-gray-300 italic">
+                        (nama penanggung jawab)
+                      </span>
                     )}
                   </div>
                 </div>
@@ -1002,37 +1421,90 @@ export default function FormulirDP() {
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2.5 flex-wrap">
                 {/* Kembali */}
-                <Button variant="secondary" size="sm" onClick={() => window.history.back()}>
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.history.back()}
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
                   </svg>
                   Kembali
                 </Button>
                 {/* Reset */}
                 <Button variant="default" size="sm" onClick={handleReset}>
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
                   </svg>
                   Reset
                 </Button>
               </div>
               {/* Kirim Formulir */}
-              <Button variant="primary" size="md"
-                onClick={() => { if (validate()) setShowConfirm(true); }}
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => {
+                  if (validate()) setShowConfirm(true);
+                }}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <svg
+                      className="w-3.5 h-3.5 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
                     </svg>
                     Memproses...
                   </>
                 ) : (
                   <>
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      />
                     </svg>
                     Kirim Formulir
                   </>
@@ -1043,13 +1515,18 @@ export default function FormulirDP() {
 
           {/* Doc footer */}
           <div className="border-t border-catskillwhite-600 bg-catskillwhite-400 px-6 sm:px-10 lg:px-14 py-3 flex justify-between items-center flex-wrap gap-1">
-            <span className="text-[11px] text-catskillwhite-900">Halaman 1 dari 1</span>
-            <span className="text-[11px] text-catskillwhite-900">FM-ADM-001 · {Profile.shortName}</span>
+            <span className="text-[11px] text-catskillwhite-900">
+              Halaman 1 dari 1
+            </span>
+            <span className="text-[11px] text-catskillwhite-900">
+              FM-ADM-001 · {Profile.shortName}
+            </span>
           </div>
         </div>
 
         <p className="text-center text-[11px] text-catskillwhite-900 mt-5 px-4">
-          Dokumen ini bersifat resmi dan dipergunakan sebagai arsip administrasi rumah sakit.
+          Dokumen ini bersifat resmi dan dipergunakan sebagai arsip administrasi
+          rumah sakit.
         </p>
       </div>
     </div>

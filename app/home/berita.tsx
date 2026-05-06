@@ -18,7 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import Image from "next/image";
+import CachedImage from "@/components/ui/custom/cached-image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -172,13 +172,14 @@ const BeritaCard: React.FC<BeritaCardProps> = ({ berita, index }) => {
             className="relative w-full rounded-xl overflow-hidden bg-gray-100 aspect-4/3 sm:aspect-video lg:aspect-16/10"
           >
             {berita.thumbnail ? (
-              <Image
+              <CachedImage
                 src={berita.thumbnail}
                 alt={berita.title}
                 fill
                 sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, 30vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                 unoptimized
+                bucket={""}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">

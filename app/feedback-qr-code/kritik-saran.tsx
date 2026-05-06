@@ -1,3 +1,4 @@
+// app/feedback-qr-code/kritik-saran.tsx
 "use client";
 
 import Animate, { ease } from "@/components/animations/animate";

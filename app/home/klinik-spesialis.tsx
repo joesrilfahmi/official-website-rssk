@@ -22,7 +22,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import Image from "next/image";
+import CachedImage from "@/components/ui/custom/cached-image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
@@ -426,13 +426,14 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({
           >
             <div className="absolute inset-0 bg-gray-100">
               {dokter.profile ? (
-                <Image
+                <CachedImage
                   src={dokter.profile}
                   alt={dokter.nama}
                   fill
                   className="object-cover"
                   style={{ objectPosition: "center 55%" }}
                   sizes="(max-width: 640px) 100vw, 512px"
+                  bucket={""}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-bittersweet-50">
@@ -547,12 +548,13 @@ const DokterRow: React.FC<{
     {/* Avatar: foto dokter jika ada, fallback icon */}
     <div className="w-10 h-10 rounded-full ring-2 ring-bittersweet-100 shrink-0 overflow-hidden bg-bittersweet-50 flex items-center justify-center">
       {dokter.profile ? (
-        <Image
+        <CachedImage
           src={dokter.profile}
           alt={dokter.nama}
           width={40}
           height={40}
           className="w-full h-full object-cover"
+          bucket={""}
         />
       ) : (
         <User className="w-5 h-5 text-bittersweet-400" />
