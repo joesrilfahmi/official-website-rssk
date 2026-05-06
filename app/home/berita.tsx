@@ -260,7 +260,12 @@ export default function BeritaSection() {
       .channel("berita_public")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "berita" },
+        { event: "INSERT", schema: "public", table: "berita" },
+        () => fetchBerita(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "berita", filter: "status=eq.active" },
         () => fetchBerita(),
       )
       .subscribe();

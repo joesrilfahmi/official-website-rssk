@@ -104,7 +104,12 @@ const Blog = () => {
       .channel("berita_public")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "berita" },
+        { event: "INSERT", schema: "public", table: "berita" },
+        () => fetchData(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "berita", filter: "status=eq.active" },
         () => fetchData(),
       )
       .subscribe();
@@ -120,7 +125,8 @@ const Blog = () => {
         .from("berita")
         .select(`*, author_detail:author (id, nama, username, avatar)`)
         .eq("status", "active")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100); // Batasi 100 berita terbaru
       if (error) throw error;
       setBeritaList(data || []);
       setPopularPosts((data || []).slice(0, 5));

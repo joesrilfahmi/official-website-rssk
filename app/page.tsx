@@ -2,32 +2,10 @@
 // FILE: src/app/page.tsx
 // ============================================
 
-// 'use client';
+import HomePage from "./home/page";
 
-// import { useEffect } from 'react';
-// import { useRouter } from 'next/navigation';
-// import { isAuthenticated } from '@/lib/auth';
+export const revalidate = 3600; // ISR: revalidate setiap 1 jam
 
-// export default function App() {
-//   const router = useRouter();
-
-//   useEffect(() => {
-//     if (isAuthenticated()) {
-//       router.push('/dashboard');
-//     } else {
-//       router.push('/login');
-//     }
-//   }, [router]);
-
-//   return null;
-// }
-
-// app/page.tsx
-import Home from "./home/page";
 export default function App() {
-  return (
-    <>
-      <Home />
-    </>
-  );
+  return <HomePage />;
 }

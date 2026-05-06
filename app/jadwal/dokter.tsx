@@ -722,7 +722,8 @@ const DokterSpesialis = () => {
         .select(
           `*, poli:poli_id (id, nama_poli), jadwal_dokter (id, hari, jam_mulai, jam_selesai, tipe_jadwal, updated_at)`,
         )
-        .order("nama", { ascending: true });
+        .order("nama", { ascending: true })
+        .limit(200); // Batasi 200 dokter
       if (error) throw error;
       const sorted = dokterData || [];
       setDokterList(sorted);
