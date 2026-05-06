@@ -43,13 +43,11 @@ function useInViewManual(
   return inView;
 }
 
-/** fadein — opacity + lift + blur */
+/** fadein — opacity only */
 const fadeinVariants = (duration: number, delay: number): Variants => ({
-  hidden: { opacity: 0, y: 22, filter: "blur(4px)" },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
     transition: { duration, ease, delay } satisfies Transition,
   },
 });
@@ -76,24 +74,20 @@ const slideleftVariants = (duration: number, delay: number): Variants => ({
   },
 });
 
-/** popin — scale-up pop + lift + fade */
+/** popin — fade only (no scale or lift) */
 const popinVariants = (duration: number, delay: number): Variants => ({
-  hidden: { opacity: 0, scale: 0.86, y: 12 },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    scale: 1,
-    y: 0,
     transition: { duration, ease, delay } satisfies Transition,
   },
 });
 
-/** slideup — upward lift + scale + fade (card entrance) */
+/** slideup — fade only (no upward movement) */
 const slideupVariants = (duration: number, delay: number): Variants => ({
-  hidden: { opacity: 0, y: 16, scale: 0.94 },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    y: 0,
-    scale: 1,
     transition: { duration, ease, delay } satisfies Transition,
   },
 });
@@ -120,11 +114,9 @@ const slideleftitemVariants = (duration: number, delay: number): Variants => ({
 });
 
 const fielditemVariants = (duration: number, delay: number): Variants => ({
-  hidden: { opacity: 0, y: 12, filter: "blur(3px)" },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
     transition: { duration, ease, delay } satisfies Transition,
   },
 });

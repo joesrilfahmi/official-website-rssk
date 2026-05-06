@@ -366,17 +366,17 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, y: 60, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 40, scale: 0.97 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         transition={{ duration: 0.45, ease } satisfies Transition}
         className="relative w-full sm:max-w-lg bg-white sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <motion.div
           key="jadwal"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.35, ease } satisfies Transition}
           className="flex flex-col max-h-[85vh]"
         >
@@ -436,8 +436,8 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={
                 { delay: 0.2, duration: 0.45, ease } satisfies Transition
               }
@@ -517,11 +517,9 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
 // ── DokterCard ──────────────────────────────────────────────────────────────
 
 const cardWrapVariants = {
-  hidden: { opacity: 0, y: 28, scale: 0.96 },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    y: 0,
-    scale: 1,
     transition: { duration: 0.6, ease } satisfies Transition,
   },
 };
@@ -539,7 +537,7 @@ const DokterCard: React.FC<{
     <motion.div
       variants={cardWrapVariants}
       whileHover={{
-        y: -4,
+        scale: 1.02,
         transition: { duration: 0.22, ease } satisfies Transition,
       }}
       onClick={() => onClick(dokter)}
@@ -656,8 +654,8 @@ const LastUpdatedBadge: React.FC<LastUpdatedBadgeProps> = ({
   if (!lastUpdated) return null;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.4, ease: easeOut } satisfies Transition}
       className="flex justify-center"
     >
@@ -858,7 +856,7 @@ const DokterSpesialis = () => {
           </Animate>
 
           <Animate
-            type="slideup"
+            type="fadein"
             ready={dataReady}
             delay={0.1}
             className="mb-8 space-y-5"
@@ -942,7 +940,7 @@ const DokterSpesialis = () => {
 
           {!loading && filteredDokter.length === 0 && (
             <Animate
-              type="slideup"
+              type="fadein"
               ready={dataReady}
               className="text-center py-16"
             >

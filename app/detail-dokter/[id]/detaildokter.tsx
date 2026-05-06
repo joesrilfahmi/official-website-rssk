@@ -159,9 +159,9 @@ const ImageLightbox: React.FC<{
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.88, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, y: 10 }}
+        initial={{ opacity: 0, scale: 0.88 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.92 }}
         transition={{ duration: 0.4, ease } satisfies Transition}
         className="relative max-w-[90vw] max-h-[90vh] cursor-default"
         onClick={(e) => e.stopPropagation()}
