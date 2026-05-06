@@ -94,7 +94,7 @@ const PartnerCard = ({ partner }: { partner: Partner }) => {
               "linear-gradient(135deg, rgba(255,255,255,0.55) 0%, transparent 55%)",
           }}
         />
-
+        // Image or Initials
         {partner.picture ? (
           <CachedImage
             src={partner.picture}
