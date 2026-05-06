@@ -9,6 +9,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { Profile } from '@/config/profile';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -172,6 +173,7 @@ export default function RootLayout({
             }}
           />
         </ThemeProvider>
+        <Analytics />
 
         {/* Structured Data for SEO */}
         <script
