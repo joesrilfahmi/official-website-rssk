@@ -5,6 +5,10 @@
 // melalui proxy /api/image/[...path] untuk mengurangi
 // Supabase Cached Egress.
 //
+// Karena gambar sudah dicache oleh proxy API dan browser/CDN,
+// komponen ini menonaktifkan optimisasi Next.js dengan `unoptimized`
+// supaya tidak memicu fungsi image optimizer Vercel ekstra.
+//
 // CARA PAKAI:
 //
 //   <CachedImage
@@ -56,11 +60,17 @@ const CachedImage: React.FC<CachedImageProps> = ({
     return fallback ? <>{fallback}</> : null;
   }
 
+  // Jika priority ada, jangan set loading="lazy" karena konflik
+  const hasPriority = imageProps.priority;
+  const loadingProp = hasPriority ? undefined : (imageProps.loading ?? "lazy");
+
   return (
     <Image
       src={url}
       alt={alt}
       className={className}
+      loading={loadingProp}
+      unoptimized
       onError={(e) => {
         setHasError(true);
         onError?.(e);
