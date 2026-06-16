@@ -1,51 +1,56 @@
-// ============================================
+// ===========================================
 // FILE: src/lib/auth.ts
 // Authentication helper functions
-// ============================================
+// ===========================================
 
-import { supabase } from './supabase/client';
-import { LoginCredentials, RegisterData, User } from '@/types';
-import bcrypt from 'bcryptjs';
+import { supabase } from "./supabase/client";
+import { LoginCredentials, RegisterData, User } from "@/types";
+import bcrypt from "bcryptjs";
 
 /**
  * Login user with username and password
  */
-export async function login(credentials: LoginCredentials): Promise<User | null> {
+export async function login(
+  credentials: LoginCredentials,
+): Promise<User | null> {
   try {
     // Fetch user by username
     const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', credentials.username)
+      .from("users")
+      .select("*")
+      .eq("username", credentials.username)
       .single();
 
     if (error || !user) {
-      throw new Error('Username atau password salah');
+      throw new Error("Username atau password salah");
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-    
+    const isPasswordValid = await bcrypt.compare(
+      credentials.password,
+      user.password,
+    );
+
     if (!isPasswordValid) {
-      throw new Error('Username atau password salah');
+      throw new Error("Username atau password salah");
     }
 
     // Check if user is active
-    if (user.status_users !== 'active') {
-      throw new Error('Akun Anda tidak aktif');
+    if (user.status_users !== "active") {
+      throw new Error("Akun Anda tidak aktif");
     }
 
     // Store user in localStorage
     const userWithoutPassword = { ...user };
     delete userWithoutPassword.password;
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("user", JSON.stringify(userWithoutPassword));
     }
 
     return userWithoutPassword;
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     throw error;
   }
 }
@@ -57,25 +62,25 @@ export async function register(data: RegisterData): Promise<User> {
   try {
     // Check if username already exists
     const { data: existingUser } = await supabase
-      .from('users')
-      .select('username')
-      .eq('username', data.username)
+      .from("users")
+      .select("username")
+      .eq("username", data.username)
       .single();
 
     if (existingUser) {
-      throw new Error('Username sudah digunakan');
+      throw new Error("Username sudah digunakan");
     }
 
     // Check if email already exists (if provided)
     if (data.email) {
       const { data: existingEmail } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', data.email)
+        .from("users")
+        .select("email")
+        .eq("email", data.email)
         .single();
 
       if (existingEmail) {
-        throw new Error('Email sudah digunakan');
+        throw new Error("Email sudah digunakan");
       }
     }
 
@@ -90,25 +95,25 @@ export async function register(data: RegisterData): Promise<User> {
       email: data.email || null,
       nomor_telepon: data.nomor_telepon || null,
       id_telegram: data.id_telegram || null,
-      role: 'user', // Default role is always 'user'
-      status_users: 'inactive', // Default status is 'inactive'
+      role: "user", // Default role is always 'user'
+      status_users: "inactive", // Default status is 'inactive'
     };
 
     // Insert new user
     const { data: newUser, error } = await supabase
-      .from('users')
+      .from("users")
       .insert([userData])
       .select()
       .single();
 
     if (error) {
-      console.error('Supabase insert error:', error);
-      throw new Error(error.message || 'Gagal membuat akun');
+      console.error("Supabase insert error:", error);
+      throw new Error(error.message || "Gagal membuat akun");
     }
 
     return newUser;
   } catch (error) {
-    console.error('Register error:', error);
+    console.error("Register error:", error);
     throw error;
   }
 }
@@ -117,9 +122,9 @@ export async function register(data: RegisterData): Promise<User> {
  * Logout user
  */
 export function logout(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("user");
+    window.location.href = "/login";
   }
 }
 
@@ -128,11 +133,11 @@ export function logout(): void {
  */
 // lib/auth.ts
 export function getCurrentUser(): User | null {
-  if (typeof window === 'undefined') return null;
-  
-  const userStr = localStorage.getItem('user');
+  if (typeof window === "undefined") return null;
+
+  const userStr = localStorage.getItem("user");
   if (!userStr) return null;
-  
+
   try {
     const user = JSON.parse(userStr);
     // Pastikan user.id ada dan valid
