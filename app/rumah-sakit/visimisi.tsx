@@ -16,12 +16,12 @@ export default function VisiMisi() {
   }, [imageLoaded]);
 
   const misiPoints = [
-    "Menyelenggarakan Pelayanan Dasar Jenjang Pelayanan Sedang Rumah Sakit Rujukan Utama Yang Bermutu, Profesional, Islami, Dan Sesuai Standar Akreditasi Universal",
-    "Trauma & Injury Center, Heart & Stroke Care, Cancer Care, Gerontology Care, Hematology Center & Telemedicine Care",
-    "Menyelenggarakan Pendidikan Kesehatan Yang Terpercaya",
-    "Mengadakan Sumber Daya Insani Yang Excellent Dan Berakhlak Mulia",
-    "Mengadakan Alat & Keselamatan Sarana Yang Berkesinambungan",
-    "Mengoptimalkan Service Excellence Yang Sejahtera Dan Mudah",
+    "Menyelenggarakan pelayanan dan jejaring pelayanan sebagai rumah sakit rujukan utama yang bermutu.",
+    "Memberikan pelayanan kesehatan yang Unggul di bidang Trauma and Sport Center Care,Heart and Stroke Care, Cancer Care, Uro-Nephrology Care, dan Intensive Care.",
+    "Menyelenggarakan RS pendidikan dan penelitian yang terintegrasi.",
+    "Mewujudkan sumber daya insani yang excellent dan berakhlak mulia.",
+    "Meningkatkan mutu dan keselamatan pasien berkelanjutan yang terakreditasi nasional.",
+    "Melaksanakan dakwah islamiyah amar makruf nahi munkar.",
   ];
 
   return (
@@ -132,9 +132,7 @@ export default function VisiMisi() {
             >
               <div className="bg-white rounded-3xl shadow-md ring-1 ring-gray-100 p-8 flex flex-col gap-6 h-full">
                 <div className="flex items-center gap-4">
-           
                   <div>
-              
                     <h3 className="text-xl font-extrabold text-mariner-500">
                       Visi
                     </h3>
@@ -142,8 +140,8 @@ export default function VisiMisi() {
                 </div>
                 <div className="h-px bg-gray-100" />
                 <p className="text-gray-700 leading-relaxed text-base sm:text-[17px] text-justify flex-1">
-                  Terwujudnya Rumah Sakit {Profile.name} {Profile.subtitle} Yang
-                  Unggul, Profesional, Islami, Dan Terpercaya Di Jawa Timur.
+                  Rumah Sakit {Profile.name} {Profile.subtitle} yang Unggul,
+                  Profesional, Islami, dan Terkemuka di Jawa Timur
                 </p>
               </div>
             </Animate>
@@ -158,9 +156,7 @@ export default function VisiMisi() {
             >
               <div className="bg-white rounded-3xl shadow-md ring-1 ring-gray-100 p-8 flex flex-col gap-6 h-full">
                 <div className="flex items-center gap-4">
-    
                   <div>
-                  
                     <h3 className="text-xl font-extrabold text-mariner-500">
                       Misi
                     </h3>
