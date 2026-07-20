@@ -68,6 +68,7 @@ export default function Navbar() {
           { label: "Kamar Inap", href: "/kamar-inap/informasi" },
           { label: "Klinik Spesialis", href: "/klinik-spesialis" },
           { label: "Layanan Unggulan", href: "/layanan" },
+          { label: "Indikator Mutu", href: "/indikator-mutu" },
         ],
       },
       { label: "Pendaftaran", href: "/pendaftaran" },
