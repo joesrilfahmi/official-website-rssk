@@ -118,6 +118,7 @@ const DOKTER_OPTIONS = [
   { value: "dr. ADITYA HERLAMBANG, SP.OG", label: "dr. ADITYA HERLAMBANG, SP.OG" },
   { value: "dr. AMIK YULIATI, SP.OG", label: "dr. AMIK YULIATI, SP.OG" },
   { value: "dr. ANDI BUDI HERIANTO, SP.OG", label: "dr. ANDI BUDI HERIANTO, SP.OG" },
+  { value: "dr. BAYU PRIANGGA, Sp.OG", label: "dr. BAYU PRIANGGA, Sp.OG" },
   { value: "dr. IKA MARET TANIA, SP.OG", label: "dr. IKA MARET TANIA, SP.OG" },
   { value: "dr. PRASTI SULANJARI, SP.OG", label: "dr. PRASTI SULANJARI, SP.OG" },
   { value: "dr. RODIYAH, SP.OG", label: "dr. RODIYAH, SP.OG" },
