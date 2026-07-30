@@ -4,43 +4,78 @@
 import { AccessDeniedDialog } from "@/components/access-denied-dialog";
 import { TablePagination } from "@/components/table/TablePagination";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import {
-  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList,
-  BreadcrumbPage, BreadcrumbSeparator,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Popover, PopoverContent, PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Profile } from "@/config/profile";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase/client";
 import {
-  ArrowUpDown, Calendar, Download, Filter, Loader2, Pencil, Search, Trash2, X,
+  ArrowUpDown,
+  Calendar,
+  Download,
+  Filter,
+  Loader2,
+  Pencil,
+  Search,
+  Trash2,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -115,14 +150,26 @@ const JENIS_TINDAKAN_OPTIONS = [
 ];
 
 const DOKTER_OPTIONS = [
-  { value: "dr. ADITYA HERLAMBANG, SP.OG", label: "dr. ADITYA HERLAMBANG, SP.OG" },
+  {
+    value: "dr. ADITYA HERLAMBANG, SP.OG",
+    label: "dr. ADITYA HERLAMBANG, SP.OG",
+  },
   { value: "dr. AMIK YULIATI, SP.OG", label: "dr. AMIK YULIATI, SP.OG" },
-  { value: "dr. ANDI BUDI HERIANTO, SP.OG", label: "dr. ANDI BUDI HERIANTO, SP.OG" },
+  {
+    value: "dr. ANDI BUDI HERIANTO, SP.OG",
+    label: "dr. ANDI BUDI HERIANTO, SP.OG",
+  },
   { value: "dr. BAYU PRIANGGA, Sp.OG", label: "dr. BAYU PRIANGGA, Sp.OG" },
   { value: "dr. IKA MARET TANIA, SP.OG", label: "dr. IKA MARET TANIA, SP.OG" },
-  { value: "dr. PRASTI SULANJARI, SP.OG", label: "dr. PRASTI SULANJARI, SP.OG" },
+  {
+    value: "dr. PRASTI SULANJARI, SP.OG",
+    label: "dr. PRASTI SULANJARI, SP.OG",
+  },
   { value: "dr. RODIYAH, SP.OG", label: "dr. RODIYAH, SP.OG" },
-  { value: "dr. SETYO BUDI PAMUNGKAS, SP.OG", label: "dr. SETYO BUDI PAMUNGKAS, SP.OG" },
+  {
+    value: "dr. SETYO BUDI PAMUNGKAS, SP.OG",
+    label: "dr. SETYO BUDI PAMUNGKAS, SP.OG",
+  },
   { value: "dr. WAHYU WIDOYOKO, SP.OG", label: "dr. WAHYU WIDOYOKO, SP.OG" },
 ];
 
@@ -139,7 +186,20 @@ const getJenisTindakanLabel = (val: string | null) => {
 
 const formatTanggal = (dateStr: string | null) => {
   if (!dateStr) return "—";
-  const months = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
   const d = new Date(dateStr + "T00:00:00");
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
@@ -150,8 +210,18 @@ const formatTanggal = (dateStr: string | null) => {
 const formatDateLong = (dateStr: string | null): string => {
   if (!dateStr) return "";
   const months = [
-    "Januari","Februari","Maret","April","Mei","Juni",
-    "Juli","Agustus","September","Oktober","November","Desember",
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
   ];
   const d = new Date(dateStr + "T00:00:00");
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
@@ -178,7 +248,10 @@ function buildFileName(item: Fmo1): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const sanitize = (s: string) =>
-    s.trim().replace(/\s+/g, "-").replace(/[^a-zA-Z0-9\-_]/g, "");
+    s
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9\-_]/g, "");
   const noRm = item.no_rm ? sanitize(item.no_rm) : "NoRM";
   const nama = sanitize(item.nama_pasien);
   const stamp = `${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
@@ -303,9 +376,13 @@ function buildDocumentHTML(item: Fmo1, logoBase64?: string): string {
 ───────────────────────────────────────── */
 function loadScript(src: string, id: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (document.getElementById(id)) { resolve(); return; }
+    if (document.getElementById(id)) {
+      resolve();
+      return;
+    }
     const s = document.createElement("script");
-    s.id = id; s.src = src;
+    s.id = id;
+    s.src = src;
     s.onload = () => resolve();
     s.onerror = () => reject(new Error(`Failed to load: ${src}`));
     document.head.appendChild(s);
@@ -320,8 +397,14 @@ function loadScript(src: string, id: string): Promise<void> {
 async function handleDownloadPDF(item: Fmo1): Promise<void> {
   const toastId = toast.loading("Membuat PDF...");
   try {
-    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", "html2canvas-script");
-    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js", "jspdf-script");
+    await loadScript(
+      "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+      "html2canvas-script",
+    );
+    await loadScript(
+      "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+      "jspdf-script",
+    );
 
     let logoBase64: string | undefined;
     try {
@@ -332,16 +415,22 @@ async function handleDownloadPDF(item: Fmo1): Promise<void> {
         r.onload = () => res(r.result as string);
         r.readAsDataURL(blob);
       });
-    } catch { /* fallback */ }
+    } catch {
+      /* fallback */
+    }
 
     const htmlContent = buildDocumentHTML(item, logoBase64);
     const fileName = buildFileName(item);
 
     const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;visibility:hidden;";
+    iframe.style.cssText =
+      "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;visibility:hidden;";
     document.body.appendChild(iframe);
 
-    await new Promise<void>((resolve) => { iframe.onload = () => resolve(); iframe.srcdoc = htmlContent; });
+    await new Promise<void>((resolve) => {
+      iframe.onload = () => resolve();
+      iframe.srcdoc = htmlContent;
+    });
     await new Promise((r) => setTimeout(r, 1000));
 
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -360,20 +449,35 @@ async function handleDownloadPDF(item: Fmo1): Promise<void> {
     const renderH = Math.min(iframeBody.scrollHeight, A4_PX);
 
     const canvas = await html2canvas(iframeBody, {
-      scale: 2.5, useCORS: true, allowTaint: true, backgroundColor: "#ffffff",
-      width: 794, height: renderH, windowWidth: 794, windowHeight: A4_PX,
-      scrollX: 0, scrollY: 0, logging: false,
+      scale: 2.5,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      width: 794,
+      height: renderH,
+      windowWidth: 794,
+      windowHeight: A4_PX,
+      scrollX: 0,
+      scrollY: 0,
+      logging: false,
     });
 
     document.body.removeChild(iframe);
 
     const imgData = canvas.toDataURL("image/jpeg", 0.97);
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
     // ── PERBAIKAN UTAMA: selalu fit ke 1 halaman, tidak pernah multi-page ──
-    const imgHeight = Math.min(pageWidth * (canvas.height / canvas.width), pageHeight);
+    const imgHeight = Math.min(
+      pageWidth * (canvas.height / canvas.width),
+      pageHeight,
+    );
     pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeight);
 
     pdf.save(`${fileName}.pdf`);
@@ -412,9 +516,11 @@ const DatePickerField: React.FC<{
             className="w-full justify-start text-left font-normal"
           >
             <Calendar className="mr-2 h-4 w-4" />
-            {selected
-              ? formatTanggal(value)
-              : <span className="text-muted-foreground">Pilih tanggal</span>}
+            {selected ? (
+              formatTanggal(value)
+            ) : (
+              <span className="text-muted-foreground">Pilih tanggal</span>
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
@@ -434,13 +540,25 @@ const DatePickerField: React.FC<{
    EDIT DIALOG
 ───────────────────────────────────────── */
 const EditDialog: React.FC<{
-  open: boolean; item: Fmo1 | null; onClose: () => void; onSaved: () => void;
+  open: boolean;
+  item: Fmo1 | null;
+  onClose: () => void;
+  onSaved: () => void;
 }> = ({ open, item, onClose, onSaved }) => {
   const [form, setForm] = useState<EditFormState>({
-    nama_pasien: "", tgl_lahir: "", no_rm: "", nama_penanggung_jawab: "",
-    no_ktp: "", no_hp: "", alamat: "", tgl_rencana_persalinan: "",
-    jenis_tindakan: "", dokter_penanggung_jawab: "", jenis_penjamin: "",
-    rencana_kelas: "", deskripsi: "",
+    nama_pasien: "",
+    tgl_lahir: "",
+    no_rm: "",
+    nama_penanggung_jawab: "",
+    no_ktp: "",
+    no_hp: "",
+    alamat: "",
+    tgl_rencana_persalinan: "",
+    jenis_tindakan: "",
+    dokter_penanggung_jawab: "",
+    jenis_penjamin: "",
+    rencana_kelas: "",
+    deskripsi: "",
   });
   const [errors, setErrors] = useState<EditFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -469,11 +587,13 @@ const EditDialog: React.FC<{
   const validate = (): boolean => {
     const e: EditFormErrors = {};
     if (!form.nama_pasien.trim()) e.nama_pasien = "Wajib diisi";
-    if (!form.nama_penanggung_jawab.trim()) e.nama_penanggung_jawab = "Wajib diisi";
+    if (!form.nama_penanggung_jawab.trim())
+      e.nama_penanggung_jawab = "Wajib diisi";
     if (!form.jenis_penjamin) e.jenis_penjamin = "Wajib dipilih";
     if (!form.rencana_kelas) e.rencana_kelas = "Wajib dipilih";
     if (!form.jenis_tindakan) e.jenis_tindakan = "Wajib dipilih";
-    if (!form.dokter_penanggung_jawab) e.dokter_penanggung_jawab = "Wajib dipilih";
+    if (!form.dokter_penanggung_jawab)
+      e.dokter_penanggung_jawab = "Wajib dipilih";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -483,28 +603,33 @@ const EditDialog: React.FC<{
     if (!validate() || !item) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("fmo_1").update({
-        nama_pasien: form.nama_pasien.trim(),
-        tgl_lahir: form.tgl_lahir || null,
-        no_rm: form.no_rm.trim() || null,
-        nama_penanggung_jawab: form.nama_penanggung_jawab.trim(),
-        no_ktp: form.no_ktp.trim() || null,
-        no_hp: form.no_hp.trim() || null,
-        alamat: form.alamat.trim() || null,
-        tgl_rencana_persalinan: form.tgl_rencana_persalinan || null,
-        jenis_tindakan: form.jenis_tindakan || null,
-        dokter_penanggung_jawab: form.dokter_penanggung_jawab || null,
-        jenis_penjamin: form.jenis_penjamin,
-        rencana_kelas: form.rencana_kelas,
-        deskripsi: form.deskripsi.trim() || null,
-      }).eq("id", item.id);
+      const { error } = await supabase
+        .from("fmo_1")
+        .update({
+          nama_pasien: form.nama_pasien.trim(),
+          tgl_lahir: form.tgl_lahir || null,
+          no_rm: form.no_rm.trim() || null,
+          nama_penanggung_jawab: form.nama_penanggung_jawab.trim(),
+          no_ktp: form.no_ktp.trim() || null,
+          no_hp: form.no_hp.trim() || null,
+          alamat: form.alamat.trim() || null,
+          tgl_rencana_persalinan: form.tgl_rencana_persalinan || null,
+          jenis_tindakan: form.jenis_tindakan || null,
+          dokter_penanggung_jawab: form.dokter_penanggung_jawab || null,
+          jenis_penjamin: form.jenis_penjamin,
+          rencana_kelas: form.rencana_kelas,
+          deskripsi: form.deskripsi.trim() || null,
+        })
+        .eq("id", item.id);
       if (error) throw error;
       toast.success("Data berhasil diperbarui");
       onSaved();
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : "Gagal memperbarui data");
+      toast.error(
+        err instanceof Error ? err.message : "Gagal memperbarui data",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -512,27 +637,45 @@ const EditDialog: React.FC<{
 
   const setF = (k: keyof EditFormState) => (v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
-  const setInputF = (k: keyof EditFormState) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF(k)(e.target.value);
+  const setInputF =
+    (k: keyof EditFormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setF(k)(e.target.value);
   const clearErr = (k: keyof EditFormState) => () =>
-    setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
+    setErrors((p) => {
+      const n = { ...p };
+      delete n[k];
+      return n;
+    });
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Formulir DP</DialogTitle>
-          <DialogDescription>Perbarui data formulir persetujuan DP persalinan</DialogDescription>
+          <DialogDescription>
+            Perbarui data formulir persetujuan DP persalinan
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             {/* Nama Pasien */}
             <div className="space-y-1.5">
-              <Label htmlFor="nama_pasien">Nama Pasien <span className="text-red-500">*</span></Label>
-              <Input id="nama_pasien" value={form.nama_pasien} onChange={setInputF("nama_pasien")}
-                onFocus={clearErr("nama_pasien")} placeholder="Nama pasien" disabled={submitting}
-                className={errors.nama_pasien ? "border-red-500" : ""} />
-              {errors.nama_pasien && <p className="text-xs text-red-500">{errors.nama_pasien}</p>}
+              <Label htmlFor="nama_pasien">
+                Nama Pasien <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="nama_pasien"
+                value={form.nama_pasien}
+                onChange={setInputF("nama_pasien")}
+                onFocus={clearErr("nama_pasien")}
+                placeholder="Nama pasien"
+                disabled={submitting}
+                className={errors.nama_pasien ? "border-red-500" : ""}
+              />
+              {errors.nama_pasien && (
+                <p className="text-xs text-red-500">{errors.nama_pasien}</p>
+              )}
             </div>
 
             {/* Tgl Lahir — Calendar Picker */}
@@ -547,13 +690,23 @@ const EditDialog: React.FC<{
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="no_rm">No. Rekam Medis</Label>
-                <Input id="no_rm" value={form.no_rm} onChange={setInputF("no_rm")}
-                  placeholder="No. rekam medis" disabled={submitting} />
+                <Input
+                  id="no_rm"
+                  value={form.no_rm}
+                  onChange={setInputF("no_rm")}
+                  placeholder="No. rekam medis"
+                  disabled={submitting}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="no_ktp">No. KTP / Identitas</Label>
-                <Input id="no_ktp" value={form.no_ktp} onChange={setInputF("no_ktp")}
-                  placeholder="No. KTP" disabled={submitting} />
+                <Input
+                  id="no_ktp"
+                  value={form.no_ktp}
+                  onChange={setInputF("no_ktp")}
+                  placeholder="No. KTP"
+                  disabled={submitting}
+                />
               </div>
             </div>
 
@@ -562,23 +715,43 @@ const EditDialog: React.FC<{
               <Label htmlFor="nama_penanggung_jawab">
                 Nama Penanggung Jawab <span className="text-red-500">*</span>
               </Label>
-              <Input id="nama_penanggung_jawab" value={form.nama_penanggung_jawab}
-                onChange={setInputF("nama_penanggung_jawab")} onFocus={clearErr("nama_penanggung_jawab")}
-                placeholder="Nama penanggung jawab" disabled={submitting}
-                className={errors.nama_penanggung_jawab ? "border-red-500" : ""} />
-              {errors.nama_penanggung_jawab && <p className="text-xs text-red-500">{errors.nama_penanggung_jawab}</p>}
+              <Input
+                id="nama_penanggung_jawab"
+                value={form.nama_penanggung_jawab}
+                onChange={setInputF("nama_penanggung_jawab")}
+                onFocus={clearErr("nama_penanggung_jawab")}
+                placeholder="Nama penanggung jawab"
+                disabled={submitting}
+                className={errors.nama_penanggung_jawab ? "border-red-500" : ""}
+              />
+              {errors.nama_penanggung_jawab && (
+                <p className="text-xs text-red-500">
+                  {errors.nama_penanggung_jawab}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="no_hp">No. HP</Label>
-              <Input id="no_hp" value={form.no_hp} onChange={setInputF("no_hp")}
-                placeholder="No. HP" disabled={submitting} />
+              <Input
+                id="no_hp"
+                value={form.no_hp}
+                onChange={setInputF("no_hp")}
+                placeholder="No. HP"
+                disabled={submitting}
+              />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="alamat">Alamat</Label>
-              <Textarea id="alamat" value={form.alamat} onChange={setInputF("alamat")}
-                placeholder="Alamat lengkap" rows={3} disabled={submitting} />
+              <Textarea
+                id="alamat"
+                value={form.alamat}
+                onChange={setInputF("alamat")}
+                placeholder="Alamat lengkap"
+                rows={3}
+                disabled={submitting}
+              />
             </div>
 
             {/* Tgl Rencana Persalinan — Calendar Picker */}
@@ -593,87 +766,172 @@ const EditDialog: React.FC<{
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Jenis Tindakan */}
               <div className="space-y-1.5">
-                <Label>Jenis Tindakan <span className="text-red-500">*</span></Label>
-                <Select value={form.jenis_tindakan}
-                  onValueChange={(v) => { setF("jenis_tindakan")(v); clearErr("jenis_tindakan")(); }}
-                  disabled={submitting}>
-                  <SelectTrigger className={errors.jenis_tindakan ? "border-red-500" : ""}>
-                    <span>{form.jenis_tindakan ? getJenisTindakanLabel(form.jenis_tindakan) : "Pilih jenis tindakan"}</span>
+                <Label>
+                  Jenis Tindakan <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={form.jenis_tindakan}
+                  onValueChange={(v) => {
+                    setF("jenis_tindakan")(v);
+                    clearErr("jenis_tindakan")();
+                  }}
+                  disabled={submitting}
+                >
+                  <SelectTrigger
+                    className={errors.jenis_tindakan ? "border-red-500" : ""}
+                  >
+                    <span>
+                      {form.jenis_tindakan
+                        ? getJenisTindakanLabel(form.jenis_tindakan)
+                        : "Pilih jenis tindakan"}
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
                     {JENIS_TINDAKAN_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.jenis_tindakan && <p className="text-xs text-red-500">{errors.jenis_tindakan}</p>}
+                {errors.jenis_tindakan && (
+                  <p className="text-xs text-red-500">
+                    {errors.jenis_tindakan}
+                  </p>
+                )}
               </div>
 
               {/* Jenis Penjamin */}
               <div className="space-y-1.5">
-                <Label>Jenis Penjamin <span className="text-red-500">*</span></Label>
-                <Select value={form.jenis_penjamin}
-                  onValueChange={(v) => { setF("jenis_penjamin")(v); clearErr("jenis_penjamin")(); }}
-                  disabled={submitting}>
-                  <SelectTrigger className={errors.jenis_penjamin ? "border-red-500" : ""}>
-                    <span>{form.jenis_penjamin ? getPenjaminLabel(form.jenis_penjamin) : "Pilih penjamin"}</span>
+                <Label>
+                  Jenis Penjamin <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={form.jenis_penjamin}
+                  onValueChange={(v) => {
+                    setF("jenis_penjamin")(v);
+                    clearErr("jenis_penjamin")();
+                  }}
+                  disabled={submitting}
+                >
+                  <SelectTrigger
+                    className={errors.jenis_penjamin ? "border-red-500" : ""}
+                  >
+                    <span>
+                      {form.jenis_penjamin
+                        ? getPenjaminLabel(form.jenis_penjamin)
+                        : "Pilih penjamin"}
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
                     {PENJAMIN_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.jenis_penjamin && <p className="text-xs text-red-500">{errors.jenis_penjamin}</p>}
+                {errors.jenis_penjamin && (
+                  <p className="text-xs text-red-500">
+                    {errors.jenis_penjamin}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Dokter PJ */}
             <div className="space-y-1.5">
-              <Label>Dokter Penanggung Jawab <span className="text-red-500">*</span></Label>
-              <Select value={form.dokter_penanggung_jawab}
-                onValueChange={(v) => { setF("dokter_penanggung_jawab")(v); clearErr("dokter_penanggung_jawab")(); }}
-                disabled={submitting}>
-                <SelectTrigger className={errors.dokter_penanggung_jawab ? "border-red-500" : ""}>
+              <Label>
+                Dokter Penanggung Jawab <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={form.dokter_penanggung_jawab}
+                onValueChange={(v) => {
+                  setF("dokter_penanggung_jawab")(v);
+                  clearErr("dokter_penanggung_jawab")();
+                }}
+                disabled={submitting}
+              >
+                <SelectTrigger
+                  className={
+                    errors.dokter_penanggung_jawab ? "border-red-500" : ""
+                  }
+                >
                   <span>{form.dokter_penanggung_jawab || "Pilih dokter"}</span>
                 </SelectTrigger>
                 <SelectContent>
                   {DOKTER_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.dokter_penanggung_jawab && <p className="text-xs text-red-500">{errors.dokter_penanggung_jawab}</p>}
+              {errors.dokter_penanggung_jawab && (
+                <p className="text-xs text-red-500">
+                  {errors.dokter_penanggung_jawab}
+                </p>
+              )}
             </div>
 
             {/* Rencana Kelas */}
             <div className="space-y-1.5">
-              <Label>Rencana Kelas <span className="text-red-500">*</span></Label>
-              <Select value={form.rencana_kelas}
-                onValueChange={(v) => { setF("rencana_kelas")(v); clearErr("rencana_kelas")(); }}
-                disabled={submitting}>
-                <SelectTrigger className={errors.rencana_kelas ? "border-red-500" : ""}>
-                  <span>{form.rencana_kelas ? getKelasLabel(form.rencana_kelas) : "Pilih kelas"}</span>
+              <Label>
+                Rencana Kelas <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={form.rencana_kelas}
+                onValueChange={(v) => {
+                  setF("rencana_kelas")(v);
+                  clearErr("rencana_kelas")();
+                }}
+                disabled={submitting}
+              >
+                <SelectTrigger
+                  className={errors.rencana_kelas ? "border-red-500" : ""}
+                >
+                  <span>
+                    {form.rencana_kelas
+                      ? getKelasLabel(form.rencana_kelas)
+                      : "Pilih kelas"}
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
                   {KELAS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.rencana_kelas && <p className="text-xs text-red-500">{errors.rencana_kelas}</p>}
+              {errors.rencana_kelas && (
+                <p className="text-xs text-red-500">{errors.rencana_kelas}</p>
+              )}
             </div>
 
             {/* Deskripsi */}
             <div className="space-y-1.5">
               <Label htmlFor="deskripsi">Keterangan Tambahan</Label>
-              <Textarea id="deskripsi" value={form.deskripsi} onChange={setInputF("deskripsi")}
-                placeholder="Keterangan tambahan (opsional)" rows={3} disabled={submitting} />
+              <Textarea
+                id="deskripsi"
+                value={form.deskripsi}
+                onChange={setInputF("deskripsi")}
+                placeholder="Keterangan tambahan (opsional)"
+                rows={3}
+                disabled={submitting}
+              />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>Batal</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={submitting}
+            >
+              Batal
+            </Button>
             <Button type="submit" disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitting ? "Menyimpan..." : "Simpan"}
@@ -713,7 +971,10 @@ export default function FormulirDPPage() {
   const [kelasFilter, setKelasFilter] = useState<string>("all");
 
   useEffect(() => {
-    const t = setTimeout(() => { setDebouncedSearch(searchQuery); setCurrentPage(1); }, 300);
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 300);
     return () => clearTimeout(t);
   }, [searchQuery]);
 
@@ -722,33 +983,51 @@ export default function FormulirDPPage() {
 
     if (debouncedSearch.trim()) {
       const q = debouncedSearch.toLowerCase();
-      f = f.filter((r) =>
-        r.nama_pasien.toLowerCase().includes(q) ||
-        r.nama_penanggung_jawab.toLowerCase().includes(q) ||
-        (r.no_rm ?? "").toLowerCase().includes(q) ||
-        (r.no_hp ?? "").toLowerCase().includes(q) ||
-        (r.dokter_penanggung_jawab ?? "").toLowerCase().includes(q),
+      f = f.filter(
+        (r) =>
+          r.nama_pasien.toLowerCase().includes(q) ||
+          r.nama_penanggung_jawab.toLowerCase().includes(q) ||
+          (r.no_rm ?? "").toLowerCase().includes(q) ||
+          (r.no_hp ?? "").toLowerCase().includes(q) ||
+          (r.dokter_penanggung_jawab ?? "").toLowerCase().includes(q),
       );
     }
 
-    if (dokterFilter !== "all") f = f.filter((r) => r.dokter_penanggung_jawab === dokterFilter);
-    if (tindakanFilter !== "all") f = f.filter((r) => r.jenis_tindakan === tindakanFilter);
-    if (kelasFilter !== "all") f = f.filter((r) => r.rencana_kelas === kelasFilter);
+    if (dokterFilter !== "all")
+      f = f.filter((r) => r.dokter_penanggung_jawab === dokterFilter);
+    if (tindakanFilter !== "all")
+      f = f.filter((r) => r.jenis_tindakan === tindakanFilter);
+    if (kelasFilter !== "all")
+      f = f.filter((r) => r.rencana_kelas === kelasFilter);
 
     f.sort((a, b) => {
       let cmp = 0;
-      if (sortField === "nama_pasien") cmp = a.nama_pasien.localeCompare(b.nama_pasien, "id");
-      else if (sortField === "tanggal") cmp = new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime();
-      else if (sortField === "created_at") cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortField === "nama_pasien")
+        cmp = a.nama_pasien.localeCompare(b.nama_pasien, "id");
+      else if (sortField === "tanggal")
+        cmp = new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime();
+      else if (sortField === "created_at")
+        cmp =
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return sortOrder === "asc" ? cmp : -cmp;
     });
 
     setFiltered(f);
     setCurrentPage(1);
     setSelectedIds(new Set());
-  }, [data, debouncedSearch, sortField, sortOrder, dokterFilter, tindakanFilter, kelasFilter]);
+  }, [
+    data,
+    debouncedSearch,
+    sortField,
+    sortOrder,
+    dokterFilter,
+    tindakanFilter,
+    kelasFilter,
+  ]);
 
-  useEffect(() => { applyFilters(); }, [applyFilters]);
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -769,7 +1048,10 @@ export default function FormulirDPPage() {
       setLoading(true);
       try {
         const user = getCurrentUser();
-        if (!user) { setShowAccessDenied(true); return; }
+        if (!user) {
+          setShowAccessDenied(true);
+          return;
+        }
         setIsAdmin(user.role === "administrator");
         await fetchData();
       } finally {
@@ -777,20 +1059,32 @@ export default function FormulirDPPage() {
       }
     };
     init();
-    const channel = supabase.channel("fmo_1_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "fmo_1" }, () => fetchData())
+    const channel = supabase
+      .channel("fmo_1_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "fmo_1" },
+        () => fetchData(),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchData]);
 
   const totalItems = filtered.length;
-  const totalPages = itemsPerPage === "all" ? 1 : Math.ceil(totalItems / itemsPerPage);
-  const startIndex = itemsPerPage === "all" ? 0 : (currentPage - 1) * (itemsPerPage as number);
-  const endIndex = itemsPerPage === "all" ? totalItems : startIndex + (itemsPerPage as number);
+  const totalPages =
+    itemsPerPage === "all" ? 1 : Math.ceil(totalItems / itemsPerPage);
+  const startIndex =
+    itemsPerPage === "all" ? 0 : (currentPage - 1) * (itemsPerPage as number);
+  const endIndex =
+    itemsPerPage === "all" ? totalItems : startIndex + (itemsPerPage as number);
   const currentRows = filtered.slice(startIndex, endIndex);
 
-  const isAllSelected = currentRows.length > 0 && currentRows.every((r) => selectedIds.has(r.id));
-  const isSomeSelected = currentRows.some((r) => selectedIds.has(r.id)) && !isAllSelected;
+  const isAllSelected =
+    currentRows.length > 0 && currentRows.every((r) => selectedIds.has(r.id));
+  const isSomeSelected =
+    currentRows.some((r) => selectedIds.has(r.id)) && !isAllSelected;
   const handleSelectAll = (checked: boolean) =>
     setSelectedIds(checked ? new Set(currentRows.map((r) => r.id)) : new Set());
   const handleSelectOne = (id: string, checked: boolean) => {
@@ -803,7 +1097,10 @@ export default function FormulirDPPage() {
     if (!deleteItem) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("fmo_1").delete().eq("id", deleteItem.id);
+      const { error } = await supabase
+        .from("fmo_1")
+        .delete()
+        .eq("id", deleteItem.id);
       if (error) throw error;
       toast.success("Data berhasil dihapus");
       setDeleteItem(null);
@@ -818,7 +1115,10 @@ export default function FormulirDPPage() {
   const handleBulkDelete = async () => {
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("fmo_1").delete().in("id", Array.from(selectedIds));
+      const { error } = await supabase
+        .from("fmo_1")
+        .delete()
+        .in("id", Array.from(selectedIds));
       if (error) throw error;
       toast.success(`${selectedIds.size} data berhasil dihapus`);
       setBulkDeleteOpen(false);
@@ -850,11 +1150,16 @@ export default function FormulirDPPage() {
   ];
 
   const getSortLabel = () =>
-    sortOptions.find((o) => o.value === `${sortField}-${sortOrder}`)?.label ?? "Urutkan";
+    sortOptions.find((o) => o.value === `${sortField}-${sortOrder}`)?.label ??
+    "Urutkan";
 
   const showReset =
-    sortField !== "created_at" || sortOrder !== "desc" || searchQuery !== "" ||
-    dokterFilter !== "all" || tindakanFilter !== "all" || kelasFilter !== "all";
+    sortField !== "created_at" ||
+    sortOrder !== "desc" ||
+    searchQuery !== "" ||
+    dokterFilter !== "all" ||
+    tindakanFilter !== "all" ||
+    kelasFilter !== "all";
 
   if (loading) {
     return (
@@ -864,7 +1169,9 @@ export default function FormulirDPPage() {
           <Skeleton className="h-5 w-96" />
         </div>
         <Card>
-          <CardHeader><Skeleton className="h-7 w-48" /></CardHeader>
+          <CardHeader>
+            <Skeleton className="h-7 w-48" />
+          </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
@@ -895,14 +1202,22 @@ export default function FormulirDPPage() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Formulir DP Persalinan</h1>
-          <p className="text-muted-foreground mt-1">Data formulir persetujuan pembayaran uang muka persalinan</p>
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
+            Formulir DP Persalinan
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Data formulir persetujuan pembayaran uang muka persalinan
+          </p>
         </div>
         {/* Bulk delete button — admin only */}
         {isAdmin && selectedIds.size > 0 && (
           <div className="self-end sm:self-auto">
-            <Button variant="outline" onClick={() => setBulkDeleteOpen(true)} disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white">
+            <Button
+              variant="outline"
+              onClick={() => setBulkDeleteOpen(true)}
+              disabled={submitting}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
+            >
               <Trash2 className="mr-2 h-4 w-4" />
               Hapus ({selectedIds.size})
             </Button>
@@ -918,21 +1233,28 @@ export default function FormulirDPPage() {
               <div className="flex gap-3 w-full sm:w-auto">
                 <div className="relative grow sm:grow-0 sm:w-72">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input placeholder="Cari nama pasien, no. RM, HP, dokter..."
-                    value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+                  <Input
+                    placeholder="Cari nama pasien, no. RM, HP, dokter..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-3">
               {/* Sort */}
-              <Select value={`${sortField}-${sortOrder}`}
+              <Select
+                value={`${sortField}-${sortOrder}`}
                 onValueChange={(v) => {
                   const parts = v.split("-");
                   const order = parts[parts.length - 1] as SortOrder;
                   const field = parts.slice(0, -1).join("-") as SortField;
-                  setSortField(field); setSortOrder(order);
-                }}>
+                  setSortField(field);
+                  setSortOrder(order);
+                }}
+              >
                 <SelectTrigger className="w-full sm:w-[200px]">
                   <div className="flex items-center gap-2">
                     <ArrowUpDown className="h-4 w-4" />
@@ -941,7 +1263,9 @@ export default function FormulirDPPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {sortOptions.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -951,13 +1275,19 @@ export default function FormulirDPPage() {
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4" />
-                    <span>{tindakanFilter === "all" ? "Semua Tindakan" : getJenisTindakanLabel(tindakanFilter)}</span>
+                    <span>
+                      {tindakanFilter === "all"
+                        ? "Semua Tindakan"
+                        : getJenisTindakanLabel(tindakanFilter)}
+                    </span>
                   </div>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Tindakan</SelectItem>
                   {JENIS_TINDAKAN_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -967,13 +1297,19 @@ export default function FormulirDPPage() {
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4" />
-                    <span>{kelasFilter === "all" ? "Semua Kelas" : getKelasLabel(kelasFilter)}</span>
+                    <span>
+                      {kelasFilter === "all"
+                        ? "Semua Kelas"
+                        : getKelasLabel(kelasFilter)}
+                    </span>
                   </div>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Kelas</SelectItem>
                   {KELAS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -993,7 +1329,9 @@ export default function FormulirDPPage() {
                 <SelectContent>
                   <SelectItem value="all">Semua Dokter</SelectItem>
                   {DOKTER_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1016,20 +1354,37 @@ export default function FormulirDPPage() {
                   {/* Checkbox — admin only */}
                   {isAdmin && (
                     <TableHead className="w-12">
-                      <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll}
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={handleSelectAll}
                         aria-label="Select all"
-                        className={isSomeSelected ? "data-[state=checked]:bg-primary/50" : ""} />
+                        className={
+                          isSomeSelected
+                            ? "data-[state=checked]:bg-primary/50"
+                            : ""
+                        }
+                      />
                     </TableHead>
                   )}
                   <TableHead className="w-12">No</TableHead>
                   <TableHead>Nama Pasien</TableHead>
-                  <TableHead className="hidden md:table-cell">Penanggung Jawab</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Penanggung Jawab
+                  </TableHead>
                   <TableHead className="hidden xl:table-cell">Dokter</TableHead>
-                  <TableHead className="hidden lg:table-cell">Tindakan</TableHead>
-                  <TableHead className="hidden lg:table-cell">Penjamin</TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    Tindakan
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    Penjamin
+                  </TableHead>
                   <TableHead className="hidden lg:table-cell">Kelas</TableHead>
-                  <TableHead className="hidden sm:table-cell">Tgl Dibuat</TableHead>
-                  <TableHead className="hidden sm:table-cell w-[130px]">Tgl Rencana Tindakan</TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    Tgl Dibuat
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell w-[130px]">
+                    Tgl Rencana Tindakan
+                  </TableHead>
                   <TableHead className="text-right w-28">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1040,7 +1395,10 @@ export default function FormulirDPPage() {
                       colSpan={isAdmin ? 10 : 9}
                       className="text-center text-muted-foreground h-32"
                     >
-                      {searchQuery || dokterFilter !== "all" || tindakanFilter !== "all" || kelasFilter !== "all"
+                      {searchQuery ||
+                      dokterFilter !== "all" ||
+                      tindakanFilter !== "all" ||
+                      kelasFilter !== "all"
                         ? "Tidak ada data yang sesuai dengan filter"
                         : "Belum ada data formulir DP"}
                     </TableCell>
@@ -1051,46 +1409,70 @@ export default function FormulirDPPage() {
                       {/* Checkbox — admin only */}
                       {isAdmin && (
                         <TableCell>
-                          <Checkbox checked={selectedIds.has(row.id)}
-                            onCheckedChange={(c) => handleSelectOne(row.id, c as boolean)} />
+                          <Checkbox
+                            checked={selectedIds.has(row.id)}
+                            onCheckedChange={(c) =>
+                              handleSelectOne(row.id, c as boolean)
+                            }
+                          />
                         </TableCell>
                       )}
-                      <TableCell className="font-medium text-muted-foreground">{startIndex + idx + 1}</TableCell>
+                      <TableCell className="font-medium text-muted-foreground">
+                        {startIndex + idx + 1}
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium">{row.nama_pasien}</div>
-                        {row.no_rm && <div className="text-xs text-muted-foreground">RM: {row.no_rm}</div>}
+                        {row.no_rm && (
+                          <div className="text-xs text-muted-foreground">
+                            RM: {row.no_rm}
+                          </div>
+                        )}
                         {row.tgl_lahir && (
-                          <div className="text-xs text-muted-foreground">Lahir: {formatTanggal(row.tgl_lahir)}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Lahir: {formatTanggal(row.tgl_lahir)}
+                          </div>
                         )}
                         {row.no_hp && (
-                          <div className="text-xs text-muted-foreground sm:hidden">{row.no_hp}</div>
+                          <div className="text-xs text-muted-foreground sm:hidden">
+                            {row.no_hp}
+                          </div>
                         )}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm">{row.nama_penanggung_jawab}</TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">
+                        {row.nama_penanggung_jawab}
+                      </TableCell>
                       <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">
                         {row.dokter_penanggung_jawab ?? "—"}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         {row.jenis_tindakan ? (
-                          <Badge variant="outline"
+                          <Badge
+                            variant="outline"
                             className={
                               row.jenis_tindakan === "sc"
                                 ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700"
                                 : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700"
-                            }>
+                            }
+                          >
                             {getJenisTindakanLabel(row.jenis_tindakan)}
                           </Badge>
-                        ) : "—"}
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Badge variant="outline"
-                          className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                        <Badge
+                          variant="outline"
+                          className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
+                        >
                           {getPenjaminLabel(row.jenis_penjamin)}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Badge variant="outline"
-                          className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700">
+                        <Badge
+                          variant="outline"
+                          className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-300 dark:border-green-700"
+                        >
                           {getKelasLabel(row.rencana_kelas)}
                         </Badge>
                       </TableCell>
@@ -1109,8 +1491,13 @@ export default function FormulirDPPage() {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button variant="outline" size="icon" className="h-8 w-8"
-                                    onClick={() => setEditItem(row)} disabled={submitting}>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => setEditItem(row)}
+                                    disabled={submitting}
+                                  >
                                     <Pencil className="h-3.5 w-3.5" />
                                   </Button>
                                 </TooltipTrigger>
@@ -1123,8 +1510,12 @@ export default function FormulirDPPage() {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="outline" size="icon" className="h-8 w-8"
-                                  onClick={() => handleDownloadPDF(row)}>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleDownloadPDF(row)}
+                                >
                                   <Download className="h-3.5 w-3.5" />
                                 </Button>
                               </TooltipTrigger>
@@ -1137,9 +1528,13 @@ export default function FormulirDPPage() {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button variant="outline" size="icon"
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
                                     className="h-8 w-8 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
-                                    onClick={() => setDeleteItem(row)} disabled={submitting}>
+                                    onClick={() => setDeleteItem(row)}
+                                    disabled={submitting}
+                                  >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
                                 </TooltipTrigger>
@@ -1171,25 +1566,39 @@ export default function FormulirDPPage() {
 
       {/* Edit Dialog — admin only */}
       {isAdmin && (
-        <EditDialog open={!!editItem} item={editItem} onClose={() => setEditItem(null)} onSaved={fetchData} />
+        <EditDialog
+          open={!!editItem}
+          item={editItem}
+          onClose={() => setEditItem(null)}
+          onSaved={fetchData}
+        />
       )}
 
       {/* Delete Dialog — admin only */}
       {isAdmin && (
-        <AlertDialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
+        <AlertDialog
+          open={!!deleteItem}
+          onOpenChange={(o) => !o && setDeleteItem(null)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Hapus Data Formulir?</AlertDialogTitle>
               <AlertDialogDescription>
                 Apakah Anda yakin ingin menghapus data formulir atas nama{" "}
-                <strong>{deleteItem?.nama_pasien}</strong>? Tindakan ini tidak dapat dibatalkan.
+                <strong>{deleteItem?.nama_pasien}</strong>? Tindakan ini tidak
+                dapat dibatalkan.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} disabled={submitting}
-                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white">
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={submitting}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white"
+              >
+                {submitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {submitting ? "Menghapus..." : "Hapus"}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -1202,17 +1611,24 @@ export default function FormulirDPPage() {
         <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Hapus {selectedIds.size} Data Formulir?</AlertDialogTitle>
+              <AlertDialogTitle>
+                Hapus {selectedIds.size} Data Formulir?
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                Apakah Anda yakin ingin menghapus {selectedIds.size} data formulir yang dipilih?
-                Tindakan ini tidak dapat dibatalkan.
+                Apakah Anda yakin ingin menghapus {selectedIds.size} data
+                formulir yang dipilih? Tindakan ini tidak dapat dibatalkan.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={submitting}>Batal</AlertDialogCancel>
-              <AlertDialogAction onClick={handleBulkDelete} disabled={submitting}
-                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white">
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <AlertDialogAction
+                onClick={handleBulkDelete}
+                disabled={submitting}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white hover:text-white"
+              >
+                {submitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {submitting ? "Menghapus..." : "Hapus Semua"}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -1220,7 +1636,10 @@ export default function FormulirDPPage() {
         </AlertDialog>
       )}
 
-      <AccessDeniedDialog open={showAccessDenied} onOpenChange={setShowAccessDenied} />
+      <AccessDeniedDialog
+        open={showAccessDenied}
+        onOpenChange={setShowAccessDenied}
+      />
     </div>
   );
 }

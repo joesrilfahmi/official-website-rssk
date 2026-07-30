@@ -159,6 +159,8 @@ const DOKTER_OPTIONS = [
     value: "dr. ANDI BUDI HERIANTO, SP.OG",
     label: "dr. ANDI BUDI HERIANTO, SP.OG",
   },
+  { value: "dr. BAYU PRIANGGA, Sp.OG", label: "dr. BAYU PRIANGGA, Sp.OG" },
+
   { value: "dr. IKA MARET TANIA, SP.OG", label: "dr. IKA MARET TANIA, SP.OG" },
   {
     value: "dr. PRASTI SULANJARI, SP.OG",
