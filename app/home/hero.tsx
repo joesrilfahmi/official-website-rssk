@@ -119,13 +119,13 @@ const TrustIndicators: React.FC = () => {
           Tahun Pengalaman
         </p>
       </div>
-      <div className="w-px bg-white/15 self-stretch hidden sm:block" />
+      {/* <div className="w-px bg-white/15 self-stretch hidden sm:block" />
       <div className="text-center lg:text-left">
         <p className="text-white font-extrabold text-2xl leading-none">KARS</p>
         <p className="text-white/45 text-[11px] mt-1 tracking-widest uppercase">
           Akreditasi Paripurna
         </p>
-      </div>
+      </div> */}
       <div className="w-px bg-white/15 self-stretch hidden sm:block" />
       <div ref={emergencyRef} className="text-center lg:text-left">
         <p className="text-white font-extrabold text-2xl leading-none tabular-nums">
