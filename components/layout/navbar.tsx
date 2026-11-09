@@ -71,7 +71,7 @@ export default function Navbar() {
           { label: "Indikator Mutu", href: "/indikator-mutu" },
         ],
       },
-      { label: "Pendaftaran", href: "/pendaftaran" },
+      { label: "Pendaftaran", href: "https://app.e-rssk.com" },
       { label: "Kritik & Saran", href: "/feedback-qr-code" },
       { label: "Kontak", href: "/kontak" },
     ],
