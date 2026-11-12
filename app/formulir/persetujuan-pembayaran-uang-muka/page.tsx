@@ -154,6 +154,10 @@ const DOKTER_OPTIONS = [
     value: "dr. ADITYA HERLAMBANG, SP.OG",
     label: "dr. ADITYA HERLAMBANG, SP.OG",
   },
+  {
+    value: "dr. ATIKA AYUNINGTYAS, Sp.OG",
+    label: "dr. ATIKA AYUNINGTYAS, Sp.OG",
+  },
   { value: "dr. AMIK YULIATI, SP.OG", label: "dr. AMIK YULIATI, SP.OG" },
   {
     value: "dr. ANDI BUDI HERIANTO, SP.OG",
