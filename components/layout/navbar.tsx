@@ -73,7 +73,7 @@ export default function Navbar() {
       },
       {
         label: "Pendaftaran",
-        href: "http://203.173.88.75:4343/apm-online/public/apm_online",
+        href: "https://app.e-rssk.com/",
       },
       { label: "Kritik & Saran", href: "/feedback-qr-code" },
       { label: "Kontak", href: "/kontak" },
