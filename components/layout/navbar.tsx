@@ -71,7 +71,10 @@ export default function Navbar() {
           { label: "Indikator Mutu", href: "/indikator-mutu" },
         ],
       },
-      { label: "Pendaftaran", href: "https://app.e-rssk.com" },
+      {
+        label: "Pendaftaran",
+        href: "http://203.173.88.75:4343/apm-online/public/apm_online",
+      },
       { label: "Kritik & Saran", href: "/feedback-qr-code" },
       { label: "Kontak", href: "/kontak" },
     ],
