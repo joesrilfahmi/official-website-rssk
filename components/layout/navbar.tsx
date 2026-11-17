@@ -1,7 +1,7 @@
 // app/components/layout/navbar.tsx
 "use client";
 import { Profile } from "@/config/profile";
-import { ChevronDown, LogIn, Menu, X } from "lucide-react";
+import { ChevronDown, LogIn, Mail, MapPin, Menu, Phone, X } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -54,6 +54,9 @@ export default function Navbar() {
     null,
   );
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Bersihkan nomor telepon agar valid untuk link tel:
+  const telHref = `tel:${Profile.phone.replace(/[^\d+]/g, "")}`;
 
   const navItems: NavItem[] = useMemo(
     () => [
@@ -158,14 +161,44 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-70 transition-all duration-300 px-4 sm:px-6
+        className={`fixed top-0 left-0 right-0 z-70 transition-all duration-300
         ${
           shouldUseDarkText
             ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100"
             : "bg-transparent"
         }`}
       >
-        <div className="max-w-7xl mx-auto" ref={dropdownRef}>
+        {/* Top bar: alamat & kontak (semua ukuran layar, selalu tampil) */}
+        <div className="bg-mariner-500 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-10 flex items-center justify-between gap-6 text-[11px] sm:text-xs">
+            {/* Alamat: disembunyikan di mobile (tampil lengkap di menu) */}
+            <div className="hidden md:flex items-center gap-1.5 min-w-0">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{Profile.address}</span>
+            </div>
+
+            {/* Kontak */}
+            <div className="flex items-center justify-between md:justify-end gap-4 md:gap-5 w-full md:w-auto min-w-0">
+              <a
+                href={telHref}
+                className="flex items-center gap-1.5 shrink-0 hover:text-white/80 transition-colors"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>{Profile.phone}</span>
+              </a>
+              <a
+                href={`mailto:${Profile.email}`}
+                className="flex items-center gap-1.5 min-w-0 hover:text-white/80 transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{Profile.email}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Navbar utama */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6" ref={dropdownRef}>
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <button
@@ -268,6 +301,7 @@ export default function Navbar() {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={`lg:hidden p-2 rounded-xl transition-colors duration-200
                 ${shouldUseDarkText ? "text-gray-700 hover:bg-gray-100" : "text-white hover:bg-white/10"}`}
+              aria-label={isMenuOpen ? "Tutup menu" : "Buka menu"}
             >
               {isMenuOpen ? (
                 <X className="w-5 h-5" />
@@ -279,9 +313,9 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay (pt-10 = tinggi top bar, agar konten tidak tertutup navbar) */}
       {isMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-white z-60 overflow-y-auto">
+        <div className="lg:hidden fixed inset-0 bg-white z-60 overflow-y-auto pt-10">
           {/* Header strip */}
           <div className="flex items-center justify-between h-20 px-4 sm:px-6 border-b border-gray-100">
             <button
@@ -309,6 +343,7 @@ export default function Navbar() {
             <button
               onClick={() => setIsMenuOpen(false)}
               className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+              aria-label="Tutup menu"
             >
               <X className="w-5 h-5" />
             </button>
@@ -381,6 +416,26 @@ export default function Navbar() {
 
           <div className="px-4 sm:px-6 pt-2 pb-8">
             <div className="h-px bg-gray-100 mb-6" />
+
+            {/* Alamat & kontak lengkap (mobile) */}
+            <div className="mb-6 space-y-3 rounded-xl bg-mariner-50 p-4 text-sm text-gray-700">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-mariner-500" />
+                <span>{Profile.address}</span>
+              </div>
+              <a href={telHref} className="flex items-center gap-2.5">
+                <Phone className="w-4 h-4 shrink-0 text-mariner-500" />
+                <span>{Profile.phone}</span>
+              </a>
+              <a
+                href={`mailto:${Profile.email}`}
+                className="flex items-center gap-2.5 break-all"
+              >
+                <Mail className="w-4 h-4 shrink-0 text-mariner-500" />
+                <span>{Profile.email}</span>
+              </a>
+            </div>
+
             <Button
               variant="primary"
               size="lg"

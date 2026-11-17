@@ -280,19 +280,9 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
   const groupedReguler = groupJadwalByHari(jadwalReguler as JadwalDokter[]);
   const groupedEksekutif = groupJadwalByHari(jadwalEksekutif as JadwalDokter[]);
 
-  const handleDaftar = (hari: string, jamMulai: string, jamSelesai: string) => {
-    const params = new URLSearchParams({
-      poliId: dokter.poli_id,
-      poliNama: dokter.poli?.nama_poli || "-",
-      dokterId: dokter.id,
-      dokterNama: dokter.nama,
-      hari,
-      jamMulai,
-      jamSelesai,
-    });
-    if (dokter.profile) params.set("dokterProfile", dokter.profile);
+  const handleDaftar = () => {
     onClose();
-    router.push(`/pendaftaran?${params.toString()}`);
+    window.location.href = "https://app.e-rssk.com/";
   };
 
   const handleNavigateToDetail = () => {
@@ -341,9 +331,7 @@ const JadwalDialog: React.FC<JadwalDialogProps> = ({ dokter, onClose }) => {
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ duration: 0.16 } satisfies Transition}
-                    onClick={() =>
-                      handleDaftar(group.hari, slot.jam_mulai, slot.jam_selesai)
-                    }
+                    onClick={handleDaftar}
                     className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-bittersweet-500 hover:bg-bittersweet-600 px-3 py-1.5 rounded-full shadow-sm shadow-bittersweet-500/20 transition-colors duration-150 shrink-0"
                   >
                     Daftar <ArrowRight className="w-3 h-3" />

@@ -635,7 +635,7 @@ const Hero: React.FC = () => {
               </Animate>
               <Animate type="fadein">
                 <div className="flex flex-wrap gap-3 pt-1 justify-center lg:justify-start">
-                  <Link href="/pendaftaran">
+                  <Link href="https://app.e-rssk.com/">
                     <Button variant="primary" size="lg" className="group gap-2">
                       Buat Janji
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
