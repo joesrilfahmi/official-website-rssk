@@ -47,7 +47,7 @@ export const Profile: Profile = {
   phone: "0317883980",
   whatsapp: "08113015001",
   whatsappHumas: "08113422330",
-  whatsappCs: "08113015001",
+  whatsappCs: "08113326757",
   ambulance: "08113087119",
   pusatPanggilan: "0317881130",
   email: "humas@sitikhodijah.com",
@@ -77,6 +77,18 @@ export const rumahSakit: RumahSakit[] = [
     url: "https://moedjito.com",
     alamat:
       "Jl. Hayam Wuruk No.9, Kepanjen, Kec. Jombang, Kabupaten Jombang, Jawa Timur 61411",
+  },
+  {
+    name: "RS PKU Surabaya",
+    url: "https://rspkumusby.com/",
+    alamat:
+      "Jl. KH. Mas Mansyur 180-182, Nyamplungan, Pabean Cantian, Surabaya",
+  },
+  {
+    name: "RSI Arofah",
+    url: "#",
+    alamat:
+      "Jl. Gajah Mada No.1, Randu Bango, Randubango, Kec. Mojosari, Kabupaten Mojokerto, Jawa Timur 61382",
   },
   {
     name: "Klinik Siti Khodijah Prima",
